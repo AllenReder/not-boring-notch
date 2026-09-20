@@ -23,10 +23,6 @@ final class LiquidGlassBackdropView: NSView {
     private var sdfLayer: CALayer?
     private var sdfElement: CALayer?
 
-    override var isFlipped: Bool {
-        true
-    }
-
     override init(frame: NSRect) {
         super.init(frame: frame)
         wantsLayer = true
@@ -92,12 +88,11 @@ final class LiquidGlassBackdropView: NSView {
         }
 
         // 2. SDF Shape Element: Inset by topRadius on both sides to align with NotchShape vertical walls.
-        // In flipped coordinates, MaxY is the bottom of the view: round ONLY the bottom corners!
+        // In native AppKit coordinates (y=0 at bottom), cornerRadius rounds the bottom corners!
         let sdfElementInstance = sdfElementClass.init()
         let contentWidth = max(bounds.width - topRadius * 2, 0)
         sdfElementInstance.frame = CGRect(x: topRadius, y: 0, width: contentWidth, height: bounds.height)
         sdfElementInstance.cornerRadius = bottomRadius
-        sdfElementInstance.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
         sdfElementInstance.setValue("bounds", forKey: "mode")
         sdfElementInstance.setValue("union", forKey: "operation")
 
@@ -124,7 +119,6 @@ final class LiquidGlassBackdropView: NSView {
         let contentWidth = max(bounds.width - topRadius * 2, 0)
         sdfElement.frame = CGRect(x: topRadius, y: 0, width: contentWidth, height: bounds.height)
         sdfElement.cornerRadius = bottomRadius
-        sdfElement.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
         backdrop.setNeedsDisplay()
         sdfLayer.setNeedsDisplay()
         CATransaction.commit()
@@ -162,12 +156,10 @@ final class LiquidGlassBackdropView: NSView {
         filter.setValue(blur > 0 ? 0.60 : 0.0, forKey: "inputBlurFillNormalOpacity")
 
         // 3. Delicate sub-pixel chromatic dispersion along refractive perimeter
-        if aberration > 0 {
-            filter.setValue(aberration, forKey: "inputAberrationAmount")
-            filter.setValue(lensHeight, forKey: "inputAberrationHeight")
-            filter.setValue(0.0, forKey: "inputAberrationOffset")
-            filter.setValue(0.0, forKey: "inputAberrationAngle")
-        }
+        filter.setValue(aberration, forKey: "inputAberrationAmount")
+        filter.setValue(lensHeight, forKey: "inputAberrationHeight")
+        filter.setValue(0.0, forKey: "inputAberrationOffset")
+        filter.setValue(0.0, forKey: "inputAberrationAngle")
 
         // 4. Clarity: 100% face opacity, 0 bleed = crystal clear!
         filter.setValue(0.0, forKey: "inputBleedAmount")
