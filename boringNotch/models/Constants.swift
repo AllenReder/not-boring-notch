@@ -106,6 +106,7 @@ extension Defaults.Keys {
 
     // MARK: Liquid Glass
     static let enableLiquidGlass = Key<Bool>("enableLiquidGlass", default: true)
+    static let preventAutoClose = Key<Bool>("preventAutoClose", default: false)
     static let glassRefraction = Key<Double>("glassRefraction", default: 20.0)
     static let glassBlur = Key<Double>("glassBlur", default: 0.0)
     static let glassDispersion = Key<Double>("glassDispersion", default: 4.0)
