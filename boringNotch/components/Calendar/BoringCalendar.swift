@@ -197,20 +197,21 @@ struct CalendarView: View {
                         .foregroundColor(Color(white: 0.65))
                 }
 
-                ZStack(alignment: .top) {
-                    WheelPicker(selectedDate: $selectedDate, config: Config())
-                    HStack(alignment: .top) {
-                        LinearGradient(
-                            colors: [Color.black, .clear], startPoint: .leading, endPoint: .trailing
-                        )
-                        .frame(width: 20)
-                        Spacer()
-                        LinearGradient(
-                            colors: [.clear, Color.black], startPoint: .leading, endPoint: .trailing
-                        )
-                        .frame(width: 20)
+                WheelPicker(selectedDate: $selectedDate, config: Config())
+                    .mask {
+                        HStack(spacing: 0) {
+                            LinearGradient(
+                                colors: [.clear, .black], startPoint: .leading, endPoint: .trailing
+                            )
+                            .frame(width: 20)
+                            Rectangle()
+                                .fill(.black)
+                            LinearGradient(
+                                colors: [.black, .clear], startPoint: .leading, endPoint: .trailing
+                            )
+                            .frame(width: 20)
+                        }
                     }
-                }
             }
 
             let filteredEvents = EventListView.filteredEvents(
