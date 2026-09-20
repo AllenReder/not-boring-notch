@@ -1166,6 +1166,7 @@ struct Appearance: View {
     @Default(.selectedVisualizer) var selectedVisualizer
 
     @Default(.enableLiquidGlass) var enableLiquidGlass
+    @Default(.preventAutoClose) var preventAutoClose
     @Default(.glassRefraction) var glassRefraction
     @Default(.glassBlur) var glassBlur
     @Default(.glassDispersion) var glassDispersion
@@ -1176,7 +1177,7 @@ struct Appearance: View {
     @Default(.glassRimTone) var glassRimTone
     @Default(.glassRimIntensity) var glassRimIntensity
 
-    @State private var showAdvancedGlassSettings: Bool = false
+    @State private var showAdvancedGlassSettings: Bool = true
 
     let icons: [String] = ["logo2"]
     @State private var selectedIcon: String = "logo2"
@@ -1209,6 +1210,10 @@ struct Appearance: View {
                     }
                 }
                 .disabled(!LiquidGlassAvailability.isSupported)
+
+                Defaults.Toggle(key: .preventAutoClose) {
+                    Text("Pin Notch Open (Keep notch open)")
+                }
 
                 if enableLiquidGlass && LiquidGlassAvailability.isSupported {
                     DisclosureGroup("Advanced Liquid Glass Tuning", isExpanded: $showAdvancedGlassSettings) {
