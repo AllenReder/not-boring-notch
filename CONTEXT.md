@@ -1,6 +1,6 @@
-# Boring Notch
+# Not Boring Notch
 
-A macOS menu bar and notch companion application that enhances the camera cutout with dynamic visual elements, media controls, and status indicators.
+A modern, high-performance macOS menu bar and notch companion application that enhances the camera cutout with dynamic visual elements, Liquid Glass optical refraction, media controls, and intelligent status indicators.
 
 ## Language
 

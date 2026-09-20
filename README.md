@@ -1,26 +1,21 @@
 <h1 align="center">
   <br>
-  <a href="http://theboring.name"><img src="https://framerusercontent.com/images/RFK4vs0kn8pRMuOO58JeyoemXA.png?scale-down-to=256" alt="Boring Notch" width="150"></a>
+  <a href="https://github.com/AllenReder/not-boring-notch"><img src="https://framerusercontent.com/images/RFK4vs0kn8pRMuOO58JeyoemXA.png?scale-down-to=256" alt="Not Boring Notch" width="150"></a>
   <br>
-  Boring Notch
+  Not Boring Notch
   <br>
 </h1>
 
-
 <p align="center">
-  <a title="Crowdin" target="_blank" href="https://crowdin.com/project/boring-notch"><img src="https://badges.crowdin.net/boring-notch/localized.svg"></a>
-  <img src="https://github.com/TheBoredTeam/boring.notch/actions/workflows/cicd.yml/badge.svg" alt="TheBoringNotch Build & Test" style="margin-right: 10px;" />
-  <a href="https://discord.gg/c8JXA7qrPm">
-    <img src="https://dcbadge.limes.pink/api/server/https://discord.gg/c8JXA7qrPm?style=flat" alt="Discord Badge" />
-  </a>
-  <a href="https://www.ko-fi.com/alexander5015">
-    <img src="https://srv-cdn.himpfen.io/badges/kofi/kofi-flat.svg" alt="Ko-Fi" />
-  </a>
+  <em>A heavily modernized notch companion for macOS with Liquid Glass optical refraction.</em><br>
+  <strong>Forked from <a href="https://github.com/TheBoredTeam/boring.notch">TheBoredTeam/boring.notch</a> · Maintained by Allen Yi</strong>
 </p>
 
-<!--Welcome to **Boring.Notch**, the coolest way to make your MacBook's notch the star of the show! Forget about those boring status bars—our notch turns into a dynamic music control center, complete with a snazzy visualizer and all the music controls you need. It's like having a mini concert right at the top of your screen! -->
+<p align="center">
+  <img src="https://github.com/AllenReder/not-boring-notch/actions/workflows/cicd.yml/badge.svg" alt="Build & Test" style="margin-right: 10px;" />
+</p>
 
-Say hello to **Boring Notch**, the coolest way to make your MacBook’s notch the star of the show! Say goodbye to boring status bars: with Boring Notch, your notch transforms into a dynamic music control center, complete with a vibrant visualizer and all the essential music controls you need. But that’s just the start! Boring Notch also offers calendar integration, a handy file shelf with AirDrop support, a complete MacOS HUD replacement and more!
+Say hello to **Not Boring Notch**, the coolest way to make your MacBook’s notch the star of the show! Say goodbye to boring status bars: with Not Boring Notch, your notch transforms into a dynamic music control center, complete with native **macOS 26 Liquid Glass optical refraction**, vibrant visualizers, calendar integration, a handy file shelf with AirDrop support, a complete macOS HUD replacement, and more!
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/2d5f69c1-6e7b-4bc2-a6f1-bb9e27cf88a8" alt="Demo GIF" />
@@ -49,14 +44,17 @@ Say hello to **Boring Notch**, the coolest way to make your MacBook’s notch th
 
 ### Option 1: Download and Install Manually
 
-<a href="https://github.com/TheBoredTeam/boring.notch/releases/latest/download/boringNotch.dmg" target="_self"><img width="200" src="https://github.com/user-attachments/assets/e3179be1-8416-4b8a-b417-743e1ecc67d6" alt="Download for macOS" /></a>
+<a href="https://github.com/AllenReder/not-boring-notch/releases/latest" target="_self"><img width="200" src="https://github.com/user-attachments/assets/e3179be1-8416-4b8a-b417-743e1ecc67d6" alt="Download for macOS" /></a>
 
-Once downloaded, open the `.dmg` and move **Boring Notch** to your `/Applications` folder.
+Once downloaded, open the `.dmg` and move **Not Boring Notch** to your `/Applications` folder.
 
 > [!IMPORTANT]
-> We don't have an Apple Developer account (yet 👀), so macOS will warn you that Boring Notch is from an unidentified developer on first launch. This is expected behavior.
+> Because this application is not notarized by a paid Apple Developer certificate, macOS will warn you that it is from an unidentified developer on first launch. This is expected behavior.
 >
-> You'll need to bypass this before the app will open. You only need to do this once. Use one of the methods below.
+> You only need to bypass this once:
+> ```bash
+> xattr -dr com.apple.quarantine "/Applications/Not Boring Notch.app"
+> ```
 
 ---
 
@@ -138,8 +136,8 @@ brew install --cask TheBoredTeam/boring-notch/boring-notch
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/TheBoredTeam/boring.notch.git
-   cd boring.notch
+   git clone https://github.com/AllenReder/not-boring-notch.git
+   cd not-boring-notch
    ```
 
 2. **Open the Project in Xcode**:
