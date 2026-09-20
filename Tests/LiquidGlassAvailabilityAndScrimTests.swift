@@ -24,25 +24,26 @@ func assertTrue(_ condition: Bool, _ message: String = "", file: StaticString = 
 struct LiquidGlassAvailabilityAndScrimTestsRunner {
     static func main() {
         testAvailabilityCheck()
-        testHardwareScrimStops()
-        testAmbientTintStops()
+        testHardwareScrimStopsOpened()
+        testHardwareScrimStopsClosedHeight()
+        testAmbientTintStopsOpened()
+        testAmbientTintStopsClosedHeight()
         testScrimStopsDegenerateHeight()
         print("🎉 All LiquidGlassAvailabilityAndScrimTests passed!")
     }
 
     static func testAvailabilityCheck() {
-        // Must execute safely and return a boolean
         let supported = LiquidGlassAvailability.isSupported
         print("ℹ️ LiquidGlassAvailability.isSupported on current system = \(supported)")
         assertEqual(LiquidGlassAvailability.isSupported, supported, "Cached availability must match")
         print("✅ testAvailabilityCheck passed")
     }
 
-    static func testHardwareScrimStops() {
+    static func testHardwareScrimStopsOpened() {
         let totalHeight: CGFloat = 195.0
-        let coreHeight: CGFloat = 34.0
-        let softness: CGFloat = 45.0
-        let floor: CGFloat = 0.0
+        let coreHeight: CGFloat = 80.0
+        let softness: CGFloat = 100.0
+        let floor: CGFloat = 0.23
 
         let stops = NotchScrimCalculator.hardwareScrimStops(
             totalHeight: totalHeight,
@@ -54,15 +55,29 @@ struct LiquidGlassAvailabilityAndScrimTestsRunner {
         assertTrue(stops.count >= 4, "Should have at least 4 gradient stops")
         assertEqual(stops[0].location, 0.0, "First stop at top (0.0)")
         let coreLoc = coreHeight / totalHeight
-        assertTrue(abs(stops[1].location - coreLoc) < 0.01, "Second stop at coreLoc (~0.174)")
+        assertTrue(abs(stops[1].location - coreLoc) < 0.01, "Second stop at coreLoc (~0.41)")
         assertEqual(stops.last?.location, 1.0, "Last stop at bottom (1.0)")
-        print("✅ testHardwareScrimStops passed")
+        print("✅ testHardwareScrimStopsOpened passed")
     }
 
-    static func testAmbientTintStops() {
+    static func testHardwareScrimStopsClosedHeight() {
+        // When height (32pt) <= coreHeight (80pt), must return 100% solid black to eliminate transparent transition
+        let stops = NotchScrimCalculator.hardwareScrimStops(
+            totalHeight: 32.0,
+            coreHeight: 80.0,
+            fadeSoftness: 100.0,
+            floorTransparency: 0.23
+        )
+        assertEqual(stops.count, 2, "Closed notch returns simple solid black stops")
+        assertEqual(stops[0].location, 0.0)
+        assertEqual(stops[1].location, 1.0)
+        print("✅ testHardwareScrimStopsClosedHeight passed")
+    }
+
+    static func testAmbientTintStopsOpened() {
         let totalHeight: CGFloat = 195.0
-        let coreHeight: CGFloat = 34.0
-        let softness: CGFloat = 45.0
+        let coreHeight: CGFloat = 80.0
+        let softness: CGFloat = 100.0
         let testColor = Color.red
 
         let stops = NotchScrimCalculator.ambientTintStops(
@@ -75,26 +90,37 @@ struct LiquidGlassAvailabilityAndScrimTestsRunner {
         assertTrue(stops.count >= 5, "Ambient tint has clear boundaries and middle tint peak")
         assertEqual(stops[0].location, 0.0, "First stop at top is clear")
         assertEqual(stops.last?.location, 1.0, "Last stop at bottom is clear")
-        print("✅ testAmbientTintStops passed")
+        print("✅ testAmbientTintStopsOpened passed")
+    }
+
+    static func testAmbientTintStopsClosedHeight() {
+        // When closed, ambient tint stops should be completely clear
+        let stops = NotchScrimCalculator.ambientTintStops(
+            totalHeight: 32.0,
+            coreHeight: 80.0,
+            fadeSoftness: 100.0,
+            ambientColor: Color.red
+        )
+        assertEqual(stops.count, 2)
+        print("✅ testAmbientTintStopsClosedHeight passed")
     }
 
     static func testScrimStopsDegenerateHeight() {
-        // Zero or negative height should not cause NaN or crash
         let stopsZero = NotchScrimCalculator.hardwareScrimStops(
             totalHeight: 0.0,
-            coreHeight: 34.0,
-            fadeSoftness: 45.0,
-            floorTransparency: 0.0
+            coreHeight: 80.0,
+            fadeSoftness: 100.0,
+            floorTransparency: 0.23
         )
-        assertTrue(!stopsZero.isEmpty, "Degenerate zero height returns safe fallback stops")
+        assertTrue(!stopsZero.isEmpty)
 
         let stopsNegative = NotchScrimCalculator.hardwareScrimStops(
             totalHeight: -100.0,
-            coreHeight: 34.0,
-            fadeSoftness: 45.0,
-            floorTransparency: 0.0
+            coreHeight: 80.0,
+            fadeSoftness: 100.0,
+            floorTransparency: 0.23
         )
-        assertTrue(!stopsNegative.isEmpty, "Degenerate negative height returns safe fallback stops")
+        assertTrue(!stopsNegative.isEmpty)
         print("✅ testScrimStopsDegenerateHeight passed")
     }
 }

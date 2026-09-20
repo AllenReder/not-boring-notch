@@ -11,25 +11,26 @@ struct NotchScrimCalculator {
     ///
     /// - Parameters:
     ///   - totalHeight: Current height of the notch surface (animating or static).
-    ///   - coreHeight: Top opaque black camera concealment region (default 34pt).
-    ///   - fadeSoftness: Downward transition range into glass (default 45pt).
-    ///   - floorTransparency: Bottom opacity floor (default 0.0 = 100% crystal clear).
+    ///   - coreHeight: Top opaque black camera concealment region (default 80pt).
+    ///   - fadeSoftness: Downward transition range into glass (default 100pt).
+    ///   - floorTransparency: Bottom opacity floor (default 0.23).
     static func hardwareScrimStops(
         totalHeight: CGFloat,
         coreHeight: CGFloat,
         fadeSoftness: CGFloat,
         floorTransparency: CGFloat
     ) -> [Gradient.Stop] {
-        guard totalHeight > 0 else {
+        // When the notch is closed or in early expansion (totalHeight <= coreHeight),
+        // the entire area is within the hardware camera cutout, so it is 100% solid black!
+        guard totalHeight > coreHeight else {
             return [
                 .init(color: .black, location: 0.0),
                 .init(color: .black, location: 1.0)
             ]
         }
 
-        let effectiveHeight = max(totalHeight, 160.0)
-        let coreLoc = min(max(coreHeight / effectiveHeight, 0.0), 0.60)
-        let fadeEndLoc = min(coreLoc + (fadeSoftness / effectiveHeight), 0.95)
+        let coreLoc = coreHeight / totalHeight
+        let fadeEndLoc = min(coreLoc + (fadeSoftness / totalHeight), 1.0)
         let floor = Double(min(max(floorTransparency, 0.0), 0.50))
 
         // Pure quadratic ease-out decay into glass.
@@ -57,16 +58,15 @@ struct NotchScrimCalculator {
         fadeSoftness: CGFloat,
         ambientColor: Color
     ) -> [Gradient.Stop] {
-        guard totalHeight > 0 else {
+        guard totalHeight > coreHeight else {
             return [
                 .init(color: .clear, location: 0.0),
                 .init(color: .clear, location: 1.0)
             ]
         }
 
-        let effectiveHeight = max(totalHeight, 160.0)
-        let coreLoc = min(max(coreHeight / effectiveHeight, 0.0), 0.60)
-        let fadeEndLoc = min(coreLoc + (fadeSoftness / effectiveHeight), 0.95)
+        let coreLoc = coreHeight / totalHeight
+        let fadeEndLoc = min(coreLoc + (fadeSoftness / totalHeight), 1.0)
         let midLoc = coreLoc + (fadeEndLoc - coreLoc) * 0.40
 
         return [

@@ -106,17 +106,13 @@ struct ContentView: View {
                     )
                     .padding([.horizontal, .bottom], vm.notchState == .open ? 12 : 0)
                     .background {
-                        if vm.notchState == .open {
-                            let ambientColor = (musicManager.isPlaying && Defaults[.playerColorTinting]) ? Color(nsColor: musicManager.avgColor) : nil
-                            LiquidGlassNotchBackground(
-                                shape: currentNotchShape,
-                                topRadius: topCornerRadius,
-                                bottomRadius: bottomCornerRadius,
-                                ambientColor: ambientColor
-                            )
-                        } else {
-                            Color.black
-                        }
+                        let ambientColor = (musicManager.isPlaying && Defaults[.playerColorTinting]) ? Color(nsColor: musicManager.avgColor) : nil
+                        LiquidGlassNotchBackground(
+                            shape: currentNotchShape,
+                            topRadius: topCornerRadius,
+                            bottomRadius: bottomCornerRadius,
+                            ambientColor: ambientColor
+                        )
                     }
                     .clipShape(currentNotchShape)
                     .overlay(alignment: .top) {
