@@ -4,8 +4,14 @@
 //  Not Boring Notch — Icon Generator
 //
 //  Renders the official Not Boring Notch app icon using the real macOS CoreAnimation
-//  Liquid Glass GPU optical refraction pipeline (CABackdropLayer + CASDFLayer + glassBackground filter),
-//  then exports all required resolutions into AppIcon.appiconset and logo assets.
+//  Liquid Glass GPU optical refraction pipeline (CABackdropLayer + CASDFLayer + glassBackground filter).
+//
+//  Usage:
+//    swift generate_app_icon.swift [output_path] [--install]
+//
+//  Default:
+//    Saves 1024x1024 master icon to `assets/app-icon.png`.
+//    Pass `--install` to slice and install into Xcode Assets.xcassets.
 //
 
 import AppKit
@@ -30,17 +36,14 @@ func makeMasterNotchPath(size: CGFloat, notchW: CGFloat, notchH: CGFloat, topR: 
     p.move(to: CGPoint(x: 0, y: topY))
     p.addLine(to: CGPoint(x: shoulderLeft, y: topY))
 
-    // Smooth G2 Concave shoulder down into notch
     p.addCurve(
         to: CGPoint(x: notchLeft, y: topY + topR),
         control1: CGPoint(x: notchLeft - topR * 0.45, y: topY),
         control2: CGPoint(x: notchLeft, y: topY + topR * 0.45)
     )
 
-    // Left vertical sidewall
     p.addLine(to: CGPoint(x: notchLeft, y: topY + notchH - botR))
 
-    // Silky Smooth G2 Convex Bottom-Left Corner
     let k = botR * 0.5522847
     p.addCurve(
         to: CGPoint(x: notchLeft + botR, y: topY + notchH),
@@ -48,33 +51,27 @@ func makeMasterNotchPath(size: CGFloat, notchW: CGFloat, notchH: CGFloat, topR: 
         control2: CGPoint(x: notchLeft + botR - k, y: topY + notchH)
     )
 
-    // Bottom horizontal edge
     p.addLine(to: CGPoint(x: notchRight - botR, y: topY + notchH))
 
-    // Silky Smooth G2 Convex Bottom-Right Corner
     p.addCurve(
         to: CGPoint(x: notchRight, y: topY + notchH - botR),
         control1: CGPoint(x: notchRight - botR + k, y: topY + notchH),
         control2: CGPoint(x: notchRight, y: topY + notchH - botR + k)
     )
 
-    // Right vertical sidewall
     p.addLine(to: CGPoint(x: notchRight, y: topY + topR))
 
-    // Smooth G2 Concave shoulder up to top bezel
     p.addCurve(
         to: CGPoint(x: shoulderRight, y: topY),
         control1: CGPoint(x: notchRight, y: topY + topR * 0.45),
         control2: CGPoint(x: notchRight + topR * 0.45, y: topY)
     )
 
-    // Line along top bezel to right
     p.addLine(to: CGPoint(x: size, y: topY))
     p.closeSubpath()
     return p
 }
 
-// Continuous Rim Path running from mid-wall around the bottom and up the other wall
 func makeContinuousRimPath(size: CGFloat, notchW: CGFloat, notchH: CGFloat, botR: CGFloat) -> Path {
     var p = Path()
     let midX = size / 2
@@ -83,39 +80,33 @@ func makeContinuousRimPath(size: CGFloat, notchW: CGFloat, notchH: CGFloat, botR
     let topY: CGFloat = 0
     let k = botR * 0.5522847
 
-    // Start midway up the left wall
     p.move(to: CGPoint(x: notchLeft, y: topY + notchH * 0.45))
     p.addLine(to: CGPoint(x: notchLeft, y: topY + notchH - botR))
 
-    // Bottom-left curve
     p.addCurve(
         to: CGPoint(x: notchLeft + botR, y: topY + notchH),
         control1: CGPoint(x: notchLeft, y: topY + notchH - botR + k),
         control2: CGPoint(x: notchLeft + botR - k, y: topY + notchH)
     )
 
-    // Bottom edge
     p.addLine(to: CGPoint(x: notchRight - botR, y: topY + notchH))
 
-    // Bottom-right curve
     p.addCurve(
         to: CGPoint(x: notchRight, y: topY + notchH - botR),
         control1: CGPoint(x: notchRight - botR + k, y: topY + notchH),
         control2: CGPoint(x: notchRight, y: topY + notchH - botR + k)
     )
 
-    // End midway up the right wall
     p.addLine(to: CGPoint(x: notchRight, y: topY + notchH * 0.45))
-
     return p
 }
 
 // MARK: - CoreAnimation Real Optical Glass View
 
 final class AwardWinningGlassView: NSView {
-    var refraction: Double = -90.0      // Deep lens displacement
-    var lensHeight: Double = 50.0      // Wide silky bevel
-    var aberration: Double = 12.0      // Prismatic dispersion
+    var refraction: Double = -90.0
+    var lensHeight: Double = 50.0
+    var aberration: Double = 12.0
     var notchWidth: CGFloat = 360.0
     var notchHeight: CGFloat = 280.0
     var bottomRadius: CGFloat = 58.0
@@ -217,7 +208,6 @@ final class AwardWinningGlassView: NSView {
         f.setValue(0.0, forKey: "inputBlurRadius")
         f.setValue(0.0, forKey: "inputBlurFillBlurRadius")
 
-        // Chromatic Dispersion
         f.setValue(aberration, forKey: "inputAberrationAmount")
         f.setValue(lensHeight, forKey: "inputAberrationHeight")
         f.setValue(0.0, forKey: "inputAberrationOffset")
@@ -252,7 +242,7 @@ struct AwardWinningGlassRepresentable: NSViewRepresentable {
     func updateNSView(_ nsView: AwardWinningGlassView, context: Context) {}
 }
 
-// MARK: - Master Icon View (Official Liquid Glass Design)
+// MARK: - Master Icon View
 
 struct NotBoringNotchOfficialIconView: View {
     let size: CGFloat = 512
@@ -280,22 +270,21 @@ struct NotBoringNotchOfficialIconView: View {
         )
 
         ZStack(alignment: .top) {
-            // 1. Base Plate: Dark Space Obsidian
             ZStack {
                 Color(red: 0.04, green: 0.04, blue: 0.06)
 
-                // Rainbow Donut Ring (Rich glowing colors)
+                // Rainbow Donut Ring
                 Circle()
                     .strokeBorder(
                         AngularGradient(
                             colors: [
-                                Color(red: 1.0, green: 0.22, blue: 0.45), // Hot Pink
-                                Color(red: 1.0, green: 0.55, blue: 0.12), // Orange
-                                Color(red: 1.0, green: 0.88, blue: 0.10), // Sunburst
-                                Color(red: 0.15, green: 0.90, blue: 0.50), // Mint Green
-                                Color(red: 0.10, green: 0.75, blue: 1.00), // Cyan Blue
-                                Color(red: 0.65, green: 0.30, blue: 0.95), // Neon Purple
-                                Color(red: 1.0, green: 0.22, blue: 0.45)  // Back to Pink
+                                Color(red: 1.0, green: 0.22, blue: 0.45),
+                                Color(red: 1.0, green: 0.55, blue: 0.12),
+                                Color(red: 1.0, green: 0.88, blue: 0.10),
+                                Color(red: 0.15, green: 0.90, blue: 0.50),
+                                Color(red: 0.10, green: 0.75, blue: 1.00),
+                                Color(red: 0.65, green: 0.30, blue: 0.95),
+                                Color(red: 1.0, green: 0.22, blue: 0.45)
                             ],
                             center: .center
                         ),
@@ -306,7 +295,6 @@ struct NotBoringNotchOfficialIconView: View {
                     .shadow(color: Color.purple.opacity(0.60), radius: 28, y: 8)
                     .shadow(color: Color.blue.opacity(0.50), radius: 38, y: 6)
 
-                // Soft glowing radial disc inside the donut hole
                 Circle()
                     .fill(
                         RadialGradient(
@@ -323,7 +311,6 @@ struct NotBoringNotchOfficialIconView: View {
                     .frame(width: size * 0.46, height: size * 0.46)
                     .offset(y: size * 0.16)
 
-                // Dark Vignette
                 RadialGradient(
                     colors: [.clear, Color.black.opacity(0.75)],
                     center: .center,
@@ -333,9 +320,7 @@ struct NotBoringNotchOfficialIconView: View {
             }
             .clipShape(RoundedRectangle(cornerRadius: squircleR, style: .continuous))
 
-            // 2. THE REAL OPTICAL LIQUID GLASS NOTCH
             ZStack(alignment: .top) {
-                // Real GPU Physical Refraction Layer
                 AwardWinningGlassRepresentable(
                     notchWidth: notchW,
                     notchHeight: notchH,
@@ -344,7 +329,6 @@ struct NotBoringNotchOfficialIconView: View {
                 .frame(width: size, height: size)
                 .clipShape(notchPath)
 
-                // Precision Hardware Camera Scrim (Top pure black core fading seamlessly into glass)
                 LinearGradient(
                     stops: [
                         .init(color: .black, location: 0.0),
@@ -361,7 +345,6 @@ struct NotBoringNotchOfficialIconView: View {
                 .position(x: size / 2, y: notchH / 2)
                 .clipShape(notchPath)
 
-                // Bottom Continuous Rim: Dissolves softly at both ends
                 continuousRim
                     .stroke(
                         LinearGradient(
@@ -380,7 +363,6 @@ struct NotBoringNotchOfficialIconView: View {
                         style: StrokeStyle(lineWidth: size * 0.012, lineCap: .round, lineJoin: .round)
                     )
 
-                // Brilliant Specular Accent on Bottom Center Edge
                 continuousRim
                     .stroke(
                         LinearGradient(
@@ -399,7 +381,6 @@ struct NotBoringNotchOfficialIconView: View {
             }
             .clipShape(RoundedRectangle(cornerRadius: squircleR, style: .continuous))
 
-            // 3. Squircle Outer Metallic Bevel Stroke
             RoundedRectangle(cornerRadius: squircleR, style: .continuous)
                 .strokeBorder(
                     LinearGradient(
@@ -419,9 +400,16 @@ struct NotBoringNotchOfficialIconView: View {
     }
 }
 
-// MARK: - Generator Runner
+// MARK: - CLI Argument Parsing
 
-let masterTempPath = "/tmp/not_boring_notch_master_1024.png"
+let args = CommandLine.arguments
+var shouldInstall = args.contains("--install") || args.contains("--apply")
+var outputPath: String = "assets/app-icon.png"
+
+// If first positional argument is a file path
+if args.count > 1 && !args[1].starts(with: "--") {
+    outputPath = args[1]
+}
 
 let app = NSApplication.shared
 app.setActivationPolicy(.accessory)
@@ -439,67 +427,68 @@ window.contentView = NSHostingView(rootView: NotBoringNotchOfficialIconView())
 window.orderFrontRegardless()
 
 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+    let outUrl = URL(fileURLWithPath: outputPath)
+    let parentDir = outUrl.deletingLastPathComponent().path
+    try? FileManager.default.createDirectory(atPath: parentDir, withIntermediateDirectories: true)
+
     let task = Process()
     task.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
-    task.arguments = ["-l", "\(window.windowNumber)", masterTempPath]
+    task.arguments = ["-l", "\(window.windowNumber)", outputPath]
     try? task.run()
     task.waitUntilExit()
 
-    guard FileManager.default.fileExists(atPath: masterTempPath) else {
-        print("❌ Error: Failed to capture master icon")
+    guard FileManager.default.fileExists(atPath: outputPath) else {
+        print("❌ Error: Failed to capture icon")
         exit(1)
     }
 
-    print("✅ Master 1024x1024 icon rendered successfully at \(masterTempPath)")
+    print("✅ Master 1024x1024 icon generated successfully at \(outputPath)")
 
-    let projectDir = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : FileManager.default.currentDirectoryPath
-    let appIconDir = "\(projectDir)/boringNotch/Assets.xcassets/AppIcon.appiconset"
-    let logo2Dir = "\(projectDir)/boringNotch/Assets.xcassets/logo2.imageset"
-    let logoDir = "\(projectDir)/boringNotch/Assets.xcassets/logo.imageset"
+    if shouldInstall {
+        let projectDir = FileManager.default.currentDirectoryPath
+        let appIconDir = "\(projectDir)/boringNotch/Assets.xcassets/AppIcon.appiconset"
+        let logo2Dir = "\(projectDir)/boringNotch/Assets.xcassets/logo2.imageset"
+        let logoDir = "\(projectDir)/boringNotch/Assets.xcassets/logo.imageset"
 
-    // Target sizes for AppIcon.appiconset
-    let appIconSizes = [
-        ("notch-stage-icon2 2.png", 16),
-        ("notch-stage-icon2 5.png", 32),
-        ("notch-stage-icon2 6.png", 32),
-        ("notch-stage-icon2 11.png", 64),
-        ("notch-stage-icon2 12.png", 128),
-        ("notch-stage-icon2 13.png", 256),
-        ("notch-stage-icon2 7.png", 256),
-        ("notch-stage-icon2 8.png", 512),
-        ("notch-stage-icon2 9.png", 512),
-        ("notch-stage-icon2 10.png", 1024)
-    ]
+        let appIconSizes = [
+            ("notch-stage-icon2 2.png", 16),
+            ("notch-stage-icon2 5.png", 32),
+            ("notch-stage-icon2 6.png", 32),
+            ("notch-stage-icon2 11.png", 64),
+            ("notch-stage-icon2 12.png", 128),
+            ("notch-stage-icon2 13.png", 256),
+            ("notch-stage-icon2 7.png", 256),
+            ("notch-stage-icon2 8.png", 512),
+            ("notch-stage-icon2 9.png", 512),
+            ("notch-stage-icon2 10.png", 1024)
+        ]
 
-    for (name, px) in appIconSizes {
-        let dest = "\(appIconDir)/\(name)"
-        let resize = Process()
-        resize.executableURL = URL(fileURLWithPath: "/usr/bin/sips")
-        resize.arguments = ["-z", "\(px)", "\(px)", masterTempPath, "--out", dest]
-        try? resize.run()
-        resize.waitUntilExit()
-        print("  → Generated \(name) (\(px)x\(px))")
+        for (name, px) in appIconSizes {
+            let dest = "\(appIconDir)/\(name)"
+            let resize = Process()
+            resize.executableURL = URL(fileURLWithPath: "/usr/bin/sips")
+            resize.arguments = ["-z", "\(px)", "\(px)", outputPath, "--out", dest]
+            try? resize.run()
+            resize.waitUntilExit()
+        }
+
+        let logo2Dest = "\(logo2Dir)/BoringNotch icon.png"
+        let resizeLogo2 = Process()
+        resizeLogo2.executableURL = URL(fileURLWithPath: "/usr/bin/sips")
+        resizeLogo2.arguments = ["-z", "512", "512", outputPath, "--out", logo2Dest]
+        try? resizeLogo2.run()
+        resizeLogo2.waitUntilExit()
+
+        let logoDest = "\(logoDir)/256-mac 1.png"
+        let resizeLogo = Process()
+        resizeLogo.executableURL = URL(fileURLWithPath: "/usr/bin/sips")
+        resizeLogo.arguments = ["-z", "256", "256", outputPath, "--out", logoDest]
+        try? resizeLogo.run()
+        resizeLogo.waitUntilExit()
+
+        print("📦 Installed and sliced into Assets.xcassets successfully!")
     }
 
-    // Logo2 (Welcome screen)
-    let logo2Dest = "\(logo2Dir)/BoringNotch icon.png"
-    let resizeLogo2 = Process()
-    resizeLogo2.executableURL = URL(fileURLWithPath: "/usr/bin/sips")
-    resizeLogo2.arguments = ["-z", "512", "512", masterTempPath, "--out", logo2Dest]
-    try? resizeLogo2.run()
-    resizeLogo2.waitUntilExit()
-    print("  → Generated logo2/BoringNotch icon.png (512x512)")
-
-    // Logo (General 256-mac)
-    let logoDest = "\(logoDir)/256-mac 1.png"
-    let resizeLogo = Process()
-    resizeLogo.executableURL = URL(fileURLWithPath: "/usr/bin/sips")
-    resizeLogo.arguments = ["-z", "256", "256", masterTempPath, "--out", logoDest]
-    try? resizeLogo.run()
-    resizeLogo.waitUntilExit()
-    print("  → Generated logo/256-mac 1.png (256x256)")
-
-    print("🎉 All product icons updated successfully!")
     NSApp.terminate(nil)
 }
 
