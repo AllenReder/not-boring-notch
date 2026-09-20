@@ -60,27 +60,27 @@ struct LiquidGlassConfiguration: Equatable, Codable {
 
     // Recommended Golden Configuration
     static let recommended = LiquidGlassConfiguration(
-        refraction: 20.0,
+        refraction: 24.0,
         blur: 0.0,
         dispersion: 4.0,
         lensHeight: 23.0,
-        coreHeight: 34.0,
-        fadeSoftness: 45.0,
-        floorTransparency: 0.0,
+        coreHeight: 80.0,
+        fadeSoftness: 100.0,
+        floorTransparency: 0.23,
         rimTone: .neutralWhite,
-        rimIntensity: 0.4
+        rimIntensity: 0.2
     )
 
     init(
-        refraction: Double = 20.0,
+        refraction: Double = 24.0,
         blur: Double = 0.0,
         dispersion: Double = 4.0,
         lensHeight: Double = 23.0,
-        coreHeight: CGFloat = 34.0,
-        fadeSoftness: CGFloat = 45.0,
-        floorTransparency: CGFloat = 0.0,
+        coreHeight: CGFloat = 80.0,
+        fadeSoftness: CGFloat = 100.0,
+        floorTransparency: CGFloat = 0.23,
         rimTone: LiquidGlassRimTone = .neutralWhite,
-        rimIntensity: Double = 0.4
+        rimIntensity: Double = 0.2
     ) {
         self.refraction = refraction
         self.blur = blur

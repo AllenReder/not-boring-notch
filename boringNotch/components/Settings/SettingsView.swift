@@ -1166,7 +1166,6 @@ struct Appearance: View {
     @Default(.selectedVisualizer) var selectedVisualizer
 
     @Default(.enableLiquidGlass) var enableLiquidGlass
-    @Default(.preventAutoClose) var preventAutoClose
     @Default(.glassRefraction) var glassRefraction
     @Default(.glassBlur) var glassBlur
     @Default(.glassDispersion) var glassDispersion
@@ -1210,10 +1209,6 @@ struct Appearance: View {
                     }
                 }
                 .disabled(!LiquidGlassAvailability.isSupported)
-
-                Defaults.Toggle(key: .preventAutoClose) {
-                    Text("Pin Notch Open (Debug: Keep notch open)")
-                }
 
                 if enableLiquidGlass && LiquidGlassAvailability.isSupported {
                     DisclosureGroup("Advanced Liquid Glass Tuning", isExpanded: $showAdvancedGlassSettings) {

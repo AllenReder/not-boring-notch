@@ -106,16 +106,15 @@ extension Defaults.Keys {
 
     // MARK: Liquid Glass
     static let enableLiquidGlass = Key<Bool>("enableLiquidGlass", default: true)
-    static let preventAutoClose = Key<Bool>("preventAutoClose", default: false)
-    static let glassRefraction = Key<Double>("glassRefraction", default: 20.0)
+    static let glassRefraction = Key<Double>("glassRefraction", default: 24.0)
     static let glassBlur = Key<Double>("glassBlur", default: 0.0)
     static let glassDispersion = Key<Double>("glassDispersion", default: 4.0)
     static let glassLensHeight = Key<Double>("glassLensHeight", default: 23.0)
-    static let glassCoreHeight = Key<CGFloat>("glassCoreHeight", default: 34.0)
-    static let glassFadeSoftness = Key<CGFloat>("glassFadeSoftness", default: 45.0)
-    static let glassFloorTransparency = Key<CGFloat>("glassFloorTransparency", default: 0.0)
+    static let glassCoreHeight = Key<CGFloat>("glassCoreHeight", default: 80.0)
+    static let glassFadeSoftness = Key<CGFloat>("glassFadeSoftness", default: 100.0)
+    static let glassFloorTransparency = Key<CGFloat>("glassFloorTransparency", default: 0.23)
     static let glassRimTone = Key<LiquidGlassRimTone>("glassRimTone", default: .neutralWhite)
-    static let glassRimIntensity = Key<Double>("glassRimIntensity", default: 0.4)
+    static let glassRimIntensity = Key<Double>("glassRimIntensity", default: 0.2)
 
     static let showNotHumanFace = Key<Bool>("showNotHumanFace", default: false)
     static let tileShowLabels = Key<Bool>("tileShowLabels", default: false)

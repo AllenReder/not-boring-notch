@@ -30,15 +30,15 @@ struct LiquidGlassConfigurationTestsRunner {
 
     static func testRecommendedConfiguration() {
         let config = LiquidGlassConfiguration.recommended
-        assertEqual(config.refraction, 20.0, "Recommended refraction should be 20.0")
+        assertEqual(config.refraction, 24.0, "Recommended refraction should be 24.0")
         assertEqual(config.blur, 0.0, "Recommended blur should be 0.0")
         assertEqual(config.dispersion, 4.0, "Recommended dispersion should be 4.0")
         assertEqual(config.lensHeight, 23.0, "Recommended lensHeight should be 23.0")
-        assertEqual(config.coreHeight, 34.0, "Recommended coreHeight should be 34.0")
-        assertEqual(config.fadeSoftness, 45.0, "Recommended fadeSoftness should be 45.0")
-        assertEqual(config.floorTransparency, 0.0, "Recommended floorTransparency should be 0.0")
+        assertEqual(config.coreHeight, 80.0, "Recommended coreHeight should be 80.0")
+        assertEqual(config.fadeSoftness, 100.0, "Recommended fadeSoftness should be 100.0")
+        assertEqual(config.floorTransparency, 0.23, "Recommended floorTransparency should be 0.23")
         assertEqual(config.rimTone, .neutralWhite, "Recommended rimTone should be neutralWhite")
-        assertEqual(config.rimIntensity, 0.4, "Recommended rimIntensity should be 0.4")
+        assertEqual(config.rimIntensity, 0.2, "Recommended rimIntensity should be 0.2")
         print("✅ testRecommendedConfiguration passed")
     }
 
