@@ -6,22 +6,47 @@
 import Defaults
 import SwiftUI
 
-// MARK: - Hardware Scrim with Ambient Music Tinting
+// MARK: - Layer 2: Hardware Scrim (Pure Camera Concealment)
 
 struct NotchBlackFadeScrim: View {
     let shape: NotchShape
     let coreHeight: CGFloat
     let fadeSoftness: CGFloat
     let floorTransparency: CGFloat
-    let ambientColor: Color?
 
     var body: some View {
         GeometryReader { geo in
-            let stops = NotchScrimCalculator.stops(
+            let stops = NotchScrimCalculator.hardwareScrimStops(
                 totalHeight: geo.size.height,
                 coreHeight: coreHeight,
                 fadeSoftness: fadeSoftness,
-                floorTransparency: floorTransparency,
+                floorTransparency: floorTransparency
+            )
+
+            LinearGradient(
+                stops: stops,
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .clipShape(shape)
+        }
+    }
+}
+
+// MARK: - Layer 3: Ambient Music Tint (Separate Middle-Band Atmosphere)
+
+struct NotchAmbientMusicTint: View {
+    let shape: NotchShape
+    let coreHeight: CGFloat
+    let fadeSoftness: CGFloat
+    let ambientColor: Color
+
+    var body: some View {
+        GeometryReader { geo in
+            let stops = NotchScrimCalculator.ambientTintStops(
+                totalHeight: geo.size.height,
+                coreHeight: coreHeight,
+                fadeSoftness: fadeSoftness,
                 ambientColor: ambientColor
             )
 
@@ -35,7 +60,7 @@ struct NotchBlackFadeScrim: View {
     }
 }
 
-// MARK: - Specular Glass Rim
+// MARK: - Layer 4: Specular Glass Rim
 
 struct NotchSpecularRim: View {
     let shape: NotchShape
@@ -134,16 +159,25 @@ struct LiquidGlassNotchBackground: View {
                 )
                 .clipShape(shape)
 
-                // Layer 2: Hardware Scrim with Ambient Music Tint
+                // Layer 2: Hardware Scrim (Guaranteed Solid Black Camera Concealment)
                 NotchBlackFadeScrim(
                     shape: shape,
                     coreHeight: glassCoreHeight,
                     fadeSoftness: glassFadeSoftness,
-                    floorTransparency: glassFloorTransparency,
-                    ambientColor: ambientColor
+                    floorTransparency: glassFloorTransparency
                 )
 
-                // Layer 3: Specular Rim Highlight
+                // Layer 3: Ambient Music Tint (Subtle Artwork Atmosphere in Mid-Band)
+                if let ambient = ambientColor {
+                    NotchAmbientMusicTint(
+                        shape: shape,
+                        coreHeight: glassCoreHeight,
+                        fadeSoftness: glassFadeSoftness,
+                        ambientColor: ambient
+                    )
+                }
+
+                // Layer 4: Specular Rim Highlight
                 NotchSpecularRim(
                     shape: shape,
                     tone: glassRimTone,

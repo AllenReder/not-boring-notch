@@ -10,6 +10,11 @@ import QuartzCore
 enum LiquidGlassAvailability {
     /// Cached check for whether the host system supports CoreAnimation Liquid Glass refraction
     private static let _isSupported: Bool = {
+        // macOS 26+ required
+        guard ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 26 else {
+            return false
+        }
+
         guard NSClassFromString("CABackdropLayer") != nil,
               NSClassFromString("CASDFLayer") != nil,
               NSClassFromString("CASDFElementLayer") != nil,

@@ -28,6 +28,9 @@ DerivedData/
 
 # Build output
 build/
+
+# Local Pi Agent runtime
+.pi/
 *.app
 *.dSYM
 

@@ -105,16 +105,18 @@ struct ContentView: View {
                     )
                     .padding([.horizontal, .bottom], vm.notchState == .open ? 12 : 0)
                     .background {
-                        if vm.notchState == .open {
-                            let ambientColor = (musicManager.isPlaying && Defaults[.playerColorTinting]) ? Color(nsColor: musicManager.avgColor) : nil
-                            LiquidGlassNotchBackground(
-                                shape: currentNotchShape,
-                                topRadius: topCornerRadius,
-                                bottomRadius: bottomCornerRadius,
-                                ambientColor: ambientColor
-                            )
-                        } else {
+                        ZStack {
                             Color.black
+                            if vm.notchState == .open {
+                                let ambientColor = (musicManager.isPlaying && Defaults[.playerColorTinting]) ? Color(nsColor: musicManager.avgColor) : nil
+                                LiquidGlassNotchBackground(
+                                    shape: currentNotchShape,
+                                    topRadius: topCornerRadius,
+                                    bottomRadius: bottomCornerRadius,
+                                    ambientColor: ambientColor
+                                )
+                                .transition(.opacity)
+                            }
                         }
                     }
                     .clipShape(currentNotchShape)

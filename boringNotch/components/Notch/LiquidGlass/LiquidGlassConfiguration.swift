@@ -22,10 +22,10 @@ enum LiquidGlassRimTone: String, CaseIterable, Identifiable, Codable {
 
     var localizedName: String {
         switch self {
-        case .neutralWhite: return "Neutral White (极简银白)"
-        case .sunsetGold: return "Sunset Gold (暖金夕阳)"
-        case .siriGlow: return "Siri Glow (AI 霓虹)"
-        case .off: return "Off (关闭高光)"
+        case .neutralWhite: return "Neutral White"
+        case .sunsetGold: return "Sunset Gold"
+        case .siriGlow: return "Siri Glow"
+        case .off: return "Off"
         }
     }
 }

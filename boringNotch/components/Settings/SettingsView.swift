@@ -1200,7 +1200,7 @@ struct Appearance: View {
             Section {
                 Defaults.Toggle(key: .enableLiquidGlass) {
                     HStack {
-                        Text("Enable Liquid Glass (渐变液态玻璃)")
+                        Text("Enable Liquid Glass")
                         if !LiquidGlassAvailability.isSupported {
                             Text("(Requires macOS 26+)")
                                 .font(.caption)
@@ -1211,12 +1211,12 @@ struct Appearance: View {
                 .disabled(!LiquidGlassAvailability.isSupported)
 
                 if enableLiquidGlass && LiquidGlassAvailability.isSupported {
-                    DisclosureGroup("Advanced Liquid Glass Tuning (高级微调)", isExpanded: $showAdvancedGlassSettings) {
+                    DisclosureGroup("Advanced Liquid Glass Tuning", isExpanded: $showAdvancedGlassSettings) {
                         VStack(spacing: 12) {
                             // 1. Refraction (0 ~ 100)
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack {
-                                    Text("Refraction (物理折射)")
+                                    Text("Refraction")
                                     Spacer()
                                     Text("\(Int(glassRefraction))")
                                         .font(.system(size: 12, weight: .bold, design: .monospaced))
@@ -1228,7 +1228,7 @@ struct Appearance: View {
                             // 2. Blur (0.0 ~ 30.0)
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack {
-                                    Text("Blur (模糊度)")
+                                    Text("Blur")
                                     Spacer()
                                     Text(String(format: "%.1f", glassBlur))
                                         .font(.system(size: 12, weight: .bold, design: .monospaced))
@@ -1240,7 +1240,7 @@ struct Appearance: View {
                             // 3. Dispersion (0 ~ 15)
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack {
-                                    Text("Dispersion (边缘色散)")
+                                    Text("Dispersion")
                                     Spacer()
                                     Text("\(Int(glassDispersion))")
                                         .font(.system(size: 12, weight: .bold, design: .monospaced))
@@ -1252,7 +1252,7 @@ struct Appearance: View {
                             // 4. Lens Height (10 ~ 60)
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack {
-                                    Text("Lens Height (透镜宽度)")
+                                    Text("Lens Height")
                                     Spacer()
                                     Text("\(Int(glassLensHeight)) pt")
                                         .font(.system(size: 12, weight: .bold, design: .monospaced))
@@ -1264,7 +1264,7 @@ struct Appearance: View {
                             // 5. Core Height (20 ~ 80)
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack {
-                                    Text("Camera Core Height (纯黑遮罩)")
+                                    Text("Camera Core Height")
                                     Spacer()
                                     Text("\(Int(glassCoreHeight)) pt")
                                         .font(.system(size: 12, weight: .bold, design: .monospaced))
@@ -1276,7 +1276,7 @@ struct Appearance: View {
                             // 6. Fade Softness (10 ~ 100)
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack {
-                                    Text("Fade Softness (羽化软度)")
+                                    Text("Fade Softness")
                                     Spacer()
                                     Text("\(Int(glassFadeSoftness)) pt")
                                         .font(.system(size: 12, weight: .bold, design: .monospaced))
@@ -1288,7 +1288,7 @@ struct Appearance: View {
                             // 7. Floor Transparency (0.0 ~ 0.50)
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack {
-                                    Text("Floor Transparency (底限透光)")
+                                    Text("Floor Transparency")
                                     Spacer()
                                     Text("\(Int(glassFloorTransparency * 100))%")
                                         .font(.system(size: 12, weight: .bold, design: .monospaced))
@@ -1299,7 +1299,7 @@ struct Appearance: View {
 
                             // 8. Specular Rim
                             HStack {
-                                Picker("Specular Rim (边缘高光)", selection: $glassRimTone) {
+                                Picker("Specular Rim", selection: $glassRimTone) {
                                     ForEach(LiquidGlassRimTone.allCases) { tone in
                                         Text(tone.localizedName).tag(tone)
                                     }
@@ -1319,7 +1319,7 @@ struct Appearance: View {
                             // Reset Button
                             HStack {
                                 Spacer()
-                                Button("Reset to Recommended (恢复推荐配置)") {
+                                Button("Reset to Recommended") {
                                     LiquidGlassConfiguration.resetToDefaults()
                                 }
                                 .buttonStyle(.bordered)
@@ -1331,7 +1331,7 @@ struct Appearance: View {
                     }
                 }
             } header: {
-                Text("Notch Surface Material (表面材质)")
+                Text("Notch Surface Material")
             } footer: {
                 Text("Liquid Glass provides continuous GPU optical refraction and camera cutout concealment. Crystal clear with zero blur by default.")
             }

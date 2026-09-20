@@ -23,6 +23,10 @@ final class LiquidGlassBackdropView: NSView {
     private var sdfLayer: CALayer?
     private var sdfElement: CALayer?
 
+    override var isFlipped: Bool {
+        true
+    }
+
     override init(frame: NSRect) {
         super.init(frame: frame)
         wantsLayer = true
@@ -61,10 +65,10 @@ final class LiquidGlassBackdropView: NSView {
         let effect = sdfEffectClass.init()
         let selMin = NSSelectorFromString("setMinimum:")
         let selMax = NSSelectorFromString("setMaximum:")
-        if let mMin = class_getInstanceMethod(sdfEffectClass, selMin),
-           let mMax = class_getInstanceMethod(sdfEffectClass, selMax) {
-            let impMin = unsafeBitCast(method_getImplementation(mMin), to: SetDoubleFunc.self)
-            let impMax = unsafeBitCast(method_getImplementation(mMax), to: SetDoubleFunc.self)
+        if let methodMin = class_getInstanceMethod(sdfEffectClass, selMin),
+           let methodMax = class_getInstanceMethod(sdfEffectClass, selMax) {
+            let impMin = unsafeBitCast(method_getImplementation(methodMin), to: SetDoubleFunc.self)
+            let impMax = unsafeBitCast(method_getImplementation(methodMax), to: SetDoubleFunc.self)
             impMin(effect, selMin, -1000.0)
             impMax(effect, selMax, 1.0)
         }
@@ -75,23 +79,25 @@ final class LiquidGlassBackdropView: NSView {
         sdfLayerInstance.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
 
         let selEffect = NSSelectorFromString("setEffect:")
-        if let m = class_getInstanceMethod(sdfLayerClass, selEffect) {
-            let imp = unsafeBitCast(method_getImplementation(m), to: SetObjFunc.self)
+        if let methodEffect = class_getInstanceMethod(sdfLayerClass, selEffect) {
+            let imp = unsafeBitCast(method_getImplementation(methodEffect), to: SetObjFunc.self)
             imp(sdfLayerInstance, selEffect, effect)
         }
 
         // C1 Hermite Smoothness: eliminates hard step boundaries and color blocks
         let selSmooth = NSSelectorFromString("setSmoothness:")
-        if let m = class_getInstanceMethod(sdfLayerClass, selSmooth) {
-            let imp = unsafeBitCast(method_getImplementation(m), to: SetDoubleFunc.self)
+        if let methodSmooth = class_getInstanceMethod(sdfLayerClass, selSmooth) {
+            let imp = unsafeBitCast(method_getImplementation(methodSmooth), to: SetDoubleFunc.self)
             imp(sdfLayerInstance, selSmooth, 38.0)
         }
 
-        // 2. SDF Shape Element: Inset by topRadius on both sides to align with NotchShape vertical walls
+        // 2. SDF Shape Element: Inset by topRadius on both sides to align with NotchShape vertical walls.
+        // In flipped coordinates, MaxY is the bottom of the view: round ONLY the bottom corners!
         let sdfElementInstance = sdfElementClass.init()
         let contentWidth = max(bounds.width - topRadius * 2, 0)
         sdfElementInstance.frame = CGRect(x: topRadius, y: 0, width: contentWidth, height: bounds.height)
         sdfElementInstance.cornerRadius = bottomRadius
+        sdfElementInstance.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
         sdfElementInstance.setValue("bounds", forKey: "mode")
         sdfElementInstance.setValue("union", forKey: "operation")
 
@@ -118,6 +124,7 @@ final class LiquidGlassBackdropView: NSView {
         let contentWidth = max(bounds.width - topRadius * 2, 0)
         sdfElement.frame = CGRect(x: topRadius, y: 0, width: contentWidth, height: bounds.height)
         sdfElement.cornerRadius = bottomRadius
+        sdfElement.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
         CATransaction.commit()
     }
 
