@@ -125,6 +125,8 @@ final class LiquidGlassBackdropView: NSView {
         sdfElement.frame = CGRect(x: topRadius, y: 0, width: contentWidth, height: bounds.height)
         sdfElement.cornerRadius = bottomRadius
         sdfElement.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        backdrop.setNeedsDisplay()
+        sdfLayer.setNeedsDisplay()
         CATransaction.commit()
     }
 
@@ -191,7 +193,7 @@ struct LiquidGlassBackdropRepresentable: NSViewRepresentable {
     var bottomRadius: CGFloat
 
     func makeNSView(context: Context) -> LiquidGlassBackdropView {
-        let view = LiquidGlassBackdropView()
+        let view = LiquidGlassBackdropView(frame: NSRect(x: 0, y: 0, width: 640, height: 195))
         view.refraction = -refraction
         view.lensHeight = lensHeight
         view.blur = blur

@@ -27,7 +27,7 @@ struct NotchScrimCalculator {
             ]
         }
 
-        let effectiveHeight = max(totalHeight, 1.0)
+        let effectiveHeight = max(totalHeight, 160.0)
         let coreLoc = min(max(coreHeight / effectiveHeight, 0.0), 0.60)
         let fadeEndLoc = min(coreLoc + (fadeSoftness / effectiveHeight), 0.95)
         let floor = Double(min(max(floorTransparency, 0.0), 0.50))
@@ -64,7 +64,7 @@ struct NotchScrimCalculator {
             ]
         }
 
-        let effectiveHeight = max(totalHeight, 1.0)
+        let effectiveHeight = max(totalHeight, 160.0)
         let coreLoc = min(max(coreHeight / effectiveHeight, 0.0), 0.60)
         let fadeEndLoc = min(coreLoc + (fadeSoftness / effectiveHeight), 0.95)
         let midLoc = coreLoc + (fadeEndLoc - coreLoc) * 0.40
