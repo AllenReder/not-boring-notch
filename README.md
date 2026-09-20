@@ -25,7 +25,7 @@ Say hello to **Not Boring Notch**, the coolest way to make your MacBook’s notc
 Forget about static black cutouts: with Not Boring Notch, your notch transforms into a dynamic control center with native **macOS 26 Liquid Glass optical refraction**, vibrant visualizers, lyrics, calendar integration, a handy file shelf with AirDrop support, sleek system HUD replacements, and upcoming intelligent workflow companions.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/2d5f69c1-6e7b-4bc2-a6f1-bb9e27cf88a8" alt="Demo GIF" width="85%" />
+  <img src="assets/demo.gif" alt="Demo GIF" width="85%" />
 </p>
 
 ---
