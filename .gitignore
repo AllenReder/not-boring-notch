@@ -31,6 +31,7 @@ build/
 
 # Local Pi Agent runtime
 .pi/
+launch.sh
 *.app
 *.dSYM
 
