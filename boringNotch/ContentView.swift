@@ -36,6 +36,7 @@ struct ContentView: View {
     @Default(.useMusicVisualizer) var useMusicVisualizer
 
     @Default(.showNotHumanFace) var showNotHumanFace
+    @Default(.preventAutoClose) var preventAutoClose
 
     // Shared interactive spring for movement/resizing to avoid conflicting animations
     private let animationSpring = Animation.interactiveSpring(response: 0.38, dampingFraction: 0.8, blendDuration: 0)
@@ -197,8 +198,8 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .onReceive(Defaults.publisher(.preventAutoClose)) { change in
-                        if change.newValue {
+                    .onChange(of: preventAutoClose) { _, isPinned in
+                        if isPinned {
                             withAnimation(animationSpring) {
                                 vm.open()
                             }
@@ -233,6 +234,7 @@ struct ContentView: View {
         }
         .padding(.bottom, 8)
         .frame(maxWidth: windowSize.width, maxHeight: windowSize.height, alignment: .top)
+        .compositingGroup()
         .scaleEffect(
             x: gestureScale,
             y: gestureScale,

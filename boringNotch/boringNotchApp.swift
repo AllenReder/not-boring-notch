@@ -244,13 +244,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             window.disableSkyLight()
         }
 
-        let hosting = NSHostingView(
+        window.contentView = NSHostingView(
             rootView: ContentView()
                 .environmentObject(viewModel)
         )
-        hosting.wantsLayer = true
-        hosting.layer?.backgroundColor = NSColor.clear.cgColor
-        window.contentView = hosting
 
         window.orderFrontRegardless()
         NotchSpaceManager.shared.notchSpace.windows.insert(window)
