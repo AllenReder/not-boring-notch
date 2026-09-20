@@ -49,12 +49,16 @@ struct ContentView: View {
                 : cornerRadiusInsets.closed.top
     }
 
+    private var bottomCornerRadius: CGFloat {
+        ((vm.notchState == .open) && Defaults[.cornerRadiusScaling])
+            ? cornerRadiusInsets.opened.bottom
+            : cornerRadiusInsets.closed.bottom
+    }
+
     private var currentNotchShape: NotchShape {
         NotchShape(
             topCornerRadius: topCornerRadius,
-            bottomCornerRadius: ((vm.notchState == .open) && Defaults[.cornerRadiusScaling])
-                ? cornerRadiusInsets.opened.bottom
-                : cornerRadiusInsets.closed.bottom
+            bottomCornerRadius: bottomCornerRadius
         )
     }
 
@@ -100,7 +104,19 @@ struct ContentView: View {
                         : cornerRadiusInsets.closed.bottom
                     )
                     .padding([.horizontal, .bottom], vm.notchState == .open ? 12 : 0)
-                    .background(.black)
+                    .background {
+                        if vm.notchState == .open {
+                            let ambientColor = (musicManager.isPlaying && Defaults[.playerColorTinting]) ? Color(nsColor: musicManager.avgColor) : nil
+                            LiquidGlassNotchBackground(
+                                shape: currentNotchShape,
+                                topRadius: topCornerRadius,
+                                bottomRadius: bottomCornerRadius,
+                                ambientColor: ambientColor
+                            )
+                        } else {
+                            Color.black
+                        }
+                    }
                     .clipShape(currentNotchShape)
                     .overlay(alignment: .top) {
                         Rectangle()

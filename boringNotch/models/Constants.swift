@@ -104,6 +104,18 @@ extension Defaults.Keys {
     static let enableShadow = Key<Bool>("enableShadow", default: true)
     static let cornerRadiusScaling = Key<Bool>("cornerRadiusScaling", default: true)
 
+    // MARK: Liquid Glass
+    static let enableLiquidGlass = Key<Bool>("enableLiquidGlass", default: true)
+    static let glassRefraction = Key<Double>("glassRefraction", default: 20.0)
+    static let glassBlur = Key<Double>("glassBlur", default: 0.0)
+    static let glassDispersion = Key<Double>("glassDispersion", default: 4.0)
+    static let glassLensHeight = Key<Double>("glassLensHeight", default: 23.0)
+    static let glassCoreHeight = Key<CGFloat>("glassCoreHeight", default: 34.0)
+    static let glassFadeSoftness = Key<CGFloat>("glassFadeSoftness", default: 45.0)
+    static let glassFloorTransparency = Key<CGFloat>("glassFloorTransparency", default: 0.0)
+    static let glassRimTone = Key<LiquidGlassRimTone>("glassRimTone", default: .neutralWhite)
+    static let glassRimIntensity = Key<Double>("glassRimIntensity", default: 0.4)
+
     static let showNotHumanFace = Key<Bool>("showNotHumanFace", default: false)
     static let tileShowLabels = Key<Bool>("tileShowLabels", default: false)
     static let showCalendar = Key<Bool>("showCalendar", default: false)

@@ -1165,6 +1165,19 @@ struct Appearance: View {
     @Default(.customVisualizers) var customVisualizers
     @Default(.selectedVisualizer) var selectedVisualizer
 
+    @Default(.enableLiquidGlass) var enableLiquidGlass
+    @Default(.glassRefraction) var glassRefraction
+    @Default(.glassBlur) var glassBlur
+    @Default(.glassDispersion) var glassDispersion
+    @Default(.glassLensHeight) var glassLensHeight
+    @Default(.glassCoreHeight) var glassCoreHeight
+    @Default(.glassFadeSoftness) var glassFadeSoftness
+    @Default(.glassFloorTransparency) var glassFloorTransparency
+    @Default(.glassRimTone) var glassRimTone
+    @Default(.glassRimIntensity) var glassRimIntensity
+
+    @State private var showAdvancedGlassSettings: Bool = false
+
     let icons: [String] = ["logo2"]
     @State private var selectedIcon: String = "logo2"
     @State private var selectedListVisualizer: CustomVisualizer? = nil
@@ -1182,6 +1195,145 @@ struct Appearance: View {
 
             } header: {
                 Text("General")
+            }
+
+            Section {
+                Defaults.Toggle(key: .enableLiquidGlass) {
+                    HStack {
+                        Text("Enable Liquid Glass (渐变液态玻璃)")
+                        if !LiquidGlassAvailability.isSupported {
+                            Text("(Requires macOS 26+)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .disabled(!LiquidGlassAvailability.isSupported)
+
+                if enableLiquidGlass && LiquidGlassAvailability.isSupported {
+                    DisclosureGroup("Advanced Liquid Glass Tuning (高级微调)", isExpanded: $showAdvancedGlassSettings) {
+                        VStack(spacing: 12) {
+                            // 1. Refraction (0 ~ 100)
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack {
+                                    Text("Refraction (物理折射)")
+                                    Spacer()
+                                    Text("\(Int(glassRefraction))")
+                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                        .foregroundStyle(.secondary)
+                                }
+                                Slider(value: $glassRefraction, in: LiquidGlassConfiguration.refractionRange, step: 1)
+                            }
+
+                            // 2. Blur (0.0 ~ 30.0)
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack {
+                                    Text("Blur (模糊度)")
+                                    Spacer()
+                                    Text(String(format: "%.1f", glassBlur))
+                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                        .foregroundStyle(.secondary)
+                                }
+                                Slider(value: $glassBlur, in: LiquidGlassConfiguration.blurRange, step: 0.5)
+                            }
+
+                            // 3. Dispersion (0 ~ 15)
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack {
+                                    Text("Dispersion (边缘色散)")
+                                    Spacer()
+                                    Text("\(Int(glassDispersion))")
+                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                        .foregroundStyle(.secondary)
+                                }
+                                Slider(value: $glassDispersion, in: LiquidGlassConfiguration.dispersionRange, step: 1)
+                            }
+
+                            // 4. Lens Height (10 ~ 60)
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack {
+                                    Text("Lens Height (透镜宽度)")
+                                    Spacer()
+                                    Text("\(Int(glassLensHeight)) pt")
+                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                        .foregroundStyle(.secondary)
+                                }
+                                Slider(value: $glassLensHeight, in: LiquidGlassConfiguration.lensHeightRange, step: 1)
+                            }
+
+                            // 5. Core Height (20 ~ 80)
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack {
+                                    Text("Camera Core Height (纯黑遮罩)")
+                                    Spacer()
+                                    Text("\(Int(glassCoreHeight)) pt")
+                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                        .foregroundStyle(.secondary)
+                                }
+                                Slider(value: $glassCoreHeight, in: LiquidGlassConfiguration.coreHeightRange, step: 1)
+                            }
+
+                            // 6. Fade Softness (10 ~ 100)
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack {
+                                    Text("Fade Softness (羽化软度)")
+                                    Spacer()
+                                    Text("\(Int(glassFadeSoftness)) pt")
+                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                        .foregroundStyle(.secondary)
+                                }
+                                Slider(value: $glassFadeSoftness, in: LiquidGlassConfiguration.fadeSoftnessRange, step: 1)
+                            }
+
+                            // 7. Floor Transparency (0.0 ~ 0.50)
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack {
+                                    Text("Floor Transparency (底限透光)")
+                                    Spacer()
+                                    Text("\(Int(glassFloorTransparency * 100))%")
+                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                        .foregroundStyle(.secondary)
+                                }
+                                Slider(value: $glassFloorTransparency, in: LiquidGlassConfiguration.floorTransparencyRange, step: 0.01)
+                            }
+
+                            // 8. Specular Rim
+                            HStack {
+                                Picker("Specular Rim (边缘高光)", selection: $glassRimTone) {
+                                    ForEach(LiquidGlassRimTone.allCases) { tone in
+                                        Text(tone.localizedName).tag(tone)
+                                    }
+                                }
+                                Spacer()
+                                if glassRimTone != .off {
+                                    Text(String(format: "%.1fx", glassRimIntensity))
+                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+
+                            if glassRimTone != .off {
+                                Slider(value: $glassRimIntensity, in: LiquidGlassConfiguration.rimIntensityRange, step: 0.05)
+                            }
+
+                            // Reset Button
+                            HStack {
+                                Spacer()
+                                Button("Reset to Recommended (恢复推荐配置)") {
+                                    LiquidGlassConfiguration.resetToDefaults()
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                            }
+                            .padding(.top, 4)
+                        }
+                        .padding(.vertical, 6)
+                    }
+                }
+            } header: {
+                Text("Notch Surface Material (表面材质)")
+            } footer: {
+                Text("Liquid Glass provides continuous GPU optical refraction and camera cutout concealment. Crystal clear with zero blur by default.")
             }
 
             Section {
