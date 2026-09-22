@@ -353,7 +353,7 @@ struct ContentView: View {
                                   HStack(alignment: .center) {
                                       Image(systemName: "music.note")
                                       GeometryReader { geo in
-                                          MarqueeText(.constant(musicManager.songTitle + " - " + musicManager.artistName),  textColor: Defaults[.playerColorTinting] ? (musicManager.avgColor.map { Color(nsColor: $0).ensureMinimumBrightness(factor: 0.6) } ?? .gray) : .gray, minDuration: 1, frameWidth: geo.size.width)
+                                          MarqueeText(.constant(musicManager.songTitle + " - " + musicManager.artistName),  textColor: Defaults[.playerColorTinting] ? (musicManager.avgColor.map { Color(nsColor: $0).withMinimumBrightness(0.6) } ?? .gray) : .gray, minDuration: 1, frameWidth: geo.size.width)
                                       }
                                   }
                                   .foregroundStyle(.gray)
@@ -437,7 +437,7 @@ struct ContentView: View {
                             MarqueeText(
                                 .constant(musicManager.songTitle),
                                 textColor: Defaults[.coloredSpectrogram]
-                                    ? (musicManager.avgColor.map { Color(nsColor: $0) } ?? Color.gray) : Color.gray,
+                                    ? (musicManager.avgColor.map { Color(nsColor: $0).withMinimumBrightness(0.6) } ?? Color.gray) : Color.gray,
                                 minDuration: 0.4,
                                 frameWidth: 100
                             )
@@ -453,7 +453,7 @@ struct ContentView: View {
                                 .truncationMode(.tail)
                                 .foregroundStyle(
                                     Defaults[.coloredSpectrogram]
-                                        ? (musicManager.avgColor.map { Color(nsColor: $0) } ?? Color.gray)
+                                        ? (musicManager.avgColor.map { Color(nsColor: $0).withMinimumBrightness(0.6) } ?? Color.gray)
                                         : Color.gray
                                 )
                                 .opacity(

@@ -137,33 +137,43 @@ extension NSImage {
 }
 
 extension Color {
-    func ensureMinimumBrightness(factor: CGFloat) -> Color {
-        guard factor >= 0 && factor <= 1 else {
-            return self // Return original color if factor is out of bounds
-        }
-        
-        let nsColor = NSColor(self)
-        
+    /// The Legibility Floor: raise a color to `factor` Perceived Brightness when it is
+    /// below it, and leave one that already reaches it alone (docs/adr/0005).
+    func withMinimumBrightness(_ factor: CGFloat) -> Color {
+        adjusted { $0.withMinimumBrightness(Double(factor)) }
+    }
+
+    /// The Brightness Pin: move a decorative derivative to `target` Perceived Brightness,
+    /// lighter or darker as required (docs/adr/0005).
+    func withBrightness(_ target: CGFloat) -> Color {
+        adjusted { $0.withBrightness(Double(target)) }
+    }
+
+    private func adjusted(_ transform: (RGBColor) -> RGBColor) -> Color {
         // Convert to RGB color space
-        guard let rgbColor = nsColor.usingColorSpace(.sRGB) else {
+        guard let rgbColor = NSColor(self).usingColorSpace(.sRGB) else {
             return self // Return original color if conversion fails
         }
-        
+
         var red: CGFloat = 0
         var green: CGFloat = 0
         var blue: CGFloat = 0
         var alpha: CGFloat = 0
-        
+
         rgbColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-        
-        // Calculate perceived brightness using the formula: (0.299*R + 0.587*G + 0.114*B)
-        let perceivedBrightness = (0.2126 * red + 0.7152 * green + 0.0722 * blue)
-        
-        let scale = factor / perceivedBrightness
-        red = min(red * scale, 1.0)
-        green = min(green * scale, 1.0)
-        blue = min(blue * scale, 1.0)
-        
-        return Color(red: Double(red), green: Double(green), blue: Double(blue), opacity: Double(alpha))
+
+        let adjusted = transform(RGBColor(
+            red: Double(red),
+            green: Double(green),
+            blue: Double(blue),
+            alpha: Double(alpha)
+        ))
+
+        return Color(
+            red: adjusted.red,
+            green: adjusted.green,
+            blue: adjusted.blue,
+            opacity: adjusted.alpha
+        )
     }
 }

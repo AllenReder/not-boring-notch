@@ -149,7 +149,7 @@ struct MusicControlsView: View {
                 nsFont: .headline,
                 textColor: Defaults[.playerColorTinting]
                     ? (musicManager.avgColor.map { Color(nsColor: $0)
-                        .ensureMinimumBrightness(factor: 0.6) } ?? .gray) : .gray,
+                        .withMinimumBrightness(0.6) } ?? .gray) : .gray,
                 frameWidth: width
             )
             .fontWeight(.medium)
@@ -486,7 +486,7 @@ struct MusicSliderView: View {
                 value: $sliderValue,
                 range: 0...duration,
                 color: Defaults[.sliderColor] == SliderColorEnum.albumArt
-                    ? Color(nsColor: color ?? .white).ensureMinimumBrightness(factor: 0.8)
+                    ? Color(nsColor: color ?? .white).withMinimumBrightness(0.8)
                     : Defaults[.sliderColor] == SliderColorEnum.accent ? .effectiveAccent : .white,
                 dragging: $dragging,
                 lastDragged: $lastDragged,
@@ -502,7 +502,7 @@ struct MusicSliderView: View {
             .fontWeight(.medium)
             .foregroundColor(
                 Defaults[.playerColorTinting]
-                    ? (color.map { Color(nsColor: $0).ensureMinimumBrightness(factor: 0.6) } ?? .gray) : .gray
+                    ? (color.map { Color(nsColor: $0).withMinimumBrightness(0.6) } ?? .gray) : .gray
             )
             .font(.caption)
         }
