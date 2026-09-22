@@ -36,7 +36,8 @@ class MusicManager: ObservableObject {
     @Published var album: String = "Self Love"
     @Published var isPlayerIdle: Bool = true
     @Published var animations: BoringAnimations = .init()
-    @Published var avgColor: NSColor = .white
+    /// The Tint Source. `nil` means the current track is Colorless (docs/adr/0003).
+    @Published var avgColor: NSColor? = nil
     @Published var bundleIdentifier: String? = nil
     @Published var songDuration: TimeInterval = 0
     @Published var elapsedTime: TimeInterval = 0
@@ -55,6 +56,17 @@ class MusicManager: ObservableObject {
     @Published var isFavoriteTrack: Bool = false
 
     private var artworkData: Data? = nil
+
+    /// Ordering and identity policy for the Tint Source (docs/adr/0003).
+    /// Only mutated from the main queue.
+    private var tintPipeline = TintPipeline()
+
+    /// Sleeps for the Tint Settle Window while the current track has no artwork.
+    private var tintSettleTask: Task<Void, Never>?
+
+    /// How long the notch waits for a track's artwork before showing the Artwork
+    /// Fallback and declaring the track Colorless (docs/adr/0003).
+    static let tintSettleWindow: Duration = .seconds(1)
 
     // Store last values at the time artwork was changed
     private var lastArtworkTitle: String = "I'm Handsome"
@@ -208,14 +220,22 @@ class MusicManager: ObservableObject {
         if hasContentChange {
             self.triggerFlipAnimation()
 
+            let track = TrackIdentity(title: state.title, artist: state.artist)
+
             if artworkChanged, let artwork = state.artwork {
-                self.updateArtwork(artwork)
+                self.cancelTintSettleWindow()
+                self.updateArtwork(artwork, for: track)
             } else if state.artwork == nil {
-                // Try to use app icon if no artwork but track changed
-                if let appIconImage = AppIconAsNSImage(for: state.bundleIdentifier) {
-                    self.usingAppIconForArtwork = true
-                    self.updateAlbumArt(newAlbumArt: appIconImage)
-                }
+                // A track's artwork usually arrives in a later event than its metadata,
+                // so wait out the Tint Settle Window before falling back to the app icon.
+                self.armArtworkFallback(for: track, bundleIdentifier: state.bundleIdentifier)
+            } else {
+                // The artwork bytes did not change, but they now belong to this track: the
+                // rest of an album shares one cover, so without recording the ownership
+                // here the track would look coverless and settle Colorless with its own
+                // cover on screen.
+                self.cancelTintSettleWindow()
+                self.tintPipeline.noteCoverApplied(for: track)
             }
             self.artworkData = state.artwork
 
@@ -522,14 +542,14 @@ class MusicManager: ObservableObject {
         DispatchQueue.main.async(execute: workItem)
     }
 
-    private func updateArtwork(_ artworkData: Data) {
+    private func updateArtwork(_ artworkData: Data, for track: TrackIdentity) {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
 
             if let artworkImage = NSImage(data: artworkData) {
                 DispatchQueue.main.async { [weak self] in
                     self?.usingAppIconForArtwork = false
-                    self?.updateAlbumArt(newAlbumArt: artworkImage)
+                    self?.updateAlbumArt(newAlbumArt: artworkImage, provenance: .trackArtwork, track: track)
                 }
             }
         }
@@ -551,15 +571,68 @@ class MusicManager: ObservableObject {
         }
     }
 
-    private var workItem: DispatchWorkItem?
-
-    func updateAlbumArt(newAlbumArt: NSImage) {
-        workItem?.cancel()
+    /// Applies artwork to the notch. Only `trackArtwork` may become a Tint Source: the
+    /// Artwork Fallback is a display substitute and never a color (docs/adr/0003).
+    func updateAlbumArt(newAlbumArt: NSImage, provenance: ArtworkProvenance, track: TrackIdentity) {
         withAnimation(.smooth) {
             self.albumArt = newAlbumArt
-            if Defaults[.coloredSpectrogram] {
-                self.calculateAverageColor()
+        }
+
+        guard provenance == .trackArtwork else { return }
+
+        // Advance the pipeline even when no derivation starts, so a derivation still in
+        // flight for an older piece of artwork can never publish.
+        let generation = tintPipeline.artworkApplied(for: track)
+
+        guard Self.tintSourceConsumersEnabled else { return }
+        calculateAverageColor(generation: generation)
+    }
+
+    /// A Tint Source is computed when any consumer of it is enabled, not only the
+    /// spectrogram: tinted text and the album-art slider read the same value.
+    private static var tintSourceConsumersEnabled: Bool {
+        Defaults[.coloredSpectrogram]
+            || Defaults[.playerColorTinting]
+            || Defaults[.sliderColor] == SliderColorEnum.albumArt
+    }
+
+    // MARK: - Tint Settle Window
+
+    private func cancelTintSettleWindow() {
+        tintSettleTask?.cancel()
+        tintSettleTask = nil
+    }
+
+    /// A track's metadata arrived without artwork. Give the artwork a chance to land
+    /// before showing the Artwork Fallback and declaring the track Colorless.
+    private func armArtworkFallback(for track: TrackIdentity, bundleIdentifier: String) {
+        guard tintPipeline.shouldArmSettleWindow(for: track) else { return }
+        cancelTintSettleWindow()
+        tintSettleTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.tintSettleWindow)
+            guard !Task.isCancelled, let self else { return }
+            await MainActor.run {
+                self.settleTintWindow(for: track, bundleIdentifier: bundleIdentifier)
             }
+        }
+    }
+
+    @MainActor
+    private func settleTintWindow(for track: TrackIdentity, bundleIdentifier: String) {
+        guard let generation = tintPipeline.declareColorlessIfSettled(for: track) else { return }
+        #if DEBUG
+        NSLog("TintPipeline: no artwork after the settle window for \(track.title) → Colorless (gen=\(generation))")
+        #endif
+
+        // The image advances on the same timeline as the tint. A playback app with no
+        // resolvable icon falls back to the placeholder rather than leaving the previous
+        // track's cover on screen.
+        let fallbackImage = AppIconAsNSImage(for: bundleIdentifier) ?? defaultImage
+        self.usingAppIconForArtwork = true
+        self.updateAlbumArt(newAlbumArt: fallbackImage, provenance: .appIconFallback, track: track)
+
+        withAnimation(.smooth) {
+            self.avgColor = nil
         }
     }
 
@@ -572,11 +645,30 @@ class MusicManager: ObservableObject {
         return min(max(0, estimated), songDuration)
     }
 
-    func calculateAverageColor() {
-        albumArt.averageColor { [weak self] color in
+    private func calculateAverageColor(generation: Int) {
+        let image = albumArt
+        image.averageColor { [weak self] color in
             DispatchQueue.main.async {
+                guard let self else { return }
+                guard self.tintPipeline.accepts(generation: generation) else {
+                    #if DEBUG
+                    NSLog("TintPipeline: dropped stale tint (gen=\(generation), current=\(self.tintPipeline.generation))")
+                    #endif
+                    return
+                }
+                guard let color else {
+                    // A derivation failure is not an absent artwork: keep the tint we have
+                    // instead of claiming the track is Colorless.
+                    #if DEBUG
+                    NSLog("TintPipeline: derivation failed (gen=\(generation))")
+                    #endif
+                    return
+                }
+                #if DEBUG
+                NSLog("TintPipeline: publishing tint for \(self.songTitle) (gen=\(generation))")
+                #endif
                 withAnimation(.smooth) {
-                    self?.avgColor = color ?? .white
+                    self.avgColor = color
                 }
             }
         }
