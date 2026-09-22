@@ -2,17 +2,25 @@
 #
 # Runs the standalone test runners in Tests/.
 #
-# Those runners are not part of an Xcode target (each has its own @main entry point),
-# so every one of them is compiled on its own against just the sources it exercises.
+# Two kinds of runner are discovered:
 #
-# Adding a runner: create Tests/<Name>Tests.swift and give it a first-line declaration
-# of the sources it needs, e.g.
+#   Tests/<Name>Tests.swift   not part of an Xcode target (each has its own @main entry
+#                             point), so every one is compiled on its own against just the
+#                             sources it exercises.
+#   Tests/<Name>Tests.sh      run with bash, for the shell scripts that are not Swift.
+#
+# Adding a Swift runner: create Tests/<Name>Tests.swift and give it a first-line
+# declaration of the sources it needs, e.g.
 #
 #   // SOURCES: boringNotch/models/TintPipeline.swift
 #
-# No change to this script is needed. A runner without a SOURCES line is reported and
-# skipped rather than failing the suite, so adding a test in one branch cannot break
-# another branch's build.
+# A runner without a SOURCES line is reported and skipped rather than failing the suite,
+# so adding a test in one branch cannot break another branch's build.
+#
+# Adding a shell runner: create Tests/<Name>Tests.sh. It takes no arguments, runs with the
+# repository root as its cwd, and signals failure with a non-zero exit status.
+#
+# No change to this script is needed for either kind.
 #
 #   ./scripts/run-tests.sh
 #
@@ -62,6 +70,21 @@ for test_file in Tests/*Tests.swift; do
   fi
 
   if "$BUILD_DIR/$name"; then
+    printf '✅ %s passed\n' "$name"
+    passed=$((passed + 1))
+  else
+    printf '❌ assertions failed\n'
+    failed=$((failed + 1))
+  fi
+done
+
+for test_file in Tests/*Tests.sh; do
+  [ -e "$test_file" ] || continue
+  name="$(basename "$test_file" .sh)"
+
+  printf '\n=== %s ===\n' "$name"
+
+  if bash "$test_file"; then
     printf '✅ %s passed\n' "$name"
     passed=$((passed + 1))
   else
