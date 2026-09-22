@@ -21,7 +21,9 @@ You can contribute in many ways: writing code, improving documentation, reportin
 
 ## Localizations
 
-Please submit all translations to [Crowdin](https://crowdin.com/project/boring-notch). New strings added to the `dev` branch from code changes will sync automatically to Crowdin, and Crowdin will automatically open a new PR with translations to allow us to integrate them.
+The interface is localized through `boringNotch/Localizable.xcstrings`. New strings are
+added in English, and translation updates are welcome as pull requests that edit that file
+directly. This project does not use Crowdin.
 
 ## Contributing Code
 
@@ -32,26 +34,26 @@ Please submit all translations to [Crowdin](https://crowdin.com/project/boring-n
 <!-- - **Review the code style**: Familiarize yourself with our code style guidelines below to ensure consistency. -->
 
 > [!IMPORTANT]
-> All code contributions must be based on the `dev` branch, not `main`. Documentation changes should be based on `main` instead.
+> All contributions are based on `main`. Create a short-lived branch off `main` and open your pull request against `main`.
 
 ### Setting Up Your Environment
 
-1. **Fork the repository**: Click the "Fork" button at the top of the repository page to create your own copy.
+1. **Fork the repository**: Click the "Fork" button at the top of the repository page to create your own copy. Maintainers work on branches in this repository directly.
 
 2. **Clone your fork**:
    ```bash
-   git clone https://github.com/{your-username}/boring.notch.git
-   cd boring.notch
+   git clone https://github.com/{your-username}/not-boring-notch.git
+   cd not-boring-notch
    ```
    Replace `{your-username}` with your GitHub username.
 
-3. **Switch to the `dev` branch**:
+3. **Update `main`**:
    ```bash
-   git checkout dev
+   git checkout main
+   git pull
    ```
-   All code contributions must be based on the `dev` branch, not `main`. Documentation changes should be based on `main` instead.
 
-5. **Create a new feature branch**:
+4. **Create a new branch**:
    ```bash
    git checkout -b feature/{your-feature-name}
    ```
@@ -71,7 +73,7 @@ Please submit all translations to [Crowdin](https://crowdin.com/project/boring-n
    Write clear, concise commit messages that explain what your changes do and why.
 
 4. **Keep your branch up to date**:
-   Regularly sync your branch with the latest changes from the `dev` branch to avoid conflicts.
+   Regularly sync your branch with the latest changes from `main` to avoid conflicts.
 
 5. **Push to your fork**:
    ```bash
@@ -80,7 +82,7 @@ Please submit all translations to [Crowdin](https://crowdin.com/project/boring-n
 
 ### Pull Requests
 
-1. **Create a pull request**: Go to the original repository and click "New Pull Request." Select your feature branch and set the base branch to `dev`.
+1. **Create a pull request**: Open a pull request against `main` in this repository, with your branch as the source.
 
 2. **Write a detailed description**: Your PR should include:
    - A clear title summarizing the changes

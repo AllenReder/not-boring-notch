@@ -2,6 +2,8 @@
 //  LiquidGlassConfigurationTests.swift
 //  Tests
 //
+// SOURCES: boringNotch/components/Notch/LiquidGlass/LiquidGlassConfiguration.swift boringNotch/components/Notch/LiquidGlass/LiquidGlassAvailability.swift
+//
 
 import Foundation
 
