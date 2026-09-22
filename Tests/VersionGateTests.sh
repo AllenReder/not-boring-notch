@@ -81,6 +81,11 @@ expect_failure "fewer copies than the two targets and two configurations RELEASI
 reset_repo ""
 expect_failure "no version setting at all"
 
+printf '\n=== usage ===\n'
+
+reset_repo "1.0.2/3 1.0.2/3 1.0.2/3 1.0.2/3"
+expect_status 2 "an unknown argument is a usage error, not a verdict on the versions" run_gate --wat
+
 printf '\n=== --expect-tag, the release step ===\n'
 
 reset_repo "1.0.2/3 1.0.2/3 1.0.2/3 1.0.2/3"

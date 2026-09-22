@@ -14,32 +14,36 @@
 # and must initialise `passed` and `failed` to 0 and end with report_and_exit.
 #
 
-expect_clean() {  # expect_clean <description> [gate arguments...]
-  local description="$1"; shift
-  run_gate "$@"
+# expect_status <expected-status> <description> <runner> [runner arguments...]
+#
+# A `runner` is a function the sourcing file defines. `run_gate` is the ordinary one; a case that
+# needs a different invocation — a fixture tree the usual one cannot reach — names its own, which
+# is why this exists rather than the two wrappers below being the whole interface. Without it,
+# such a case has to re-implement the pass/fail bookkeeping, and that is how the two runners
+# drifted apart the first time.
+expect_status() {
+  local expected="$1" description="$2" runner="$3"
+  shift 3
+  "$runner" "$@"
   local status=$?
-  if [ "$status" -eq 0 ]; then
+  if [ "$status" -eq "$expected" ]; then
     printf '✅ %s\n' "$description"
     passed=$((passed + 1))
   else
-    printf '❌ %s\n   expected a clean run, got exit %s:\n' "$description" "$status"
+    printf '❌ %s\n   expected exit %s, got %s:\n' "$description" "$expected" "$status"
     sed 's/^/   /' "$WORK/gate-output"
     failed=$((failed + 1))
   fi
 }
 
+expect_clean() {  # expect_clean <description> [gate arguments...]
+  local description="$1"; shift
+  expect_status 0 "$description" run_gate "$@"
+}
+
 expect_failure() {  # expect_failure <description> [gate arguments...]
   local description="$1"; shift
-  run_gate "$@"
-  local status=$?
-  if [ "$status" -eq 1 ]; then
-    printf '✅ %s\n' "$description"
-    passed=$((passed + 1))
-  else
-    printf '❌ %s\n   expected exit 1, got %s:\n' "$description" "$status"
-    sed 's/^/   /' "$WORK/gate-output"
-    failed=$((failed + 1))
-  fi
+  expect_status 1 "$description" run_gate "$@"
 }
 
 # Asserts against the output of the most recent run_gate.

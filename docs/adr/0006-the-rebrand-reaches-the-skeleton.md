@@ -78,7 +78,8 @@ be added to it without a reason a reviewer can disagree with.
 - **Do the rename carefully without a gate.** Rejected: upstream is still brought in by hand
   (ADR 0004), and upstream's own tree is named `boringNotch`, so the old name arrives again on
   its own. The token is six letters; the check is one grep. The gate also gave the rename its
-  acceptance criterion — it is finished when the allowlist has nothing in it but attribution.
+  acceptance criterion: it is finished when every remaining occurrence is one this ADR can
+  account for, which is what the allowlist being down to those entries means.
 - **Move the shelf's directory without migrating it.** Rejected: it would have been the one part
   of this change a user could lose data to. `ShelfStorage` adopts the legacy directory on first
   launch instead.

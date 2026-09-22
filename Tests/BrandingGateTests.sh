@@ -67,6 +67,13 @@ run_gate() {
 "
 }
 
+# run_gate_without_filelist <root>
+#
+# For the one case about how the gate builds its own file list, which cannot be handed one.
+run_gate_without_filelist() {
+  CHECK_BRANDING_ROOT="$1" bash "$GATE" > "$WORK/gate-output" 2>&1
+}
+
 printf '\n=== the correct brand is never a violation ===\n'
 
 reset_fixture
@@ -183,17 +190,8 @@ line|NotBoringNotch/models/Constants.swift|//  boringNotch|still on the old path
 
 reset_fixture
 write_file "LICENSE" "Copyright (C) 2024-2025 TheBoredTeam and contributors (boring.notch)"
-run_gate_verbatim 'line|LICENSE|(boring.notch)|upstream copyright notice'
-status=$?
-if [ "$status" -eq 0 ]; then
-  printf '✅ an allowlist whose last line has no newline is still honoured\n'
-  passed=$((passed + 1))
-else
-  printf '❌ an allowlist whose last line has no newline is still honoured\n'
-  printf '   expected a clean run, got exit %s:\n' "$status"
-  sed 's/^/   /' "$WORK/gate-output"
-  failed=$((failed + 1))
-fi
+expect_status 0 "an allowlist whose last line has no newline is still honoured" \
+  run_gate_verbatim 'line|LICENSE|(boring.notch)|upstream copyright notice'
 
 printf '\n=== the gate sees files that are not committed yet ===\n'
 
@@ -207,17 +205,8 @@ printf 'clean\n' > "$UNTRACKED_REPO/committed.md"
 git -C "$UNTRACKED_REPO" add committed.md
 printf '//  boringNotch\n' > "$UNTRACKED_REPO/not-added-yet.swift"
 
-CHECK_BRANDING_ROOT="$UNTRACKED_REPO" bash "$GATE" > "$WORK/gate-output" 2>&1
-status=$?
-if [ "$status" -eq 1 ]; then
-  printf '✅ a file that has not been git added is still scanned\n'
-  passed=$((passed + 1))
-else
-  printf '❌ a file that has not been git added is still scanned\n'
-  printf '   expected exit 1, got %s:\n' "$status"
-  sed 's/^/   /' "$WORK/gate-output"
-  failed=$((failed + 1))
-fi
+expect_status 1 "a file that has not been git added is still scanned" \
+  run_gate_without_filelist "$UNTRACKED_REPO"
 expect_reported "the report names the file that is not committed yet" "not-added-yet.swift"
 
 report_and_exit

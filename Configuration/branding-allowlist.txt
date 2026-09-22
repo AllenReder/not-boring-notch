@@ -18,13 +18,11 @@
 # so it would fail on itself.
 #
 # This file is the answer to "why does this file still say boring?". Every entry needs a reason
-# a reader can disagree with; "it is annoying to fix" is not one. It is short on purpose, and
-# every entry is one of three things:
-#
-#   - a name this repository does not own: upstream attribution, the GPL copyright line, a
-#     local server's route, another application's bundle identifier;
-#   - a string persisted on disk, where renaming it would silently reset a user's setting;
-#   - a file made of the token itself, which is what the two `file` entries at the end are.
+# a reader can disagree with; "it is annoying to fix" is not one. The test for a new entry is not
+# whether the old name is present — it plainly is — but whether renaming it would be wrong:
+# because the name belongs to somebody else, because the string is written to disk under it,
+# because this is a record of what was decided at the time, or because the file exists to talk
+# about the token at all. Anything else is a rename that has not happened yet.
 
 # GPL requires the original copyright line to name the project it was granted for.
 line|LICENSE|boring.notch|upstream copyright notice
