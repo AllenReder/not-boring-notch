@@ -76,7 +76,15 @@ trap 'rm -f "$TMP_FILELIST"' EXIT
 if [ -n "$FILELIST" ]; then
   cp "$FILELIST" "$TMP_FILELIST"
 else
-  ( cd "$ROOT" && git ls-files ) > "$TMP_FILELIST"
+  # Tracked, plus untracked-and-not-ignored. A file nobody has `git add`ed yet is exactly the
+  # file whose brand string nobody has read, and a gate that cannot see it until after the
+  # commit gives its advice too late. CI checks out a clean tree, so this changes nothing
+  # there; locally it means the gate can fail while the mistake is still cheap.
+  (
+    cd "$ROOT"
+    git ls-files
+    git ls-files --others --exclude-standard
+  ) | LC_ALL=C sort -u > "$TMP_FILELIST"
 fi
 
 # Allowlist entries, split by kind. `path` entries exempt a path; `line` entries exempt

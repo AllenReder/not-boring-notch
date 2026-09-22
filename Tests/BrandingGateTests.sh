@@ -200,6 +200,31 @@ else
   failed=$((failed + 1))
 fi
 
+printf '\n=== the gate sees files that are not committed yet ===\n'
+
+# Every case above hands the gate its file list. This one does not: it is about how the gate
+# builds that list, so it needs a repository of its own to build it from.
+UNTRACKED_REPO="$WORK/untracked-repo"
+rm -rf "$UNTRACKED_REPO"
+mkdir -p "$UNTRACKED_REPO"
+git -C "$UNTRACKED_REPO" init -q
+printf 'clean\n' > "$UNTRACKED_REPO/committed.md"
+git -C "$UNTRACKED_REPO" add committed.md
+printf '//  boringNotch\n' > "$UNTRACKED_REPO/not-added-yet.swift"
+
+CHECK_BRANDING_ROOT="$UNTRACKED_REPO" bash "$GATE" > "$WORK/gate-output" 2>&1
+status=$?
+if [ "$status" -eq 1 ]; then
+  printf '✅ a file that has not been git added is still scanned\n'
+  passed=$((passed + 1))
+else
+  printf '❌ a file that has not been git added is still scanned\n'
+  printf '   expected exit 1, got %s:\n' "$status"
+  sed 's/^/   /' "$WORK/gate-output"
+  failed=$((failed + 1))
+fi
+expect_reported "the report names the file that is not committed yet" "not-added-yet.swift"
+
 printf '\n%d passed, %d failed\n' "$passed" "$failed"
 
 if [ "$failed" -ne 0 ]; then
