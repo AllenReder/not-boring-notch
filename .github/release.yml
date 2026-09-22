@@ -1,0 +1,27 @@
+# Release notes categories.
+#
+# Used by GitHub's "Generate release notes" when publishing a Release, so the notes come out
+# grouped instead of as one flat list. The labels below are the ones this repository actually
+# uses (see docs/agents/triage-labels.md).
+#
+# Dependency bumps are excluded as noise. If dependabot entries still appear, change the
+# author to "dependabot[bot]".
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+    authors:
+      - dependabot
+  categories:
+    - title: New features
+      labels:
+        - enhancement
+    - title: Fixes
+      labels:
+        - bug
+    - title: Documentation
+      labels:
+        - documentation
+    - title: Other changes
+      labels:
+        - "*"
