@@ -53,3 +53,9 @@ line|NotBoringNotch/components/Tips/TipStore.swift|theboringteam.boringNotch|the
 # A persisted UserDefaults key. The Swift property is `notchShelf`; the stored string stays,
 # because changing it would silently reset the setting for everyone who has one.
 line|NotBoringNotch/models/Constants.swift|"boringShelf"|persisted UserDefaults key
+
+# The shelf's directory is renamed along with the app. Every build before this one wrote to
+# the old one, and those directories are still on people's machines holding whatever they had
+# staged, so both the migration and its test have to be able to name it.
+line|NotBoringNotch/components/Shelf/Services/ShelfStorage.swift|boringNotch|the legacy shelf directory, named so it can be adopted
+line|Tests/ShelfStorageMigrationTests.swift|boringNotch|stages the legacy directory the migration has to adopt

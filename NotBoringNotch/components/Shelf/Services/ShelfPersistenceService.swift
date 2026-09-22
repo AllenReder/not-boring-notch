@@ -21,9 +21,12 @@ final class ShelfPersistenceService {
     private init() {
         let fm = FileManager.default
         let support = try? fm.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        let dir = (support ?? fm.temporaryDirectory).appendingPathComponent("NotBoringNotch", isDirectory: true).appendingPathComponent("Shelf", isDirectory: true)
-        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
-        fileURL = dir.appendingPathComponent("items.json")
+        // Adopts the directory an older build wrote to, if this is the first launch since the
+        // rename. See ShelfStorage.
+        let fileURL = ShelfStorage.itemsFile(applicationSupport: support ?? fm.temporaryDirectory,
+                                             fileManager: fm)
+        try? fm.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        self.fileURL = fileURL
         encoder.outputFormatting = [.prettyPrinted]
         decoder.dateDecodingStrategy = .iso8601
         encoder.dateEncodingStrategy = .iso8601
