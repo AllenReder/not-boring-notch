@@ -1,0 +1,87 @@
+# Occurrences of the old brand that scripts/check-branding.sh is told to accept.
+#
+# Format, one entry per line:
+#
+#   kind | path glob | fragment | reason
+#
+#   kind = path   the path itself may contain the old brand. `fragment` is unused (`-`).
+#   kind = line   occurrences of `fragment` may appear in any file the path glob matches.
+#
+# The fragment is stripped from the line before the line is tested, so an entry excuses
+# exactly the text it names and nothing else. Editing the exempted text without editing the
+# entry turns the exemption back into a violation.
+#
+# There are two sections. The first is permanent and is why this file exists at all. The
+# second is a transition ledger: it exists because the gate had to be able to run, and fail,
+# before the rename happened. Every entry in it is deleted by the commit that lands the
+# rename, and nothing may be added to it.
+#
+# An entry in the permanent section needs a reason a reader can disagree with. "It is
+# annoying to fix" is not a reason.
+
+# ---------------------------------------------------------------------------------------
+# Permanent: the old name is correct here.
+# ---------------------------------------------------------------------------------------
+
+# GPL requires the original copyright line to name the project it was granted for.
+line|LICENSE|boring.notch|upstream copyright notice
+# ADRs are records of decisions taken under the name in force at the time; rewriting one
+# would misstate what was decided.
+line|docs/adr/0001-liquid-glass-refraction-pipeline.md|Boring Notch|historical ADR, records the name in force at the time
+line|docs/adr/0002-liquid-glass-layering-and-states.md|Boring Notch|historical ADR, records the name in force at the time
+# ADR 0004 is the hard-fork decision: it has to say which repository this forked from.
+line|docs/adr/0004-hard-fork-from-upstream.md|boring.notch|names the upstream repository this fork came from
+line|README.md|boring.notch|upstream attribution in the heritage section
+line|SECURITY.md|boring.notch|upstream attribution next to the ADR 0004 reference
+line|docs/agents/issue-tracker.md|boring.notch|upstream tracker, deliberately referenced by full name
+# The Discord invite's vanity slug is owned by the server, not by this repository.
+line|CONTRIBUTING.md|boring-notch|Discord invite slug; editing it breaks the link
+# The upstream project's logo. Kept for attribution and referenced by no code, so the file
+# name is not worth changing.
+path|*theboringteam.imageset/*|-|upstream logo asset, referenced by no code
+
+# ---------------------------------------------------------------------------------------
+# Transition ledger: every entry below is deleted by the rename commit.
+# ---------------------------------------------------------------------------------------
+
+path|boringNotch.xcodeproj/*|-|the rename commit removes this entry
+path|boringNotch/*|-|the rename commit removes this entry
+path|BoringNotchXPCHelper/*|-|the rename commit removes this entry
+line|.github/ISSUE_TEMPLATE/bug-report.yml|Boring Notch|the rename commit removes this entry
+line|.github/ISSUE_TEMPLATE/feature-request.yml|Boring Notch|the rename commit removes this entry
+line|.github/PULL_REQUEST.md|boringNotch|the rename commit removes this entry
+line|.github/workflows/cicd.yml|Boring Notch|the rename commit removes this entry
+line|.github/workflows/cicd.yml|boringNotch|the rename commit removes this entry
+line|AGENTS.md|boring.notch|the rename commit removes this entry
+line|boringNotch.xcodeproj/*|boring|the rename commit removes this entry
+line|boringNotch.xcodeproj/*|Boring|the rename commit removes this entry
+line|boringNotch.xcodeproj/*|boringNotch|the rename commit removes this entry
+line|boringNotch.xcodeproj/*|BoringNotch|the rename commit removes this entry
+line|boringNotch/*|boring|the rename commit removes this entry
+line|boringNotch/*|Boring|the rename commit removes this entry
+line|boringNotch/*|Boring Notch|the rename commit removes this entry
+line|boringNotch/*|boring.notch|the rename commit removes this entry
+line|boringNotch/*|boringNotch|the rename commit removes this entry
+line|boringNotch/*|BoringNotch|the rename commit removes this entry
+line|boringNotch/*|theboringteam|the rename commit removes this entry
+line|BoringNotchXPCHelper/*|boringnotch|the rename commit removes this entry
+line|BoringNotchXPCHelper/*|BoringNotch|the rename commit removes this entry
+line|BoringNotchXPCHelper/*|theboringteam|the rename commit removes this entry
+line|Configuration/dmg/create_dmg.sh|boringNotch|the rename commit removes this entry
+line|CONTRIBUTING.md|Boring Notch|the rename commit removes this entry
+line|CONTRIBUTING.md|boringNotch|the rename commit removes this entry
+line|docs/adr/0004-hard-fork-from-upstream.md|boringNotch|the rename commit removes this entry
+line|docs/agents/domain.md|boringNotch|the rename commit removes this entry
+line|docs/agents/domain.md|BoringNotch|the rename commit removes this entry
+line|README.md|Boring|the rename commit removes this entry
+line|README.md|boringNotch|the rename commit removes this entry
+line|RELEASING.md|boringNotch|the rename commit removes this entry
+line|RELEASING.md|BoringNotch|the rename commit removes this entry
+line|scripts/generate_app_icon.swift|boringNotch|the rename commit removes this entry
+line|scripts/generate_app_icon.swift|BoringNotch|the rename commit removes this entry
+line|scripts/run-tests.sh|boringNotch|the rename commit removes this entry
+line|Tests/EstimatedPositionTests.swift|boringNotch|the rename commit removes this entry
+line|Tests/LiquidGlassAvailabilityAndScrimTests.swift|boringNotch|the rename commit removes this entry
+line|Tests/LiquidGlassConfigurationTests.swift|boringNotch|the rename commit removes this entry
+line|Tests/TintLegibilityTests.swift|boringNotch|the rename commit removes this entry
+line|Tests/TintPipelineTests.swift|boringNotch|the rename commit removes this entry
