@@ -2,16 +2,14 @@
 //  TintPipelineTests.swift
 //  Tests
 //
-//  Standalone runner. The Tests folder is not part of an Xcode target, so run it
-//  directly:
+//  Standalone runner, discovered by scripts/run-tests.sh, which compiles it against the
+//  sources declared below. The Tests folder is not part of an Xcode target, so each
+//  runner is compiled on its own.
 //
-//    swiftc -o /tmp/tint-pipeline-tests \
-//      Tests/TintPipelineTests.swift boringNotch/models/TintPipeline.swift \
-//      && /tmp/tint-pipeline-tests
+// SOURCES: boringNotch/models/TintPipeline.swift
 //
 //  Helper names are prefixed (`check*`) so they stay distinguishable from the helpers
-//  in the other standalone runners in this folder. Each runner has its own `@main`,
-//  so they are compiled one file at a time.
+//  in the other standalone runners in this folder.
 //
 
 import Foundation
