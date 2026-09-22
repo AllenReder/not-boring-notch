@@ -35,7 +35,7 @@ jobs:
       - name: Issue Forms Dropdown Options
         uses: ShaMan123/gha-form-dropdown-options@124b08a39f06a6a4fcafdec501ecaca8db019db2 # v2.1.0
         with:
-          form: .github/ISSUE_TEMPLATE/1-bug-report-form.yml
+          form: .github/ISSUE_TEMPLATE/bug-report.yml
           dropdown: version
           options: ${{ steps.tags.outputs.versions }}
 
@@ -47,7 +47,7 @@ jobs:
           if git diff --quiet; then
             echo "No changes to commit."
           else
-            git add .github/ISSUE_TEMPLATE/1-bug-report-form.yml
+            git add .github/ISSUE_TEMPLATE/bug-report.yml
             git commit -m "Update issue form version dropdown with placeholder and latest tags"
             git push
           fi

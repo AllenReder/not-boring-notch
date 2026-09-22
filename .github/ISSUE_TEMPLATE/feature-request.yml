@@ -1,8 +1,9 @@
 name: Feature Request
 description: Suggest a new idea or enhancement for Boring Notch
-title: "[FEATURE] "
+title: "feat: "
 type: Feature
-labels: []
+labels:
+  - enhancement
 
 body:
   - type: markdown
@@ -10,7 +11,7 @@ body:
       value: |
         ## Feature Request
         
-        Thanks for helping make **Boring Notch** better! Please check [existing requests](https://github.com/TheBoredTeam/boring.notch/issues?q=is%3Aissue) before submitting to avoid duplicates.
+        Thanks for helping make **Boring Notch** better! Please check [existing requests](https://github.com/AllenReder/not-boring-notch/issues?q=is%3Aissue) before submitting to avoid duplicates.
 
   - type: textarea
     id: problem

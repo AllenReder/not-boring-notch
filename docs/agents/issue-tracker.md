@@ -21,7 +21,7 @@ Upstream issues (`TheBoredTeam/boring.notch`) are reference material, not this r
 
 ## Note: issue templates are bypassed
 
-`.github/ISSUE_TEMPLATE/config.yml` sets `blank_issues_enabled: false`, and the templates are YAML issue forms (`1-bug-report-form.yml`, `1-feature-request-form.yml`). `gh issue create` does not fill those forms — it posts a blank-body issue, which the web UI would have blocked. That is fine for agent-created tickets, but include the fields the forms would have asked for (macOS version, app version, reproduction steps) in the body so the result is as complete as a filed form.
+`.github/ISSUE_TEMPLATE/config.yml` sets `blank_issues_enabled: false`, and the templates are YAML issue forms (`bug-report.yml`, `feature-request.yml`). `gh issue create` does not fill those forms — it posts a blank-body issue, which the web UI would have blocked. That is fine for agent-created tickets, but include the fields the forms would have asked for (macOS version, app version, reproduction steps) in the body so the result is as complete as a filed form.
 
 ## Pull requests as a triage surface
 
