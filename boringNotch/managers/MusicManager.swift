@@ -222,6 +222,10 @@ class MusicManager: ObservableObject {
 
             let track = TrackIdentity(title: state.title, artist: state.artist)
 
+            // A decode still in flight for a different track belongs to a track the notch has
+            // left, so moving on supersedes it (docs/adr/0003, addendum).
+            tintPipeline.noteCurrentTrack(track)
+
             if artworkChanged, let artwork = state.artwork {
                 self.cancelTintSettleWindow()
                 self.updateArtwork(artwork, for: track)
@@ -543,13 +547,25 @@ class MusicManager: ObservableObject {
     }
 
     private func updateArtwork(_ artworkData: Data, for track: TrackIdentity) {
+        // Claim the order before the decode starts: a decode that returns after a newer
+        // artwork was requested must not touch the image, the fallback flag, or the tint
+        // (docs/adr/0003, addendum).
+        let order = tintPipeline.artworkRequested()
+
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
 
             if let artworkImage = NSImage(data: artworkData) {
                 DispatchQueue.main.async { [weak self] in
-                    self?.usingAppIconForArtwork = false
-                    self?.updateAlbumArt(newAlbumArt: artworkImage, provenance: .trackArtwork, track: track)
+                    guard let self else { return }
+                    guard self.tintPipeline.acceptsArtwork(order: order) else {
+                        #if DEBUG
+                        NSLog("TintPipeline: dropped stale artwork decode (order=\(order), current=\(self.tintPipeline.artworkOrder))")
+                        #endif
+                        return
+                    }
+                    self.usingAppIconForArtwork = false
+                    self.updateAlbumArt(newAlbumArt: artworkImage, provenance: .trackArtwork, track: track)
                 }
             }
         }
