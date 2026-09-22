@@ -4,7 +4,7 @@ Thank you for taking the time to contribute! ❤️
 
 These guidelines help streamline the contribution process for everyone involved. By following them, you'll make it easier for maintainers to review your work and collaborate with you effectively.
 
-You can contribute in many ways: writing code, improving documentation, reporting bugs, requesting features, or creating tutorials and blog posts. Every contribution, large or small, helps make Boring Notch better.
+You can contribute in many ways: writing code, improving documentation, reporting bugs, requesting features, or creating tutorials and blog posts. Every contribution, large or small, helps make Not Boring Notch better.
 
 ## Table of Contents
 
@@ -21,7 +21,7 @@ You can contribute in many ways: writing code, improving documentation, reportin
 
 ## Localizations
 
-The interface is localized through `boringNotch/Localizable.xcstrings`. New strings are
+The interface is localized through `NotBoringNotch/Localizable.xcstrings`. New strings are
 added in English, and translation updates are welcome as pull requests that edit that file
 directly. This project does not use Crowdin.
 
@@ -132,4 +132,4 @@ If you need help or have questions:
 
 ---
 
-Thank you for contributing to Boring Notch! Your efforts help make this project better for everyone. 🎉
+Thank you for contributing to Not Boring Notch! Your efforts help make this project better for everyone. 🎉

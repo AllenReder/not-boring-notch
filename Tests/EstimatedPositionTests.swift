@@ -6,7 +6,7 @@
 //  sources declared below. The Tests folder is not part of an Xcode target, so each
 //  runner is compiled on its own.
 //
-// SOURCES: boringNotch/models/EstimatedPosition.swift
+// SOURCES: NotBoringNotch/models/EstimatedPosition.swift
 //
 //  Helper names are prefixed (`check*`) so they stay distinguishable from the helpers
 //  in the other standalone runners in this folder.

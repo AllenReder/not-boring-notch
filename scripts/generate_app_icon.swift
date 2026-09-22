@@ -446,9 +446,9 @@ DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
 
     if shouldInstall {
         let projectDir = FileManager.default.currentDirectoryPath
-        let appIconDir = "\(projectDir)/boringNotch/Assets.xcassets/AppIcon.appiconset"
-        let logo2Dir = "\(projectDir)/boringNotch/Assets.xcassets/logo2.imageset"
-        let logoDir = "\(projectDir)/boringNotch/Assets.xcassets/logo.imageset"
+        let appIconDir = "\(projectDir)/NotBoringNotch/Assets.xcassets/AppIcon.appiconset"
+        let logo2Dir = "\(projectDir)/NotBoringNotch/Assets.xcassets/logo2.imageset"
+        let logoDir = "\(projectDir)/NotBoringNotch/Assets.xcassets/logo.imageset"
 
         let appIconSizes = [
             ("notch-stage-icon2 2.png", 16),
@@ -472,7 +472,7 @@ DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             resize.waitUntilExit()
         }
 
-        let logo2Dest = "\(logo2Dir)/BoringNotch icon.png"
+        let logo2Dest = "\(logo2Dir)/NotBoringNotch icon.png"
         let resizeLogo2 = Process()
         resizeLogo2.executableURL = URL(fileURLWithPath: "/usr/bin/sips")
         resizeLogo2.arguments = ["-z", "512", "512", outputPath, "--out", logo2Dest]

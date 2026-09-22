@@ -12,7 +12,7 @@
 # Adding a Swift runner: create Tests/<Name>Tests.swift and give it a first-line
 # declaration of the sources it needs, e.g.
 #
-#   // SOURCES: boringNotch/models/TintPipeline.swift
+#   // SOURCES: NotBoringNotch/models/TintPipeline.swift
 #
 # A runner without a SOURCES line is reported and skipped rather than failing the suite,
 # so adding a test in one branch cannot break another branch's build.

@@ -2,7 +2,7 @@
 
 ### Issue tracker
 
-Issues live in GitHub Issues on `AllenReder/boring.notch` (this clone's fork; `TheBoredTeam/boring.notch` upstream is reference only). See `docs/agents/issue-tracker.md`.
+Issues live in GitHub Issues on `AllenReder/not-boring-notch` (this clone's fork; `TheBoredTeam/boring.notch` upstream is reference only). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

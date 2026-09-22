@@ -19,18 +19,18 @@ CI (`cicd.yml`) runs the same tests plus a Release build on every push and pull 
 
 `MARKETING_VERSION` is what the app reports and what the DMG is named after.
 `CURRENT_PROJECT_VERSION` is the build number; bump it by one at the same time. Each appears
-**four times** — the app target and the `BoringNotchXPCHelper` target, Debug and Release
+**four times** — the app target and the `NotBoringNotchXPCHelper` target, Debug and Release
 configurations each — and all four copies are kept in step:
 
 ```bash
-grep -nE "MARKETING_VERSION|CURRENT_PROJECT_VERSION" boringNotch.xcodeproj/project.pbxproj
+grep -nE "MARKETING_VERSION|CURRENT_PROJECT_VERSION" NotBoringNotch.xcodeproj/project.pbxproj
 git commit -am "chore(release): bump version to X.Y.Z"
 ```
 
 ## 3. Build the release app
 
 ```bash
-xcodebuild -project boringNotch.xcodeproj -scheme boringNotch \
+xcodebuild -project NotBoringNotch.xcodeproj -scheme NotBoringNotch \
   -configuration Release -derivedDataPath build/DerivedData build
 
 APP="build/DerivedData/Build/Products/Release/Not Boring Notch.app"

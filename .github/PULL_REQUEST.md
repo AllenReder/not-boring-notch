@@ -4,7 +4,7 @@ Please, go through these steps before you submit a PR.
 1. Make sure that your PR is not a duplicate.
 2. If not, then make sure that:
 
-    a. Keep localization changes in their own pull request: edit `boringNotch/Localizable.xcstrings` directly.
+    a. Keep localization changes in their own pull request: edit `NotBoringNotch/Localizable.xcstrings` directly.
 
     b. You have tested the code yourself to ensure it builds correctly and functions as intended.
 
