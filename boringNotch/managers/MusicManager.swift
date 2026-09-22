@@ -653,12 +653,21 @@ class MusicManager: ObservableObject {
     }
 
     // MARK: - Playback Position Estimation
-    public func estimatedPlaybackPosition(at date: Date = Date()) -> TimeInterval {
-        guard isPlaying else { return min(elapsedTime, songDuration) }
 
-        let timeDifference = date.timeIntervalSince(timestampDate)
-        let estimated = elapsedTime + (timeDifference * playbackRate)
-        return min(max(0, estimated), songDuration)
+    /// The notch's reading of the player's last position report. The progress slider derives
+    /// its displayed position from the same value.
+    var estimatedPosition: EstimatedPosition {
+        EstimatedPosition(
+            reportedAt: timestampDate,
+            elapsedTime: elapsedTime,
+            duration: songDuration,
+            playbackRate: playbackRate,
+            isPlaying: isPlaying
+        )
+    }
+
+    public func estimatedPlaybackPosition(at date: Date = Date()) -> TimeInterval {
+        estimatedPosition.at(date)
     }
 
     private func calculateAverageColor(generation: Int) {

@@ -59,3 +59,13 @@ _Avoid_: Contrast boost, auto-contrast
 **Brightness Pin**:
 A decorative derivative of the Accent set to a target Perceived Brightness, lighter or darker as required. Decoration pins; text and the progress track floor.
 _Avoid_: Brightness adjustment, darken, lighten
+
+### Playback
+
+**Estimated Position**:
+The playback position the notch computes for now, from the player's last report plus the time elapsed since it at the current playback rate, rather than a position the player has confirmed.
+_Avoid_: Current time, elapsed time
+
+**Seek Settle Window**:
+The grace period after a seek during which the notch keeps displaying the seek target instead of the Estimated Position, covering the gap before the player reports the new position.
+_Avoid_: Drag delay, debounce, seek timeout
