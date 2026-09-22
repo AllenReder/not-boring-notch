@@ -272,6 +272,12 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
             )
         } else if !diff {
             newPlaybackState.artwork = nil
+        } else {
+            // A diff event omits keys that did not change, so artwork missing from the
+            // payload is still the artwork we already have — every other field below
+            // follows the same rule. Without this, changing track within one album (whose
+            // tracks share a cover) is indistinguishable from a track with no artwork.
+            newPlaybackState.artwork = self.playbackState.artwork
         }
 
         if let dateString = payload.timestamp,

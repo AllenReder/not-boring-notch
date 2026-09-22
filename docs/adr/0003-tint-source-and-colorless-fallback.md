@@ -22,4 +22,5 @@ The notch renders its ambient music tint, progress slider, and tinted text from 
 - A track without artwork renders no tint at all. This is a deliberate, visible absence and not a defect.
 - Within the Tint Settle Window the tint still shows the previous track's color; after it, the tint can never describe the previous track.
 - The tint becomes optional in the model, so "no tint" is representable instead of approximated by a color.
-- Consumers that already have an untinted rendering — gray text, an uncolored spectrum, an absent ambient layer — are the defined rendering for Colorless.
+- Consumers that already have an untinted rendering are the defined rendering for Colorless: gray text, an uncolored spectrum, an absent ambient layer, and the white progress-slider track.
+- A transport that cannot distinguish unchanged artwork from removed artwork inherits the artwork it already has, so such a track keeps the previous cover and its tint instead of settling Colorless. Transports that report absent artwork explicitly still settle Colorless.

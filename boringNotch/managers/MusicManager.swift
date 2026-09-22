@@ -229,6 +229,13 @@ class MusicManager: ObservableObject {
                 // A track's artwork usually arrives in a later event than its metadata,
                 // so wait out the Tint Settle Window before falling back to the app icon.
                 self.armArtworkFallback(for: track, bundleIdentifier: state.bundleIdentifier)
+            } else {
+                // The artwork bytes did not change, but they now belong to this track: the
+                // rest of an album shares one cover, so without recording the ownership
+                // here the track would look coverless and settle Colorless with its own
+                // cover on screen.
+                self.cancelTintSettleWindow()
+                self.tintPipeline.noteCoverApplied(for: track)
             }
             self.artworkData = state.artwork
 
@@ -612,15 +619,18 @@ class MusicManager: ObservableObject {
 
     @MainActor
     private func settleTintWindow(for track: TrackIdentity, bundleIdentifier: String) {
-        guard let generation = tintPipeline.settleWindowExpired(for: track) else { return }
+        guard let generation = tintPipeline.declareColorlessIfSettled(for: track) else { return }
         #if DEBUG
         NSLog("TintPipeline: no artwork after the settle window for \(track.title) → Colorless (gen=\(generation))")
         #endif
 
-        if let appIconImage = AppIconAsNSImage(for: bundleIdentifier) {
-            self.usingAppIconForArtwork = true
-            self.updateAlbumArt(newAlbumArt: appIconImage, provenance: .appIconFallback, track: track)
-        }
+        // The image advances on the same timeline as the tint. A playback app with no
+        // resolvable icon falls back to the placeholder rather than leaving the previous
+        // track's cover on screen.
+        let fallbackImage = AppIconAsNSImage(for: bundleIdentifier) ?? defaultImage
+        self.usingAppIconForArtwork = true
+        self.updateAlbumArt(newAlbumArt: fallbackImage, provenance: .appIconFallback, track: track)
+
         withAnimation(.smooth) {
             self.avgColor = nil
         }
@@ -643,6 +653,14 @@ class MusicManager: ObservableObject {
                 guard self.tintPipeline.accepts(generation: generation) else {
                     #if DEBUG
                     NSLog("TintPipeline: dropped stale tint (gen=\(generation), current=\(self.tintPipeline.generation))")
+                    #endif
+                    return
+                }
+                guard let color else {
+                    // A derivation failure is not an absent artwork: keep the tint we have
+                    // instead of claiming the track is Colorless.
+                    #if DEBUG
+                    NSLog("TintPipeline: derivation failed (gen=\(generation))")
                     #endif
                     return
                 }

@@ -57,10 +57,20 @@ struct TintPipeline {
         return true
     }
 
+    /// Records that the artwork already on screen belongs to this track, without
+    /// advancing the generation: the bytes did not change, so the derivation they
+    /// belong to is still the current one and must be allowed to publish. Needed for
+    /// the rest of an album, whose tracks share one cover and therefore never reach
+    /// `artworkApplied`.
+    mutating func noteCoverApplied(for track: TrackIdentity) {
+        artworkTrack = track
+        armedTrack = nil
+    }
+
     /// The Tint Settle Window expired. Returns the new generation when the track is
     /// Colorless, or `nil` when artwork is already known for it — the case where a
     /// metadata-only event must not take the tint away from a covered track.
-    mutating func settleWindowExpired(for track: TrackIdentity) -> Int? {
+    mutating func declareColorlessIfSettled(for track: TrackIdentity) -> Int? {
         guard artworkTrack != track else { return nil }
         generation &+= 1
         armedTrack = nil

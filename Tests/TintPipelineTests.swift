@@ -9,8 +9,9 @@
 //      Tests/TintPipelineTests.swift boringNotch/models/TintPipeline.swift \
 //      && /tmp/tint-pipeline-tests
 //
-//  Helper names are prefixed (`check*`) so this file can be compiled together
-//  with the other standalone runners in this folder.
+//  Helper names are prefixed (`check*`) so they stay distinguishable from the helpers
+//  in the other standalone runners in this folder. Each runner has its own `@main`,
+//  so they are compiled one file at a time.
 //
 
 import Foundation
@@ -37,6 +38,7 @@ struct TintPipelineTestsRunner {
         testLatestArtworkOwnsTheTint()
         testStaleDerivationIsDiscarded()
         testMetadataRefinementDoesNotTakeTheTintAway()
+        testUnchangedArtworkStillBelongsToTheNewTrack()
         testCoverlessTrackSettlesColorless()
         testSettleWindowArmsOncePerTrack()
         testReplayedCoverlessTrackArmsAgain()
@@ -70,10 +72,26 @@ struct TintPipelineTestsRunner {
         var pipeline = TintPipeline()
         let track = TrackIdentity(title: "Bubble", artist: "Samuel Kim")
         let generation = pipeline.artworkApplied(for: track)
-        checkEqual(pipeline.settleWindowExpired(for: track), nil,
+        checkEqual(pipeline.declareColorlessIfSettled(for: track), nil,
                    "a covered track never settles Colorless")
         checkTrue(pipeline.accepts(generation: generation),
                   "the cover's derivation survives the refinement")
+    }
+
+    /// Tracks that share a cover (the rest of an album) never reach `artworkApplied`
+    /// because the artwork bytes did not change, so the pipeline is told about the
+    /// ownership directly. Without that they would settle Colorless while their own
+    /// cover is on screen.
+    static func testUnchangedArtworkStillBelongsToTheNewTrack() {
+        var pipeline = TintPipeline()
+        let first = TrackIdentity(title: "Track 1", artist: "Album Artist")
+        let second = TrackIdentity(title: "Track 2", artist: "Album Artist")
+        let generation = pipeline.artworkApplied(for: first)
+        pipeline.noteCoverApplied(for: second)
+        checkEqual(pipeline.declareColorlessIfSettled(for: second), nil,
+                   "an unchanged cover still counts as this track's artwork")
+        checkTrue(pipeline.accepts(generation: generation),
+                  "recording ownership must not invalidate a derivation still in flight")
     }
 
     /// A track that offers no artwork becomes Colorless, and any derivation still
@@ -83,7 +101,7 @@ struct TintPipelineTestsRunner {
         let track = TrackIdentity(title: "Podcast", artist: "Someone")
         let abandoned = pipeline.artworkApplied(for: TrackIdentity(title: "Previous", artist: "Track"))
         checkTrue(pipeline.shouldArmSettleWindow(for: track), "a track without artwork arms the window")
-        let colorless = pipeline.settleWindowExpired(for: track)
+        let colorless = pipeline.declareColorlessIfSettled(for: track)
         checkTrue(colorless != nil, "the window expiring without artwork settles the track Colorless")
         checkTrue(!pipeline.accepts(generation: abandoned),
                   "a derivation from an older track must not publish over Colorless")
@@ -103,7 +121,7 @@ struct TintPipelineTestsRunner {
         var pipeline = TintPipeline()
         let coverless = TrackIdentity(title: "Podcast", artist: "Someone")
         checkTrue(pipeline.shouldArmSettleWindow(for: coverless), "first play arms the window")
-        _ = pipeline.settleWindowExpired(for: coverless)
+        _ = pipeline.declareColorlessIfSettled(for: coverless)
         _ = pipeline.artworkApplied(for: TrackIdentity(title: "Song", artist: "Someone Else"))
         checkTrue(pipeline.shouldArmSettleWindow(for: coverless), "a replay arms the window again")
     }

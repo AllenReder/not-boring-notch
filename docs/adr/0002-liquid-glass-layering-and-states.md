@@ -1,5 +1,7 @@
 # 0002. Liquid Glass Layering Hierarchy and State Boundary
 
+> Partially superseded by [ADR-0003](0003-tint-source-and-colorless-fallback.md): the Ambient Music Tint’s source is now the Tint Source (the track’s artwork only), which replaces the “album dominant color” wording in Decision 3.
+
 ## Context
 
 Integrating Liquid Glass into Boring Notch requires defining its interaction with multiple window states (closed notch vs opened card), dynamic resize animations, and media playback color tinting. Applying glass refraction to the closed notch (~32pt height) causes severe optical distortion directly over the physical camera aperture. Furthermore, applying full-bleed album art color across transparent glass results in a muddy, desaturated appearance that destroys optical refraction.
