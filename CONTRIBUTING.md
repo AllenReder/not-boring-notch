@@ -63,7 +63,15 @@ directly. This project does not use Crowdin.
 
 1. **Make your changes**: Implement your feature or bug fix. Write clean, well-documented code <!-- following the project's style guidelines. -->
 
-2. **Test your changes**: Ensure your changes work as expected and don't break existing functionality.
+2. **Test your changes**:
+   ```bash
+   ./scripts/run-tests.sh      # the standalone runners in Tests/
+   ./scripts/check-branding.sh # fails if the old boringNotch name has crept back in
+   ./scripts/check-version.sh  # fails if the project's version settings disagree
+   ```
+   CI blocks on all three, so run them before you push — each is a grep or a few seconds of
+   `swiftc`, and the third one exists because a version bumped in only some of its four copies
+   is not a build error, just a lie the app tells about itself.
 
 3. **Commit your changes**:
    ```bash

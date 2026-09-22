@@ -11,21 +11,28 @@ run from a clean `main`.
 git switch main
 git pull
 ./scripts/run-tests.sh
+./scripts/check-branding.sh
+./scripts/check-version.sh
 ```
 
-CI (`cicd.yml`) runs the same tests plus a Release build on every push and pull request.
+CI (`cicd.yml`) runs all three plus a Release build on every push and pull request.
 
 ## 2. Pick the version and bump it
 
 `MARKETING_VERSION` is what the app reports and what the DMG is named after.
 `CURRENT_PROJECT_VERSION` is the build number; bump it by one at the same time. Each appears
 **four times** — the app target and the `NotBoringNotchXPCHelper` target, Debug and Release
-configurations each — and all four copies are kept in step:
+configurations each — and all four copies have to agree:
 
 ```bash
-grep -nE "MARKETING_VERSION|CURRENT_PROJECT_VERSION" NotBoringNotch.xcodeproj/project.pbxproj
+$EDITOR NotBoringNotch.xcodeproj/project.pbxproj
+./scripts/check-version.sh          # names every copy that disagrees
 git commit -am "chore(release): bump version to X.Y.Z"
 ```
+
+Missing one of the four is not a build error. It is a build that reports a version nobody
+released, which is what the About pane did once already. That is why the check is a script and
+a CI step rather than a paragraph of this file.
 
 ## 3. Build the release app
 
@@ -95,8 +102,12 @@ notarization (`xcrun notarytool submit --wait`) belong here instead.
 
 ```bash
 git tag -a vX.Y.Z -m "Not Boring Notch X.Y.Z"
+./scripts/check-version.sh --expect-tag   # the tag and the built app have to agree
 git push origin main --tags
 ```
+
+`--expect-tag` is checked here rather than in CI because a branch is legitimately between a
+version bump and its tag, so on a topic branch that check would fail on a healthy tree.
 
 Then publish the Release for the tag and attach the DMG:
 

@@ -23,6 +23,10 @@ line|LICENSE|boring.notch|upstream copyright notice
 # misstate what was decided.
 line|docs/adr/0001-liquid-glass-refraction-pipeline.md|Boring Notch|historical ADR, records the name in force at the time
 line|docs/adr/0002-liquid-glass-layering-and-states.md|Boring Notch|historical ADR, records the name in force at the time
+# ADR 0006 is the record of this rename. It is expected to name what it renamed, in the
+# paths it moved, the directories it adopted and the strings it left alone.
+line|docs/adr/0006-the-rebrand-reaches-the-skeleton.md|boring|ADR 0006, whose subject is the old name
+line|docs/adr/0006-the-rebrand-reaches-the-skeleton.md|Boring|ADR 0006, whose subject is the old name
 
 # ADR 0004 is the hard-fork decision, so it has to say which repository this forked from.
 line|docs/adr/0004-hard-fork-from-upstream.md|boring.notch|names the upstream repository this fork came from
@@ -33,6 +37,10 @@ line|AGENTS.md|boring.notch|names the upstream repository, which is reference on
 
 # The Discord invite's vanity slug is owned by the server, not by this repository.
 line|CONTRIBUTING.md|boring-notch|Discord invite slug; editing it breaks the link
+# The contributor docs name the old brand on purpose, so that whoever trips the gate knows
+# what it was looking for. The fragment is the sentence, not the token: elsewhere in this file
+# the old name would be a mistake.
+line|CONTRIBUTING.md|the old boringNotch name has crept back in|names the token the brand gate searches for
 
 # The upstream project's logo: the image set's name is upstream's, and no code references
 # it. Kept for attribution, so both the asset name and the SVG file name stay.
