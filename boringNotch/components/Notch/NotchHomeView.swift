@@ -115,7 +115,7 @@ struct MusicControlsView: View {
         @ObservedObject var webcamManager = WebcamManager.shared
     @State private var sliderValue: Double = 0
     @State private var dragging: Bool = false
-    @State private var lastDragged: Date = .distantPast
+    @State private var lastSeek: Date = .distantPast
     @Default(.musicControlSlots) private var slotConfig
     @Default(.musicControlSlotLimit) private var slotLimit
 
@@ -149,18 +149,13 @@ struct MusicControlsView: View {
                 nsFont: .headline,
                 textColor: Defaults[.playerColorTinting]
                     ? (musicManager.avgColor.map { Color(nsColor: $0)
-                        .ensureMinimumBrightness(factor: 0.6) } ?? .gray) : .gray,
+                        .withMinimumBrightness(0.6) } ?? .gray) : .gray,
                 frameWidth: width
             )
             .fontWeight(.medium)
             if Defaults[.enableLyrics] {
                 TimelineView(.animation(minimumInterval: 0.25)) { timeline in
-                    let currentElapsed: Double = {
-                        guard musicManager.isPlaying else { return musicManager.elapsedTime }
-                        let delta = timeline.date.timeIntervalSince(musicManager.timestampDate)
-                        let progressed = musicManager.elapsedTime + (delta * musicManager.playbackRate)
-                        return min(max(progressed, 0), musicManager.songDuration)
-                    }()
+                    let currentElapsed: Double = musicManager.estimatedPlaybackPosition(at: timeline.date)
                     let line: String = {
                         if musicManager.isFetchingLyrics { return "Loading lyrics…" }
                         if !musicManager.syncedLyrics.isEmpty {
@@ -194,7 +189,7 @@ struct MusicControlsView: View {
             MusicSliderView(
                 sliderValue: $sliderValue,
                 duration: $musicManager.songDuration,
-                lastDragged: $lastDragged,
+                lastSeek: $lastSeek,
                 color: musicManager.avgColor,
                 dragging: $dragging,
                 currentDate: timeline.date,
@@ -354,11 +349,12 @@ struct VolumeControlView: View {
 
             if showVolumeSlider && musicManager.volumeControlSupported {
                 CustomSlider(
-                    value: $volumeSliderValue,
+                    displayed: volumeSliderValue,
+                    seekValue: $volumeSliderValue,
                     range: 0.0...1.0,
                     color: .white,
                     dragging: $dragging,
-                    lastDragged: .constant(Date.distantPast),
+                    lastSeek: .constant(Date.distantPast),
                     onValueChange: { newValue in
                         MusicManager.shared.setVolume(to: newValue)
                     },
@@ -469,7 +465,7 @@ struct NotchHomeView: View {
 struct MusicSliderView: View {
     @Binding var sliderValue: Double
     @Binding var duration: Double
-    @Binding var lastDragged: Date
+    @Binding var lastSeek: Date
     var color: NSColor?
     @Binding var dragging: Bool
     let currentDate: Date
@@ -479,36 +475,46 @@ struct MusicSliderView: View {
     let isPlaying: Bool
     var onValueChange: (Double) -> Void
 
+    /// What the slider draws. Derived while rendering, never stored: the timeline ticks up to
+    /// ten times a second, and writing this back into state was a per-frame state update
+    /// (issue #19).
+    private var displayedPosition: Double {
+        EstimatedPosition(
+            reportedAt: timestampDate,
+            elapsedTime: elapsedTime,
+            duration: duration,
+            playbackRate: playbackRate,
+            isPlaying: isPlaying
+        )
+        .displayed(at: currentDate, seekTarget: sliderValue, isDragging: dragging, lastSeek: lastSeek)
+    }
 
     var body: some View {
         VStack {
             CustomSlider(
-                value: $sliderValue,
+                displayed: displayedPosition,
+                seekValue: $sliderValue,
                 range: 0...duration,
                 color: Defaults[.sliderColor] == SliderColorEnum.albumArt
-                    ? Color(nsColor: color ?? .white).ensureMinimumBrightness(factor: 0.8)
+                    ? Color(nsColor: color ?? .white).withMinimumBrightness(0.8)
                     : Defaults[.sliderColor] == SliderColorEnum.accent ? .effectiveAccent : .white,
                 dragging: $dragging,
-                lastDragged: $lastDragged,
+                lastSeek: $lastSeek,
                 onValueChange: onValueChange
             )
             .frame(height: 10, alignment: .center)
 
             HStack {
-                Text(timeString(from: sliderValue))
+                Text(timeString(from: displayedPosition))
                 Spacer()
                 Text(timeString(from: duration))
             }
             .fontWeight(.medium)
             .foregroundColor(
                 Defaults[.playerColorTinting]
-                    ? (color.map { Color(nsColor: $0).ensureMinimumBrightness(factor: 0.6) } ?? .gray) : .gray
+                    ? (color.map { Color(nsColor: $0).withMinimumBrightness(0.6) } ?? .gray) : .gray
             )
             .font(.caption)
-        }
-        .onChange(of: currentDate) {
-           guard !dragging, timestampDate.timeIntervalSince(lastDragged) > -1 else { return }
-            sliderValue = MusicManager.shared.estimatedPlaybackPosition(at: currentDate)
         }
     }
 
@@ -527,11 +533,15 @@ struct MusicSliderView: View {
 }
 
 struct CustomSlider: View {
-    @Binding var value: Double
+    /// The value the slider draws. It is never written, so a caller may pass a value it
+    /// derived while rendering (issue #19).
+    var displayed: Double
+    /// The value the slider writes while the user drags, and the position a seek targets.
+    @Binding var seekValue: Double
     var range: ClosedRange<Double>
     var color: Color = .white
     @Binding var dragging: Bool
-    @Binding var lastDragged: Date
+    @Binding var lastSeek: Date
     var onValueChange: ((Double) -> Void)?
     var onDragChange: ((Double) -> Void)?
 
@@ -541,7 +551,7 @@ struct CustomSlider: View {
             let height = CGFloat(dragging ? 9 : 5)
             let rangeSpan = range.upperBound - range.lowerBound
 
-            let progress = rangeSpan == .zero ? 0 : (value - range.lowerBound) / rangeSpan
+            let progress = rangeSpan == .zero ? 0 : (displayed - range.lowerBound) / rangeSpan
             let filledTrackWidth = min(max(progress, 0), 1) * width
 
             ZStack(alignment: .leading) {
@@ -562,14 +572,15 @@ struct CustomSlider: View {
                         withAnimation {
                             dragging = true
                         }
-                        let newValue = range.lowerBound + Double(gesture.location.x / width) * rangeSpan
-                        value = min(max(newValue, range.lowerBound), range.upperBound)
-                        onDragChange?(value)
+                        let rawValue = range.lowerBound + Double(gesture.location.x / width) * rangeSpan
+                        let newValue = min(max(rawValue, range.lowerBound), range.upperBound)
+                        seekValue = newValue
+                        onDragChange?(newValue)
                     }
                     .onEnded { _ in
-                        onValueChange?(value)
+                        onValueChange?(seekValue)
                         dragging = false
-                        lastDragged = Date()
+                        lastSeek = Date()
                     }
             )
             .animation(.spring(response: 0.35, dampingFraction: 0.7), value: dragging)

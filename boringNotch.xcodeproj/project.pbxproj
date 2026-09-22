@@ -35,6 +35,8 @@
 		1153BD8F2D986B1F00979FB0 /* MediaControllerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1153BD8D2D986B1F00979FB0 /* MediaControllerProtocol.swift */; };
 		1153BD912D986DB300979FB0 /* PlaybackState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1153BD902D986DB300979FB0 /* PlaybackState.swift */; };
 		5EE3A0022FA1000000000002 /* TintPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE3A0012FA1000000000001 /* TintPipeline.swift */; };
+		5EE3A0042FA1000000000004 /* TintLegibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE3A0032FA1000000000003 /* TintLegibility.swift */; };
+		5EE3A0062FA1000000000006 /* EstimatedPosition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE3A0052FA1000000000005 /* EstimatedPosition.swift */; };
 		1153BD932D986E4300979FB0 /* AppleMusicController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1153BD922D986E4300979FB0 /* AppleMusicController.swift */; };
 		1153BD982D9881F900979FB0 /* AppleScriptHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1153BD972D9881F900979FB0 /* AppleScriptHelper.swift */; };
 		1153BD9A2D98824300979FB0 /* SpotifyController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1153BD992D98824300979FB0 /* SpotifyController.swift */; };
@@ -210,6 +212,8 @@
 		1153BD8D2D986B1F00979FB0 /* MediaControllerProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaControllerProtocol.swift; sourceTree = "<group>"; };
 		1153BD902D986DB300979FB0 /* PlaybackState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackState.swift; sourceTree = "<group>"; };
 		5EE3A0012FA1000000000001 /* TintPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TintPipeline.swift; sourceTree = "<group>"; };
+		5EE3A0032FA1000000000003 /* TintLegibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TintLegibility.swift; sourceTree = "<group>"; };
+		5EE3A0052FA1000000000005 /* EstimatedPosition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EstimatedPosition.swift; sourceTree = "<group>"; };
 		1153BD922D986E4300979FB0 /* AppleMusicController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleMusicController.swift; sourceTree = "<group>"; };
 		1153BD972D9881F900979FB0 /* AppleScriptHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleScriptHelper.swift; sourceTree = "<group>"; };
 		1153BD992D98824300979FB0 /* SpotifyController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotifyController.swift; sourceTree = "<group>"; };
@@ -645,6 +649,8 @@
 				14D570CA2C5F4B2C0011E668 /* BatteryStatusViewModel.swift */,
 				1153BD902D986DB300979FB0 /* PlaybackState.swift */,
 				5EE3A0012FA1000000000001 /* TintPipeline.swift */,
+				5EE3A0032FA1000000000003 /* TintLegibility.swift */,
+				5EE3A0052FA1000000000005 /* EstimatedPosition.swift */,
 			);
 			path = models;
 			sourceTree = "<group>";
@@ -994,6 +1000,8 @@
 				B1C4489B2C97376A001F0858 /* TipStore.swift in Sources */,
 				1153BD912D986DB300979FB0 /* PlaybackState.swift in Sources */,
 				5EE3A0022FA1000000000002 /* TintPipeline.swift in Sources */,
+				5EE3A0042FA1000000000004 /* TintLegibility.swift in Sources */,
+				5EE3A0062FA1000000000006 /* EstimatedPosition.swift in Sources */,
 				B1A78C822C8BA08100BD51B0 /* FullscreenMediaDetection.swift in Sources */,
 				14E9FEAE2C7325770062E83F /* Button+Bouncing.swift in Sources */,
 				14D570C92C5F38890011E668 /* BoringViewModel.swift in Sources */,

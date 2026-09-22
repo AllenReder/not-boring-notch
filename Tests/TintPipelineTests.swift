@@ -41,6 +41,11 @@ struct TintPipelineTestsRunner {
         testSettleWindowArmsOncePerTrack()
         testReplayedCoverlessTrackArmsAgain()
         testTrackIdentityOnlyRefinesOnTitleOrArtist()
+        testStaleArtworkDecodeIsDiscarded()
+        testArtworkRequestDoesNotInvalidateADerivation()
+        testColorlessDoesNotSupersedeAPendingArtworkDecode()
+        testMovingToAnotherTrackSupersedesThePreviousTracksDecode()
+        testRefiningTheCurrentTrackDoesNotSupersedeItsDecode()
         print("✅ TintPipelineTests: all passed")
     }
 
@@ -132,5 +137,71 @@ struct TintPipelineTestsRunner {
         checkEqual(before, after, "album and bundle are not part of track identity")
         checkTrue(before != TrackIdentity(title: "Bubble", artist: "Someone Else"),
                   "a different artist is a different track")
+    }
+
+    /// Issue #18: two track changes in quick succession start two decodes, and whichever
+    /// finishes last used to win. Only the decode belonging to the newest request may be
+    /// applied.
+    static func testStaleArtworkDecodeIsDiscarded() {
+        var pipeline = TintPipeline()
+        let slowDecode = pipeline.artworkRequested()
+        let newestDecode = pipeline.artworkRequested()
+        checkTrue(pipeline.acceptsArtwork(order: newestDecode), "the newest decode is applied")
+        checkTrue(!pipeline.acceptsArtwork(order: slowDecode),
+                  "a decode that returns after a newer request must be dropped")
+    }
+
+    /// The image's order and the tint generation are separate counters: requesting a decode
+    /// must not invalidate a derivation that is still in flight for the artwork already on
+    /// screen.
+    static func testArtworkRequestDoesNotInvalidateADerivation() {
+        var pipeline = TintPipeline()
+        let track = TrackIdentity(title: "Bubble", artist: "Samuel Kim")
+        let generation = pipeline.artworkApplied(for: track)
+        _ = pipeline.artworkRequested()
+        checkTrue(pipeline.accepts(generation: generation),
+                  "a pending tint derivation survives a newer artwork request")
+    }
+
+    /// The Tint Settle Window may expire while a large cover is still decoding. That track's
+    /// own cover is not superseded by the Colorless declaration: dropping it would strand the
+    /// track on its Artwork Fallback.
+    static func testColorlessDoesNotSupersedeAPendingArtworkDecode() {
+        var pipeline = TintPipeline()
+        let track = TrackIdentity(title: "Podcast", artist: "Someone")
+        pipeline.noteCurrentTrack(track)
+        let pendingDecode = pipeline.artworkRequested()
+        _ = pipeline.shouldArmSettleWindow(for: track)
+        checkTrue(pipeline.declareColorlessIfSettled(for: track) != nil, "the window expires")
+        checkTrue(pipeline.acceptsArtwork(order: pendingDecode),
+                  "the late decode still applies over the Artwork Fallback")
+    }
+
+    /// The guard is scoped to the track, not just to the request: a coverless track that settled
+    /// Colorless must not be overwritten by the *previous* track's slow decode, which would put
+    /// that track's cover and tint on screen for the current one.
+    static func testMovingToAnotherTrackSupersedesThePreviousTracksDecode() {
+        var pipeline = TintPipeline()
+        let previous = TrackIdentity(title: "Track 1", artist: "Someone")
+        let coverless = TrackIdentity(title: "Podcast", artist: "Someone Else")
+        pipeline.noteCurrentTrack(previous)
+        let pendingDecode = pipeline.artworkRequested()
+        pipeline.noteCurrentTrack(coverless)
+        _ = pipeline.shouldArmSettleWindow(for: coverless)
+        _ = pipeline.declareColorlessIfSettled(for: coverless)
+        checkTrue(!pipeline.acceptsArtwork(order: pendingDecode),
+                  "the previous track's cover must not replace the Artwork Fallback")
+    }
+
+    /// A track refining itself — an album or bundle field arriving late — is not a move, so a
+    /// decode already in flight for it stays valid.
+    static func testRefiningTheCurrentTrackDoesNotSupersedeItsDecode() {
+        var pipeline = TintPipeline()
+        let track = TrackIdentity(title: "Bubble", artist: "Samuel Kim")
+        pipeline.noteCurrentTrack(track)
+        let pendingDecode = pipeline.artworkRequested()
+        pipeline.noteCurrentTrack(track)
+        checkTrue(pipeline.acceptsArtwork(order: pendingDecode),
+                  "refining the same track is not a move")
     }
 }

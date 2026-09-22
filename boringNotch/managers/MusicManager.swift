@@ -222,6 +222,10 @@ class MusicManager: ObservableObject {
 
             let track = TrackIdentity(title: state.title, artist: state.artist)
 
+            // A decode still in flight for a different track belongs to a track the notch has
+            // left, so moving on supersedes it (docs/adr/0003, addendum).
+            tintPipeline.noteCurrentTrack(track)
+
             if artworkChanged, let artwork = state.artwork {
                 self.cancelTintSettleWindow()
                 self.updateArtwork(artwork, for: track)
@@ -543,13 +547,25 @@ class MusicManager: ObservableObject {
     }
 
     private func updateArtwork(_ artworkData: Data, for track: TrackIdentity) {
+        // Claim the order before the decode starts: a decode that returns after a newer
+        // artwork was requested must not touch the image, the fallback flag, or the tint
+        // (docs/adr/0003, addendum).
+        let order = tintPipeline.artworkRequested()
+
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
 
             if let artworkImage = NSImage(data: artworkData) {
                 DispatchQueue.main.async { [weak self] in
-                    self?.usingAppIconForArtwork = false
-                    self?.updateAlbumArt(newAlbumArt: artworkImage, provenance: .trackArtwork, track: track)
+                    guard let self else { return }
+                    guard self.tintPipeline.acceptsArtwork(order: order) else {
+                        #if DEBUG
+                        NSLog("TintPipeline: dropped stale artwork decode (order=\(order), current=\(self.tintPipeline.artworkOrder))")
+                        #endif
+                        return
+                    }
+                    self.usingAppIconForArtwork = false
+                    self.updateAlbumArt(newAlbumArt: artworkImage, provenance: .trackArtwork, track: track)
                 }
             }
         }
@@ -637,12 +653,21 @@ class MusicManager: ObservableObject {
     }
 
     // MARK: - Playback Position Estimation
-    public func estimatedPlaybackPosition(at date: Date = Date()) -> TimeInterval {
-        guard isPlaying else { return min(elapsedTime, songDuration) }
 
-        let timeDifference = date.timeIntervalSince(timestampDate)
-        let estimated = elapsedTime + (timeDifference * playbackRate)
-        return min(max(0, estimated), songDuration)
+    /// The notch's reading of the player's last position report. The progress slider derives
+    /// its displayed position from the same value.
+    var estimatedPosition: EstimatedPosition {
+        EstimatedPosition(
+            reportedAt: timestampDate,
+            elapsedTime: elapsedTime,
+            duration: songDuration,
+            playbackRate: playbackRate,
+            isPlaying: isPlaying
+        )
+    }
+
+    public func estimatedPlaybackPosition(at date: Date = Date()) -> TimeInterval {
+        estimatedPosition.at(date)
     }
 
     private func calculateAverageColor(generation: Int) {
