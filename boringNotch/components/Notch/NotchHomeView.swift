@@ -148,8 +148,8 @@ struct MusicControlsView: View {
                 font: .headline,
                 nsFont: .headline,
                 textColor: Defaults[.playerColorTinting]
-                    ? Color(nsColor: musicManager.avgColor)
-                        .ensureMinimumBrightness(factor: 0.6) : .gray,
+                    ? (musicManager.avgColor.map { Color(nsColor: $0)
+                        .ensureMinimumBrightness(factor: 0.6) } ?? .gray) : .gray,
                 frameWidth: width
             )
             .fontWeight(.medium)
@@ -470,7 +470,7 @@ struct MusicSliderView: View {
     @Binding var sliderValue: Double
     @Binding var duration: Double
     @Binding var lastDragged: Date
-    var color: NSColor
+    var color: NSColor?
     @Binding var dragging: Bool
     let currentDate: Date
     let timestampDate: Date
@@ -486,7 +486,7 @@ struct MusicSliderView: View {
                 value: $sliderValue,
                 range: 0...duration,
                 color: Defaults[.sliderColor] == SliderColorEnum.albumArt
-                    ? Color(nsColor: color).ensureMinimumBrightness(factor: 0.8)
+                    ? Color(nsColor: color ?? .white).ensureMinimumBrightness(factor: 0.8)
                     : Defaults[.sliderColor] == SliderColorEnum.accent ? .effectiveAccent : .white,
                 dragging: $dragging,
                 lastDragged: $lastDragged,
@@ -502,7 +502,7 @@ struct MusicSliderView: View {
             .fontWeight(.medium)
             .foregroundColor(
                 Defaults[.playerColorTinting]
-                    ? Color(nsColor: color).ensureMinimumBrightness(factor: 0.6) : .gray
+                    ? (color.map { Color(nsColor: $0).ensureMinimumBrightness(factor: 0.6) } ?? .gray) : .gray
             )
             .font(.caption)
         }

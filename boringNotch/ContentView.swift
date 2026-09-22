@@ -106,7 +106,7 @@ struct ContentView: View {
                     )
                     .padding([.horizontal, .bottom], vm.notchState == .open ? 12 : 0)
                     .background {
-                        let ambientColor = (musicManager.isPlaying && Defaults[.playerColorTinting]) ? Color(nsColor: musicManager.avgColor) : nil
+                        let ambientColor = (musicManager.isPlaying && Defaults[.playerColorTinting]) ? musicManager.avgColor.map { Color(nsColor: $0) } : nil
                         LiquidGlassNotchBackground(
                             shape: currentNotchShape,
                             topRadius: topCornerRadius,
@@ -353,7 +353,7 @@ struct ContentView: View {
                                   HStack(alignment: .center) {
                                       Image(systemName: "music.note")
                                       GeometryReader { geo in
-                                          MarqueeText(.constant(musicManager.songTitle + " - " + musicManager.artistName),  textColor: Defaults[.playerColorTinting] ? Color(nsColor: musicManager.avgColor).ensureMinimumBrightness(factor: 0.6) : .gray, minDuration: 1, frameWidth: geo.size.width)
+                                          MarqueeText(.constant(musicManager.songTitle + " - " + musicManager.artistName),  textColor: Defaults[.playerColorTinting] ? (musicManager.avgColor.map { Color(nsColor: $0).ensureMinimumBrightness(factor: 0.6) } ?? .gray) : .gray, minDuration: 1, frameWidth: geo.size.width)
                                       }
                                   }
                                   .foregroundStyle(.gray)
@@ -437,7 +437,7 @@ struct ContentView: View {
                             MarqueeText(
                                 .constant(musicManager.songTitle),
                                 textColor: Defaults[.coloredSpectrogram]
-                                    ? Color(nsColor: musicManager.avgColor) : Color.gray,
+                                    ? (musicManager.avgColor.map { Color(nsColor: $0) } ?? Color.gray) : Color.gray,
                                 minDuration: 0.4,
                                 frameWidth: 100
                             )
@@ -453,7 +453,7 @@ struct ContentView: View {
                                 .truncationMode(.tail)
                                 .foregroundStyle(
                                     Defaults[.coloredSpectrogram]
-                                        ? Color(nsColor: musicManager.avgColor)
+                                        ? (musicManager.avgColor.map { Color(nsColor: $0) } ?? Color.gray)
                                         : Color.gray
                                 )
                                 .opacity(
@@ -479,7 +479,7 @@ struct ContentView: View {
                     Rectangle()
                         .fill(
                             Defaults[.coloredSpectrogram]
-                                ? Color(nsColor: musicManager.avgColor).gradient
+                                ? (musicManager.avgColor.map { Color(nsColor: $0) } ?? Color.gray).gradient
                                 : Color.gray.gradient
                         )
                         .frame(width: 50, alignment: .center)

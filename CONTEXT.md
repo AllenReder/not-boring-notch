@@ -25,3 +25,21 @@ _Avoid_: Border, stroke, outline, glow
 **Ambient Music Tint**:
 A subtle, localized color wash derived from the current playing media artwork, layered between the hardware scrim and the transparent glass.
 _Avoid_: Background color, player tint, album overlay
+
+### Media Color
+
+**Tint Source**:
+The single color that the ambient music tint, the progress slider, and tinted text all render. It is derived from the current track's artwork, and from nothing else.
+_Avoid_: Album color, player tint, dominant color, accent color
+
+**Artwork Fallback**:
+The playback app's icon, displayed in place of artwork when a track has none of its own. It is a display fallback only and never becomes a Tint Source.
+_Avoid_: Album art, placeholder artwork, app icon color
+
+**Colorless**:
+The tint state of a track that offers no artwork to derive a Tint Source from. It renders as no tint, rather than as a neutral or borrowed color.
+_Avoid_: White tint, default color, gray tint, transparent tint
+
+**Tint Settle Window**:
+The grace period after the notch learns of a new track, during which it waits for artwork before declaring that track Colorless.
+_Avoid_: Debounce, fallback delay, loading timeout
