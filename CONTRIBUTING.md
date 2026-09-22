@@ -21,7 +21,9 @@ You can contribute in many ways: writing code, improving documentation, reportin
 
 ## Localizations
 
-Please submit all translations to [Crowdin](https://crowdin.com/project/boring-notch).
+The interface is localized through `boringNotch/Localizable.xcstrings`. New strings are
+added in English, and translation updates are welcome as pull requests that edit that file
+directly. This project does not use Crowdin.
 
 ## Contributing Code
 
