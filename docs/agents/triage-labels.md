@@ -16,4 +16,4 @@ Edit the right-hand column to match whatever vocabulary you actually use.
 
 ## Current state in this tracker
 
-`wontfix` already exists on `AllenReder/boring.notch` (GitHub's default set). The other four do not, so the first `/triage` run will create them on demand. No collisions with the existing default labels (`bug`, `enhancement`, `documentation`, `invalid`, `duplicate`, `question`, `good first issue`, `help wanted`, `accessibility`).
+`wontfix` already exists on `AllenReder/not-boring-notch` (GitHub's default set). The other four do not, so the first `/triage` run will create them on demand. No collisions with the existing default labels (`bug`, `enhancement`, `documentation`, `invalid`, `duplicate`, `question`, `good first issue`, `help wanted`, `accessibility`).
