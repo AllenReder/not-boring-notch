@@ -105,6 +105,16 @@ if [ ! -d "$DMG_APP_PATH" ]; then
   exit 3
 fi
 
+# Guard: an ad-hoc app with the hardened runtime enabled cannot load its own embedded
+# frameworks — library validation refuses them ("mapping process and mapped file
+# (non-platform) have different Team IDs") and the app aborts at launch. Re-sign it first;
+# see RELEASING.md. A Developer ID signature carries a team identifier and is left alone.
+APP_SIGNATURE="$(codesign -dv "$DMG_APP_PATH" 2>&1 || true)"
+if echo "$APP_SIGNATURE" | grep -q "flags=.*runtime" && echo "$APP_SIGNATURE" | grep -q "TeamIdentifier=not set"; then
+  die "$DMG_APP_PATH is ad-hoc signed with the hardened runtime enabled, so the DMG it produces would abort at launch. Re-sign it first:
+  codesign --force --deep --sign - --preserve-metadata=entitlements \"$DMG_APP_PATH\""
+fi
+
 dmgbuild -s "$SETTINGS" "$DMG_VOLUME_NAME" "$DMG_OUTPUT"
 
 exit $?
