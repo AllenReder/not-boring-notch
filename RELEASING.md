@@ -62,9 +62,17 @@ git tag -a vX.Y.Z -m "Not Boring Notch X.Y.Z"
 git push origin main --tags
 ```
 
-Then create a GitHub Release for the tag, choose **Generate release notes** (its categories
-come from `.github/release.yml`), edit those notes into something a user can read, and attach
-the DMG.
+Then publish the Release for the tag and attach the DMG:
+
+```bash
+gh release create vX.Y.Z "build/release/Not-Boring-Notch-vX.Y.Z.dmg" \
+  --title "Not Boring Notch vX.Y.Z" --notes-file <body.md>
+```
+
+Write the body from [`docs/release-notes-template.md`](docs/release-notes-template.md).
+`gh release create --generate-notes` is the alternative: it groups the commit list by the
+`.github/release.yml` categories, which is a starting point to edit down rather than something
+to publish as-is.
 
 ## 6. Confirm the issue form was updated
 
