@@ -19,7 +19,10 @@
 # Both contents and paths are checked, because `boring.m4a` and
 # `Assets.xcassets/theboringteam.imageset/` carry the old name in the file name alone.
 #
-# An occurrence is a violation unless Configuration/branding-allowlist.txt exempts it.
+# An occurrence is a violation unless Configuration/branding-allowlist.txt exempts it. That
+# file is never scanned, and needs no entry saying so: it is made of the token, since every
+# entry names a fragment to excuse, so scanning it would make it fail on itself. The two gates'
+# own source files are a different matter — they are exempted in the allowlist, with reasons.
 #
 # Exit status: 0 when clean, 1 when the old brand was found.
 #
@@ -32,22 +35,12 @@ ROOT="${CHECK_BRANDING_ROOT:-$(git rev-parse --show-toplevel)}"
 ALLOWLIST="${CHECK_BRANDING_ALLOWLIST:-$ROOT/Configuration/branding-allowlist.txt}"
 FILELIST="${CHECK_BRANDING_FILES:-}"
 
-# Files that must contain the forbidden token by construction: the gate's own patterns, its
-# fixtures, and the allowlist. Exempting them here rather than in the allowlist keeps the
-# allowlist about the repository instead of about the gate.
-SELF_EXEMPT=(
-  "scripts/check-branding.sh"
-  "Tests/BrandingGateTests.sh"
-  "Configuration/branding-allowlist.txt"
-)
-
 # The brand this repository renames *to*. Each is stripped before a line is tested.
 # `Not-Boring-Notch` is the DMG file name RELEASING.md builds, and it contains `Boring`.
 LEGIT_FORMS=(
   "Not_Boring_Notch"
   "Not-Boring-Notch"
   "NotBoringNotch"
-  "notBoringNotch"
   "notboringnotch"
   "not-boring-notch"
   "Not Boring Notch"
@@ -87,11 +80,13 @@ else
   ) | LC_ALL=C sort -u > "$TMP_FILELIST"
 fi
 
-# Allowlist entries, split by kind. `path` entries exempt a path; `line` entries exempt
-# occurrences of a fragment in files whose path matches the glob.
+# Allowlist entries, split by kind. `path` exempts a path; `line` exempts occurrences of a
+# fragment in files whose path matches the glob; `file` exempts a whole file, which is for the
+# handful of files made of the token itself.
 PATH_GLOBS=()
 LINE_GLOBS=()
 LINE_FRAGMENTS=()
+FILE_GLOBS=()
 
 if [ -f "$ALLOWLIST" ]; then
   # The trailing `|| [ -n "$kind" ]` matters: `read` returns non-zero when the last line
@@ -101,6 +96,7 @@ if [ -f "$ALLOWLIST" ]; then
     case "$kind" in
       ''|\#*) continue ;;
       path) PATH_GLOBS+=("${glob:-}") ;;
+      file) FILE_GLOBS+=("${glob:-}") ;;
       line)
         if [ -z "${fragment:-}" ] || [ "$fragment" = "-" ]; then
           printf '⚠️  allowlist entry needs a fragment: %s|%s\n' "$kind" "$glob" >&2
@@ -116,10 +112,11 @@ if [ -f "$ALLOWLIST" ]; then
   done < "$ALLOWLIST"
 fi
 
-is_self_exempt() {
-  local p="$1" exempt
-  for exempt in "${SELF_EXEMPT[@]}"; do
-    [ "$p" = "$exempt" ] && return 0
+is_file_exempt() {
+  local p="$1" i=0
+  while [ "$i" -lt "${#FILE_GLOBS[@]}" ]; do
+    case "$p" in ${FILE_GLOBS[$i]}) return 0 ;; esac
+    i=$((i + 1))
   done
   return 1
 }
@@ -150,7 +147,8 @@ trap 'rm -f "$TMP_FILELIST" "$VIOLATIONS"' EXIT
 while IFS= read -r path; do
   [ -n "$path" ] || continue
   [ -d "$path" ] && continue
-  is_self_exempt "$path" && continue
+  is_file_exempt "$path" && continue
+  [ "$ROOT/$path" = "$ALLOWLIST" ] && continue
 
   # The path itself: `BoringNotch/App.swift`, `Assets.xcassets/theboringteam.imageset/…`
   if has_brand "$(strip_legit_forms "$path")" && ! path_is_allowlisted "$path"; then

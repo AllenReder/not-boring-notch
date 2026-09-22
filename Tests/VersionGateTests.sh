@@ -10,6 +10,8 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=Support/GateTestHarness.sh
+. "$(dirname "$0")/Support/GateTestHarness.sh"
 GATE="$ROOT/scripts/check-version.sh"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -55,45 +57,6 @@ run_gate() {  # run_gate [args...]
   CHECK_VERSION_REPO="$REPO" bash "$GATE" "$@" > "$WORK/gate-output" 2>&1
 }
 
-expect_clean() {  # expect_clean <description> [args...]
-  local description="$1"; shift
-  run_gate "$@"
-  local status=$?
-  if [ "$status" -eq 0 ]; then
-    printf '✅ %s\n' "$description"
-    passed=$((passed + 1))
-  else
-    printf '❌ %s\n   expected a clean run, got exit %s:\n' "$description" "$status"
-    sed 's/^/   /' "$WORK/gate-output"
-    failed=$((failed + 1))
-  fi
-}
-
-expect_failure() {  # expect_failure <description> [args...]
-  local description="$1"; shift
-  run_gate "$@"
-  local status=$?
-  if [ "$status" -eq 1 ]; then
-    printf '✅ %s\n' "$description"
-    passed=$((passed + 1))
-  else
-    printf '❌ %s\n   expected exit 1, got %s:\n' "$description" "$status"
-    sed 's/^/   /' "$WORK/gate-output"
-    failed=$((failed + 1))
-  fi
-}
-
-expect_reported() {  # expect_reported <description> <substring>
-  if grep -qF -- "$2" "$WORK/gate-output"; then
-    printf '✅ %s\n' "$1"
-    passed=$((passed + 1))
-  else
-    printf '❌ %s\n   the report never mentions %s:\n' "$1" "$2"
-    sed 's/^/   /' "$WORK/gate-output"
-    failed=$((failed + 1))
-  fi
-}
-
 printf '\n=== the four copies are in step ===\n'
 
 reset_repo "1.0.2/3 1.0.2/3 1.0.2/3 1.0.2/3"
@@ -134,8 +97,4 @@ reset_repo "1.0.2/3 1.0.2/3 1.0.2/3 1.0.2/3"
 commit_and_tag
 expect_failure "no tag at HEAD, so there is nothing to publish against" --expect-tag
 
-printf '\n%d passed, %d failed\n' "$passed" "$failed"
-
-if [ "$failed" -ne 0 ]; then
-  exit 1
-fi
+report_and_exit

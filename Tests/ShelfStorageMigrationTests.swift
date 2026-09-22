@@ -13,8 +13,9 @@
 //  name below is spelled out rather than read from the production constant: a test that
 //  asked the implementation what its own legacy name was would pass against a typo.
 //
-//  Helper names are prefixed (`check*`) so they stay distinguishable from the helpers
-//  in the other standalone runners in this folder.
+//  Helper names are prefixed — `check*` for the assertions, `shelf*` for this runner's
+//  fixtures — so they stay distinguishable from the helpers in the other standalone runners
+//  in this folder, which are compiled separately but must not read as if they shared a scope.
 //
 
 import Foundation
@@ -37,21 +38,21 @@ func checkTrue(_ condition: Bool, _ message: String = "",
 
 /// An empty Application Support directory of the kind the app is handed, under a unique
 /// name so that runners never share one.
-func makeSupportDirectory() -> URL {
+func shelfSupportDirectory() -> URL {
     let url = FileManager.default.temporaryDirectory
         .appendingPathComponent("shelf-storage-tests-\(UUID().uuidString)", isDirectory: true)
     try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
 }
 
-func writeShelf(_ body: String, under name: String, in support: URL) {
+func shelfWrite(_ body: String, under name: String, in support: URL) {
     let shelf = support.appendingPathComponent(name, isDirectory: true)
         .appendingPathComponent("Shelf", isDirectory: true)
     try? FileManager.default.createDirectory(at: shelf, withIntermediateDirectories: true)
     try? body.write(to: shelf.appendingPathComponent("items.json"), atomically: true, encoding: .utf8)
 }
 
-func contents(at url: URL) -> String? {
+func shelfContents(at url: URL) -> String? {
     try? String(contentsOf: url, encoding: .utf8)
 }
 
@@ -69,8 +70,8 @@ struct ShelfStorageMigrationTestsRunner {
     /// The behaviour this file exists for: the items somebody staged under the old directory
     /// are still there after the rename.
     static func testAdoptsTheShelfAnOlderBuildLeftBehind() {
-        let support = makeSupportDirectory()
-        writeShelf("[staged before the rename]", under: "boringNotch", in: support)
+        let support = shelfSupportDirectory()
+        shelfWrite("[staged before the rename]", under: "boringNotch", in: support)
 
         let items = ShelfStorage.itemsFile(applicationSupport: support)
 
@@ -79,7 +80,7 @@ struct ShelfStorageMigrationTestsRunner {
             .appendingPathComponent("Shelf", isDirectory: true)
             .appendingPathComponent("items.json"),
             "the shelf now lives under the new name")
-        checkEqual(contents(at: items), "[staged before the rename]",
+        checkEqual(shelfContents(at: items), "[staged before the rename]",
             "the items staged under the old name survived the move")
         checkTrue(!FileManager.default.fileExists(atPath: support
             .appendingPathComponent("boringNotch").path),
@@ -87,15 +88,15 @@ struct ShelfStorageMigrationTestsRunner {
     }
 
     static func testPrefersTheNewDirectoryWhenBothExist() {
-        let support = makeSupportDirectory()
-        writeShelf("[old]", under: "boringNotch", in: support)
-        writeShelf("[new]", under: "NotBoringNotch", in: support)
+        let support = shelfSupportDirectory()
+        shelfWrite("[old]", under: "boringNotch", in: support)
+        shelfWrite("[new]", under: "NotBoringNotch", in: support)
 
         let items = ShelfStorage.itemsFile(applicationSupport: support)
 
-        checkEqual(contents(at: items), "[new]",
+        checkEqual(shelfContents(at: items), "[new]",
             "an existing shelf under the new name is never overwritten")
-        checkEqual(contents(at: support
+        checkEqual(shelfContents(at: support
             .appendingPathComponent("boringNotch", isDirectory: true)
             .appendingPathComponent("Shelf", isDirectory: true)
             .appendingPathComponent("items.json")), "[old]",
@@ -105,7 +106,7 @@ struct ShelfStorageMigrationTestsRunner {
     /// Creating the directory is the caller's job, and it already did it before the rename.
     /// This exists so the migration does not quietly take on a second responsibility.
     static func testCreatesNothingWhenThereIsNothingToAdopt() {
-        let support = makeSupportDirectory()
+        let support = shelfSupportDirectory()
 
         let items = ShelfStorage.itemsFile(applicationSupport: support)
 
@@ -120,20 +121,20 @@ struct ShelfStorageMigrationTestsRunner {
     }
 
     static func testAdoptionIsIdempotent() {
-        let support = makeSupportDirectory()
-        writeShelf("[staged]", under: "boringNotch", in: support)
+        let support = shelfSupportDirectory()
+        shelfWrite("[staged]", under: "boringNotch", in: support)
 
         let first = ShelfStorage.itemsFile(applicationSupport: support)
         let second = ShelfStorage.itemsFile(applicationSupport: support)
 
         checkEqual(first, second, "the same path on both launches")
-        checkEqual(contents(at: second), "[staged]",
+        checkEqual(shelfContents(at: second), "[staged]",
             "the second launch does not lose what the first one adopted")
     }
 
     static func testTheShelfDirectorySitsUnderTheNewName() {
-        let support = makeSupportDirectory()
-        writeShelf("[staged]", under: "boringNotch", in: support)
+        let support = shelfSupportDirectory()
+        shelfWrite("[staged]", under: "boringNotch", in: support)
 
         checkEqual(ShelfStorage.directory(applicationSupport: support), support
             .appendingPathComponent("NotBoringNotch", isDirectory: true)

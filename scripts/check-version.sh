@@ -9,14 +9,14 @@
 # apart from inside the app. The gate is one grep over the project file — and it is the
 # reason that promise no longer lives only in a paragraph.
 #
-#   ./scripts/check-version.sh                 check the readme's invariant
+#   ./scripts/check-version.sh                 check the invariant RELEASING.md step 2 asks for
 #   ./scripts/check-version.sh --expect-tag    also assert the tag being released matches
 #
 # --expect-tag belongs to step 6 of RELEASING.md, next to `git tag`. CI runs the plain form:
 # a branch is legitimately between a version bump and its tag, so comparing against a tag
 # there would fail on a healthy tree.
 #
-# Exit status: 0 when the copies agree, 1 when they do not.
+# Exit status: 0 when the copies agree, 1 when they do not, 2 for an unknown argument.
 #
 # Tested by Tests/VersionGateTests.sh.
 #

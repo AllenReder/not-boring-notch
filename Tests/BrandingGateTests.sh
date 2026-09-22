@@ -15,9 +15,14 @@
 # neighbouring file, or that swallows a second violation on the same line, is a gate
 # that has quietly stopped working.
 #
+# The assertion helpers are in Tests/Support/GateTestHarness.sh, shared with the other gate's
+# runner so that "expect a violation" means one thing in both.
+#
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=Support/GateTestHarness.sh
+. "$(dirname "$0")/Support/GateTestHarness.sh"
 GATE="$ROOT/scripts/check-branding.sh"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -53,47 +58,13 @@ run_gate_verbatim() {
 }
 
 # run_gate <allowlist-contents> — with the trailing newline an editor would leave.
+#
+# This is the seam the shared harness calls: expect_clean/expect_failure pass their trailing
+# arguments straight through, and for this gate the only argument is the allowlist. Cases that
+# name no allowlist get an empty one.
 run_gate() {
-  run_gate_verbatim "$1
+  run_gate_verbatim "${1:-}
 "
-}
-
-expect_clean() {  # expect_clean <description> [allowlist]
-  run_gate "${2:-}"
-  local status=$?
-  if [ "$status" -eq 0 ]; then
-    printf '✅ %s\n' "$1"
-    passed=$((passed + 1))
-  else
-    printf '❌ %s\n   expected a clean run, got exit %s:\n' "$1" "$status"
-    sed 's/^/   /' "$WORK/gate-output"
-    failed=$((failed + 1))
-  fi
-}
-
-expect_violation() {  # expect_violation <description> [allowlist]
-  run_gate "${2:-}"
-  local status=$?
-  if [ "$status" -eq 1 ]; then
-    printf '✅ %s\n' "$1"
-    passed=$((passed + 1))
-  else
-    printf '❌ %s\n   expected exit 1, got %s:\n' "$1" "$status"
-    sed 's/^/   /' "$WORK/gate-output"
-    failed=$((failed + 1))
-  fi
-}
-
-# Asserts against the output of the most recent run_gate.
-expect_reported() {  # expect_reported <description> <substring>
-  if grep -qF -- "$2" "$WORK/gate-output"; then
-    printf '✅ %s\n' "$1"
-    passed=$((passed + 1))
-  else
-    printf '❌ %s\n   the report never mentions %s:\n' "$1" "$2"
-    sed 's/^/   /' "$WORK/gate-output"
-    failed=$((failed + 1))
-  fi
 }
 
 printf '\n=== the correct brand is never a violation ===\n'
@@ -107,49 +78,54 @@ write_file "NotBoringNotch/XPCHelper/XPCHelperClient.swift" \
   'private let serviceName = "com.allenreder.notboringnotch.NotBoringNotchXPCHelper"'
 write_file "README.md" "Not Boring Notch, cloned from not-boring-notch"
 write_file "RELEASING.md" 'gh release create vX.Y.Z "build/release/Not-Boring-Notch-vX.Y.Z.dmg"'
-write_file "notBoringNotch/legacy-casing.swift" "//  notBoringNotch"
 expect_clean "every spelling of the correct brand passes, including the substrings that contain the old one"
 
 printf '\n=== the old brand in a file is a violation ===\n'
 
 reset_fixture
 write_file "boringNotch/models/TintPipeline.swift" "//  boringNotch"
-expect_violation "the old directory name in a file header"
+expect_failure "the old directory name in a file header"
 
 reset_fixture
 write_file "NotBoringNotch/legacy.swift" "//  created for BoringNotch"
-expect_violation "the old target name in prose"
+expect_failure "the old target name in prose"
 
 reset_fixture
 write_file "docs/agents/issue-tracker.md" "upstream lives at TheBoredTeam/boring.notch"
-expect_violation "the upstream repository slug"
+expect_failure "the upstream repository slug"
 
 reset_fixture
 write_file ".github/ISSUE_TEMPLATE/bug-report.yml" "      label: Boring Notch Version"
-expect_violation "the old brand as two words"
+expect_failure "the old brand as two words"
 
 reset_fixture
 write_file "XPCHelper/Protocol.swift" '"theboringteam.boringnotch.BoringNotchXPCHelper"'
-expect_violation "the old team prefix"
+expect_failure "the old team prefix"
 
 reset_fixture
 write_file "NotBoringNotch/components/Notch/BoringHeader.swift" "struct BoringHeader {}"
-expect_violation "a bare Boring type name"
+expect_failure "a bare Boring type name"
+
+# The correct brand is PascalCase. The old lowerCamel casing is not a spelling to tolerate:
+# a `notBoringNotch/` directory would be the only one in the tree shaped that way.
+reset_fixture
+write_file "notBoringNotch/legacy-casing.swift" "//  notBoringNotch"
+expect_failure "the old lowerCamel casing, which would leave an inconsistently-cased directory"
 
 printf '\n=== the old brand in a path is a violation ===\n'
 
 reset_fixture
 write_file "BoringNotch/NotBoringNotchApp.swift" "clean"
-expect_violation "the old directory in the path itself"
+expect_failure "the old directory in the path itself"
 expect_reported "the violation report names the offending path" "BoringNotch/NotBoringNotchApp.swift"
 
 reset_fixture
 write_file "NotBoringNotch/Assets.xcassets/theboringteam.imageset/Contents.json" "clean"
-expect_violation "an old-brand asset name in the path itself"
+expect_failure "an old-brand asset name in the path itself"
 
 reset_fixture
 write_file "NotBoringNotch/Assets.xcassets/logo2.imageset/BoringNotch icon.png" "clean"
-expect_violation "an old-brand file name containing a space"
+expect_failure "an old-brand file name containing a space"
 
 printf '\n=== the allowlist exempts what it names, and nothing else ===\n'
 
@@ -160,12 +136,12 @@ expect_clean "a line entry exempts the fragment it names" \
 
 reset_fixture
 write_file "AGENTS.md" "issues live on AllenReder/boring.notch"
-expect_violation "a line entry for another file does not exempt this one" \
+expect_failure "a line entry for another file does not exempt this one" \
   'line|LICENSE|(boring.notch)|upstream copyright notice'
 
 reset_fixture
 write_file "LICENSE" "upstream (boring.notch) — and also boringNotch"
-expect_violation "an entry does not swallow a second violation on the same line" \
+expect_failure "an entry does not swallow a second violation on the same line" \
   'line|LICENSE|(boring.notch)|upstream copyright notice'
 
 reset_fixture
@@ -175,8 +151,27 @@ expect_clean "a path entry exempts the path it names" \
 
 reset_fixture
 write_file "NotBoringNotch/Assets.xcassets/theboringteam.imageset/Contents.json" "// boringNotch"
-expect_violation "a path entry does not exempt the file's contents" \
+expect_failure "a path entry does not exempt the file's contents" \
   'path|NotBoringNotch/Assets.xcassets/theboringteam.imageset/*|-|upstream logo, no code references'
+
+# `file` entries are for the handful of files made of the token itself — the gate's own
+# patterns and its fixtures — so that they are excused in the allowlist, with a reason, rather
+# than by a list hidden in the script.
+reset_fixture
+write_file "scripts/check-branding.sh" "the token, by construction: boringNotch"
+write_file "NotBoringNotch/models/Constants.swift" "//  boringNotch"
+expect_failure "a file entry for one path does not exempt another" \
+  'file|scripts/check-branding.sh|-|defines the token'
+
+reset_fixture
+write_file "scripts/check-branding.sh" "the token, by construction: boringNotch"
+expect_clean "a file entry exempts the contents of the file it names" \
+  'file|scripts/check-branding.sh|-|defines the token'
+
+reset_fixture
+write_file "boringNotch/Old.swift" "//  boringNotch"
+expect_clean "a file entry exempts a path that carries the token too" \
+  'file|boringNotch/*|-|a directory made of the token'
 
 reset_fixture
 write_file "NotBoringNotch/models/Constants.swift" "//  boringNotch"
@@ -225,8 +220,4 @@ else
 fi
 expect_reported "the report names the file that is not committed yet" "not-added-yet.swift"
 
-printf '\n%d passed, %d failed\n' "$passed" "$failed"
-
-if [ "$failed" -ne 0 ]; then
-  exit 1
-fi
+report_and_exit

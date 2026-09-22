@@ -1,4 +1,4 @@
-# 0006. The rebrand reaches the skeleton
+# 0006. The Rebrand Reaches the Skeleton
 
 ## Context
 
