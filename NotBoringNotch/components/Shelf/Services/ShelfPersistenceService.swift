@@ -20,11 +20,7 @@ final class ShelfPersistenceService {
 
     private init() {
         let fm = FileManager.default
-        let support = try? fm.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        // Adopts the directory an older build wrote to, if this is the first launch since the
-        // rename. See ShelfStorage.
-        let fileURL = ShelfStorage.itemsFile(applicationSupport: support ?? fm.temporaryDirectory,
-                                             fileManager: fm)
+        let fileURL = ShelfStorage.itemsFile(fileManager: fm)
         try? fm.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         self.fileURL = fileURL
         encoder.outputFormatting = [.prettyPrinted]
@@ -52,6 +48,15 @@ final class ShelfPersistenceService {
             var failedCount = 0
             
             for (index, jsonItem) in jsonArray.enumerated() {
+                // `data(withJSONObject:)` raises an ObjC exception — which `do`/`catch` cannot see —
+                // when the object is not a JSON container. A file whose array holds anything else
+                // aborted the app during launch, before this guard: +[NSJSONSerialization
+                // dataWithJSONObject:options:error:]: Invalid top-level type in JSON write.
+                guard JSONSerialization.isValidJSONObject(jsonItem) else {
+                    failedCount += 1
+                    print("⚠️ Failed to decode shelf item at index \(index): not a JSON object")
+                    continue
+                }
                 do {
                     let itemData = try JSONSerialization.data(withJSONObject: jsonItem)
                     let item = try decoder.decode(ShelfItem.self, from: itemData)
