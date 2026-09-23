@@ -12,6 +12,8 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=Support/GateTestHarness.sh
 . "$(dirname "$0")/Support/GateTestHarness.sh"
+# shellcheck source=Support/PbxprojFixture.sh
+. "$(dirname "$0")/Support/PbxprojFixture.sh"
 GATE="$ROOT/scripts/check-version.sh"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -21,25 +23,8 @@ REPO="$WORK/repo"
 passed=0
 failed=0
 
-# write_pbxproj <repo-dir> <"marketing/build" ...>
-#
-# The settings are written in the shape Xcode writes them, one pair per build configuration.
-write_pbxproj() {
-  local repo="$1" spec="$2" pair
-  mkdir -p "$repo/Any.xcodeproj"
-  : > "$repo/Any.xcodeproj/project.pbxproj"
-  for pair in $spec; do
-    {
-      printf '\t\t\t\tCODE_SIGN_STYLE = Automatic;\n'
-      printf '\t\t\t\tCURRENT_PROJECT_VERSION = %s;\n' "${pair#*/}"
-      printf '\t\t\t\tGENERATE_INFOPLIST_FILE = YES;\n'
-      printf '\t\t\t\tMARKETING_VERSION = %s;\n' "${pair%%/*}"
-    } >> "$repo/Any.xcodeproj/project.pbxproj"
-  done
-}
-
-# A repository whose name says nothing about the brand: the gate has to find the project
-# rather than be told where it is, or the rename would have to edit this script too.
+# A repository whose name says nothing about the brand: the gate has to find the project rather
+# than be told where it is, or the rename would have to edit this script too.
 reset_repo() {  # reset_repo <"marketing/build" ...>
   rm -rf "$REPO"
   mkdir -p "$REPO"

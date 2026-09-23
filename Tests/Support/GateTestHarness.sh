@@ -58,8 +58,19 @@ expect_reported() {  # expect_reported <description> <substring>
   fi
 }
 
-report_and_exit() {
-  printf '\n%d passed, %d failed\n' "$passed" "$failed"
+# Compares two values. For what a runner asserts about a file it wrote, rather than about a
+# gate's exit status.
+expect_equal() {  # expect_equal <description> <actual> <expected>
+  if [ "$2" = "$3" ]; then
+    printf '✅ %s\n' "$1"
+    passed=$((passed + 1))
+  else
+    printf '❌ %s\n   expected [%s], got [%s]\n' "$1" "$3" "$2"
+    failed=$((failed + 1))
+  fi
+}
+
+report_and_exit() {  printf '\n%d passed, %d failed\n' "$passed" "$failed"
   if [ "$failed" -ne 0 ]; then
     exit 1
   fi

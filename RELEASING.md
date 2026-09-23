@@ -25,14 +25,16 @@ CI (`cicd.yml`) runs all three plus a Release build on every push and pull reque
 configurations each — and all four copies have to agree:
 
 ```bash
-$EDITOR NotBoringNotch.xcodeproj/project.pbxproj
-./scripts/check-version.sh          # names every copy that disagrees
+./scripts/set-version.sh X.Y.Z N     # writes all eight values, then checks them
 git commit -am "chore(release): bump version to X.Y.Z"
 ```
 
-Missing one of the four is not a build error. It is a build that reports a version nobody
-released, which is what the About pane did once already. That is why the check is a script and
-a CI step rather than a paragraph of this file.
+Writing one and missing another is not a build error. It is a build that reports a version nobody
+released, which is what the About pane did once already. `set-version.sh` writes every copy in one
+go and then runs `check-version.sh`, whose predicate is exactly its own postcondition — so the
+step either ends with the eight values agreeing or with a named reason it could not make them.
+CI runs that same check on every push, so a copy edited by hand afterwards cannot quietly
+disagree either.
 
 ## 3. Build the release app
 

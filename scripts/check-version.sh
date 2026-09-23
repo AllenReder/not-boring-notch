@@ -24,12 +24,8 @@ set -euo pipefail
 
 REPO="${CHECK_VERSION_REPO:-$(git rev-parse --show-toplevel)}"
 
-# Worse than a rename: this script must not hardcode the project's name, or renaming the
-# project would have to edit the gate that is supposed to notice such mistakes.
-PROJECTS=()
-for candidate in "$REPO"/*.xcodeproj; do
-  [ -d "$candidate" ] && PROJECTS+=("$candidate")
-done
+# shellcheck source=lib/xcode-project.sh
+. "$(dirname "$0")/lib/xcode-project.sh"
 
 EXPECT_TAG=0
 for argument in "$@"; do
@@ -39,17 +35,7 @@ for argument in "$@"; do
   esac
 done
 
-if [ "${#PROJECTS[@]}" -ne 1 ]; then
-  printf '❌ expected exactly one .xcodeproj in %s, found %s\n' "$REPO" "${#PROJECTS[@]}"
-  exit 1
-fi
-
-PBXPROJ="${PROJECTS[0]}/project.pbxproj"
-
-if [ ! -f "$PBXPROJ" ]; then
-  printf '❌ no project.pbxproj at %s\n' "$PBXPROJ"
-  exit 1
-fi
+PBXPROJ="$(pbxproject_in "$REPO")" || exit 1
 
 # Values of a build setting, in file order, without the surrounding quotes.
 values_of() {
