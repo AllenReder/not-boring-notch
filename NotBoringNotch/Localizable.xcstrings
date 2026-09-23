@@ -1001,6 +1001,57 @@
         }
       }
     },
+    "Any process running as you can read this. It keeps web pages and sandboxed apps out, which is what it is for." : {
+
+    },
+    "Channel" : {
+
+    },
+    "Connection" : {
+
+    },
+    "Copy example" : {
+
+    },
+    "Copy" : {
+
+    },
+    "Discovery file" : {
+
+    },
+    "Dismiss" : {
+
+    },
+    "Integrations" : {
+
+    },
+    "Let another app or a script raise a reminder in the notch. The channel listens on 127.0.0.1, so nothing on your network can reach it, and it needs the token below." : {
+
+    },
+    "Listening on 127.0.0.1:%u" : {
+
+    },
+    "Port" : {
+
+    },
+    "Regenerate" : {
+
+    },
+    "Reminder Channel" : {
+
+    },
+    "Send test reminder" : {
+
+    },
+    "Show in Finder" : {
+
+    },
+    "Token" : {
+
+    },
+    "Try it" : {
+
+    },
     "• Bug fixes" : {
       "localizations" : {
         "ar" : {

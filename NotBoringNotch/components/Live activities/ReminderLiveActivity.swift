@@ -95,9 +95,26 @@ struct ReminderLiveActivity: View {
             .frame(width: sideWidth, height: sideWidth, alignment: .center)
         }
         .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)
-        .onAppear { ReminderChannel.shared.reminderDidAppear(reminder) }
-        .onChange(of: reminder) { _, replacement in
-            ReminderChannel.shared.reminderDidAppear(replacement)
-        }
+        .reminderClock(reminder)
+    }
+}
+
+/// Starts a Reminder's clock when the Reminder is drawn — the closed notch and the open detail
+/// both use this, so which one is on screen can never change how long a Reminder is given.
+private struct ReminderClock: ViewModifier {
+    let reminder: Reminder
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear { ReminderChannel.shared.startShowing(reminder) }
+            .onChange(of: reminder) { _, replacement in
+                ReminderChannel.shared.startShowing(replacement)
+            }
+    }
+}
+
+extension View {
+    func reminderClock(_ reminder: Reminder) -> some View {
+        modifier(ReminderClock(reminder: reminder))
     }
 }

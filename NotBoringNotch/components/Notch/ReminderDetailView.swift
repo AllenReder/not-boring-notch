@@ -66,9 +66,6 @@ struct ReminderDetailView: View {
         }
         .padding(.top, 2)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .onAppear { ReminderChannel.shared.reminderDidAppear(reminder) }
-        .onChange(of: reminder) { _, replacement in
-            ReminderChannel.shared.reminderDidAppear(replacement)
-        }
+        .reminderClock(reminder)
     }
 }

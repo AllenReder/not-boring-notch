@@ -99,7 +99,7 @@ struct IntegrationsSettings: View {
 
                     HStack {
                         Button("Copy example") { copy(example) }
-                        Button("Send test reminder") { channel.sendTestReminder() }
+                        Button("Send test reminder") { channel.enqueue(testReminder) }
                     }
                 } header: {
                     Text("Try it")
@@ -137,6 +137,23 @@ struct IntegrationsSettings: View {
                "body":"12 files typechecked, 0 errors.",
                "duration":6}'
         """
+    }
+
+    /// A fixture rather than a feature: the pane's own Reminder, so the shape can be seen
+    /// without wiring up a client first.
+    private var testReminder: Reminder {
+        Reminder(
+            id: UUID().uuidString,
+            icon: .symbol("bell.badge"),
+            title: "Test reminder",
+            subtitle: "From the Integrations settings",
+            body: "This is what a Reminder looks like. Hover the notch to read the whole thing, "
+                + "or press the × to dismiss it.",
+            duration: 8,
+            isSticky: false,
+            sound: .none,
+            action: nil
+        )
     }
 
     private func copy(_ text: String) {

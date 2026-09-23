@@ -99,7 +99,8 @@ notch's own bell rather than an empty square.
 | `400` | `{"error":"missing_title"}` and friends | The payload was there but wrong. |
 | `401` | `{"error":"unauthorized"}` | Missing or wrong token. |
 | `403` | `{"error":"forbidden_origin"}` | The request carried an `Origin` header, so it came from a browser. |
-| `404` / `405` | `{"error":"not_found"}` | Wrong path or method. Only `POST /reminder` exists. |
+| `404` | `{"error":"not_found"}` | Wrong path. Only `POST /reminder` exists. |
+| `405` | `{"error":"method_not_allowed"}` | Wrong method. |
 | `411` | `{"error":"length_required"}` | No `Content-Length`. |
 | `413` | `{"error":"too_large"}` | Body over 64 KiB. |
 | `415` | `{"error":"unsupported_media_type"}` | `Content-Type` was not `application/json`. |
@@ -113,7 +114,8 @@ cap bounds memory, not what you are allowed to say.
 ## What the user sees
 
 - **Closed notch** — the icon, title, and subtitle slide out beside the camera housing, taking the
-  same slot the music live activity uses. A `×` dismisses early.
+  same slot the music live activity uses. A `×` dismisses early. A title too long for the slot
+  ends in an ellipsis; the body is never truncated, only scrolled.
 - **Hover** — the notch opens onto the full body, the action button if there is one, and Dismiss.
 - **One at a time** — a further five Reminders wait their turn; past that the oldest waiter is
   dropped, so a sender in a loop cannot flood the notch.

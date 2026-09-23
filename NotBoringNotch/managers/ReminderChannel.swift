@@ -10,7 +10,6 @@ import AppKit
 import Combine
 import Defaults
 import Foundation
-import SwiftUI
 
 /// The Reminder Channel: a loopback HTTP port an external process posts Reminders to.
 ///
@@ -35,16 +34,19 @@ final class ReminderChannel: ObservableObject {
         let endpoint: String
     }
 
-    @Published private(set) var queue = ReminderQueue()
+    @Published private var queue = ReminderQueue()
     @Published private(set) var status: Status = .off
     /// Where the port and token are published for clients to read, once the channel is up.
     @Published private(set) var discoveryPath: String?
 
+    /// The Reminder the notch is showing, if any.
     var visible: Reminder? { queue.visible }
-    var waitingCount: Int { queue.waiting.count }
 
     private let server = ReminderChannelServer()
     private var dismissTask: Task<Void, Never>?
+    /// The Reminder whose clock is running, so that drawing the same one again does not
+    /// refund its duration.
+    private var clocked: Reminder?
     private var cancellables = Set<AnyCancellable>()
     private var started = false
 
@@ -78,7 +80,11 @@ final class ReminderChannel: ObservableObject {
     var port: Int { Defaults[.reminderChannelPort] }
     var token: String { Defaults[.reminderChannelToken] }
 
-    var endpoint: String { "http://127.0.0.1:\(port)/reminder" }
+    var endpoint: String { Self.endpoint(port: port) }
+
+    private static func endpoint(port: Int) -> String {
+        "http://127.0.0.1:\(port)/reminder"
+    }
 
     func regenerateToken() {
         Defaults[.reminderChannelToken] = Self.newToken()
@@ -91,6 +97,7 @@ final class ReminderChannel: ObservableObject {
         guard Defaults[.reminderChannelEnabled] else {
             server.stop()
             dismissTask?.cancel()
+            clocked = nil
             queue = ReminderQueue()
             status = .off
             removeDiscoveryFile()
@@ -135,7 +142,7 @@ final class ReminderChannel: ObservableObject {
     private func writeDiscoveryFile(port: UInt16) {
         guard let url = discoveryURL else { return }
         let discovery = Discovery(port: Int(port), token: token,
-                                  endpoint: "http://127.0.0.1:\(port)/reminder")
+                                  endpoint: Self.endpoint(port: Int(port)))
         do {
             try FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
                                                    withIntermediateDirectories: true)
@@ -160,11 +167,13 @@ final class ReminderChannel: ObservableObject {
         queue.enqueue(reminder)
     }
 
-    /// Called by the view that is actually drawing the Reminder — the one place its clock can
-    /// start. A Reminder that arrives while the notch is hidden therefore keeps its whole
-    /// duration for when it appears, and one that is replaced by newer content starts again.
-    func reminderDidAppear(_ reminder: Reminder) {
-        guard queue.visible?.id == reminder.id else { return }
+    /// Called by whatever view is drawing the Reminder, which is the one place its clock can
+    /// start. A Reminder that arrives while the notch is hidden keeps its whole duration for
+    /// when it appears. Drawing it again — opening the notch and closing it — does not restart
+    /// the clock; a sender replacing its content under the same id does.
+    func startShowing(_ reminder: Reminder) {
+        guard queue.visible?.id == reminder.id, clocked != reminder else { return }
+        clocked = reminder
 
         if reminder.sound == .standard {
             playAlert()
@@ -183,6 +192,7 @@ final class ReminderChannel: ObservableObject {
     func dismissVisible() {
         dismissTask?.cancel()
         dismissTask = nil
+        clocked = nil
         queue.dismissVisible()
     }
 
@@ -194,20 +204,5 @@ final class ReminderChannel: ObservableObject {
     private func playAlert() {
         guard Bundle.main.url(forResource: "notch", withExtension: "m4a") != nil else { return }
         AudioPlayer().play(fileName: "notch", fileExtension: "m4a")
-    }
-
-    func sendTestReminder() {
-        enqueue(Reminder(
-            id: UUID().uuidString,
-            icon: .symbol("bell.badge"),
-            title: "Test reminder",
-            subtitle: "From the Integrations settings",
-            body: "This is what a Reminder looks like. Hover the notch to read the whole thing, "
-                + "or press the × to dismiss it.",
-            duration: 8,
-            isSticky: false,
-            sound: .none,
-            action: nil
-        ))
     }
 }

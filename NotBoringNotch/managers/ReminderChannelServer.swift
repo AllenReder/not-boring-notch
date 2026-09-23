@@ -68,7 +68,7 @@ final class ReminderChannelServer {
             case .ready:
                 self.onStateChange?(.ready(port: port))
             case let .failed(error):
-                self.onStateChange?(.failed(Self.describe(error, port: port)))
+                self.onStateChange?(.failed(Self.stoppedMessage(error, port: port)))
                 self.stop()
             default:
                 break
@@ -83,7 +83,8 @@ final class ReminderChannelServer {
         listener = nil
     }
 
-    private static func describe(_ error: NWError, port: UInt16) -> String {
+    /// Why a listener that was running stopped, phrased for the Settings pane.
+    private static func stoppedMessage(_ error: NWError, port: UInt16) -> String {
         if case let .posix(code) = error, code == .EADDRINUSE {
             return "Port \(port) is already in use. Choose another port below."
         }
@@ -193,7 +194,7 @@ final class ReminderChannelServer {
         }
         // Requiring JSON is not decoration: a browser sending it must preflight first, and the
         // channel does not answer preflights.
-        guard (request.headers["content-type"] ?? "").lowercased().hasPrefix("application/json") else {
+        guard Self.isJSON(request.headers["content-type"]) else {
             return Self.failure(415, "Unsupported Media Type", "unsupported_media_type")
         }
         guard request.contentLength != nil else {
@@ -216,24 +217,45 @@ final class ReminderChannelServer {
         .respond(response(status: status, reason: reason, json: ["error": code]))
     }
 
+    /// `application/json`, optionally with parameters (`; charset=utf-8`). Not
+    /// `application/jsonp`, which a prefix match would have accepted.
+    private static func isJSON(_ contentType: String?) -> Bool {
+        guard let contentType else { return false }
+        let mediaType = contentType
+            .split(separator: ";", maxSplits: 1, omittingEmptySubsequences: false)[0]
+            .trimmingCharacters(in: .whitespaces)
+            .lowercased()
+        return mediaType == "application/json"
+    }
+
+    /// The refusal a payload problem earns: a code for the sender, naming the offending value
+    /// when there is one to name. Only one of these is about size rather than content.
     private static func describe(_ error: ReminderPayloadError) -> Data {
+        var json = ["error": code(for: error)]
         switch error {
-        case .tooLarge:
-            return response(status: 413, reason: "Payload Too Large", json: ["error": "too_large"])
-        case .malformed:
-            return response(status: 400, reason: "Bad Request", json: ["error": "malformed"])
-        case .missingTitle:
-            return response(status: 400, reason: "Bad Request", json: ["error": "missing_title"])
         case let .unknownIconKind(kind):
-            return response(status: 400, reason: "Bad Request",
-                            json: ["error": "unknown_icon_kind", "kind": kind])
-        case .invalidIconData:
-            return response(status: 400, reason: "Bad Request", json: ["error": "invalid_icon_data"])
+            json["kind"] = kind
         case let .unknownSound(sound):
-            return response(status: 400, reason: "Bad Request",
-                            json: ["error": "unknown_sound", "sound": sound])
-        case .invalidAction:
-            return response(status: 400, reason: "Bad Request", json: ["error": "invalid_action"])
+            json["sound"] = sound
+        default:
+            break
+        }
+
+        guard case .tooLarge = error else {
+            return response(status: 400, reason: "Bad Request", json: json)
+        }
+        return response(status: 413, reason: "Payload Too Large", json: json)
+    }
+
+    private static func code(for error: ReminderPayloadError) -> String {
+        switch error {
+        case .tooLarge: return "too_large"
+        case .malformed: return "malformed"
+        case .missingTitle: return "missing_title"
+        case .unknownIconKind: return "unknown_icon_kind"
+        case .invalidIconData: return "invalid_icon_data"
+        case .unknownSound: return "unknown_sound"
+        case .invalidAction: return "invalid_action"
         }
     }
 
