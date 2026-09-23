@@ -193,6 +193,21 @@ write_file "LICENSE" "Copyright (C) 2024-2025 TheBoredTeam and contributors (bor
 expect_status 0 "an allowlist whose last line has no newline is still honoured" \
   run_gate_verbatim 'line|LICENSE|(boring.notch)|upstream copyright notice'
 
+# An entry whose file has been deleted exempts nothing, but it still reads as though it does, and
+# the gate would go on reporting a clean tree. Deleting a file and forgetting its entry is how
+# that happened once.
+reset_fixture
+write_file "LICENSE" "clean"
+expect_failure "an entry naming a path that is not in the tree at all" \
+  'line|NotBoringNotch/models/Deleted.swift|boring.notch|exempts nothing, because the file is gone'
+
+# A glob cannot be checked for existence, so it is not checked. Pinned because the reverse would be
+# a surprise: an entry that matches nothing is not evidence of anything either way.
+reset_fixture
+write_file "NotBoringNotch/App.swift" "clean"
+expect_clean "a glob entry is not reported as stale" \
+  'path|nothing/matches/this/*|-|a glob cannot be checked for existence'
+
 printf '\n=== the gate sees files that are not committed yet ===\n'
 
 # Every case above hands the gate its file list. This one does not: it is about how the gate

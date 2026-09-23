@@ -24,7 +24,7 @@
 # entry names a fragment to excuse, so scanning it would make it fail on itself. The two gates'
 # own source files are a different matter — they are exempted in the allowlist, with reasons.
 #
-# Exit status: 0 when clean, 1 when the old brand was found.
+# Exit status: 0 when clean, 1 when the old brand was found or the allowlist is broken.
 #
 # Tested by Tests/BrandingGateTests.sh. The environment overrides at the top of this file
 # exist so that test can point the gate at a fixture tree.
@@ -87,6 +87,7 @@ PATH_GLOBS=()
 LINE_GLOBS=()
 LINE_FRAGMENTS=()
 FILE_GLOBS=()
+ENTRY_PATHS=""
 
 if [ -f "$ALLOWLIST" ]; then
   # The trailing `|| [ -n "$kind" ]` matters: `read` returns non-zero when the last line
@@ -95,8 +96,8 @@ if [ -f "$ALLOWLIST" ]; then
   while IFS='|' read -r kind glob fragment reason || [ -n "$kind" ]; do
     case "$kind" in
       ''|\#*) continue ;;
-      path) PATH_GLOBS+=("${glob:-}") ;;
-      file) FILE_GLOBS+=("${glob:-}") ;;
+      path) PATH_GLOBS+=("${glob:-}"); ENTRY_PATHS="${ENTRY_PATHS}path|${glob:-}"$'\n' ;;
+      file) FILE_GLOBS+=("${glob:-}"); ENTRY_PATHS="${ENTRY_PATHS}file|${glob:-}"$'\n' ;;
       line)
         if [ -z "${fragment:-}" ] || [ "$fragment" = "-" ]; then
           printf '⚠️  allowlist entry needs a fragment: %s|%s\n' "$kind" "$glob" >&2
@@ -104,12 +105,30 @@ if [ -f "$ALLOWLIST" ]; then
         fi
         LINE_GLOBS+=("${glob:-}")
         LINE_FRAGMENTS+=("$fragment")
+        ENTRY_PATHS="${ENTRY_PATHS}line|${glob:-}"$'\n'
         ;;
       *)
         printf '⚠️  unknown allowlist kind "%s" for %s\n' "$kind" "${glob:-}" >&2
         ;;
     esac
   done < "$ALLOWLIST"
+fi
+
+# An entry naming a path that is not there exempts nothing while reading as though it does, and
+# the gate would go on reporting a clean tree. That happened once: deleting a file left its entry
+# behind, and only re-reading this file by hand caught it. A glob cannot be checked this way, so
+# this is a floor, not a proof.
+STALE_ENTRIES=""
+while IFS='|' read -r kind glob; do
+  [ -n "$glob" ] || continue
+  case "$glob" in *'*'*|*'?'*) continue ;; esac
+  [ -e "$ROOT/$glob" ] || STALE_ENTRIES="${STALE_ENTRIES}   ${kind}|${glob}"$'\n'
+done <<< "$ENTRY_PATHS"
+
+if [ -n "$STALE_ENTRIES" ]; then
+  printf '❌ the allowlist names paths that are not there:\n\n%s\n' "$STALE_ENTRIES"
+  printf 'An entry that exempts nothing still reads as though it does. Delete it, or fix the path.\n'
+  exit 1
 fi
 
 is_file_exempt() {

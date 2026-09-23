@@ -51,13 +51,6 @@ line|CONTRIBUTING.md|the old boringNotch name has crept back in|names the token 
 line|*theboringteam.imageset/*|TheBoringTeam|the upstream logo's own file name
 path|*theboringteam.imageset/*|-|upstream logo asset, referenced by no code
 
-# The extras menu links to the project this one was forked from.
-line|NotBoringNotch/components/Notch/NotchExtrasMenu.swift|boring.notch|links to the upstream project
-
-# Upstream's app still exists and still has this bundle identifier, looked up to show that
-# app's icon in a tip.
-line|NotBoringNotch/components/Tips/TipStore.swift|theboringteam.boringNotch|the upstream app's bundle identifier
-
 # A persisted UserDefaults key. The Swift property is `notchShelf`; the stored string stays,
 # because changing it would silently reset the setting for everyone who has one.
 line|NotBoringNotch/models/Constants.swift|"boringShelf"|persisted UserDefaults key

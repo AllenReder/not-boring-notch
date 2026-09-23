@@ -40,18 +40,6 @@ struct NotchExtrasMenu : View {
         }
     }
     
-    var github: some View {
-        NotchLargeButtons(
-            action: {
-                if let url = URL(string: "https://github.com/TheBoredTeam/boring.notch") {
-                    NSWorkspace.shared.open(url)
-                }
-            },
-            icon: Image(.github),
-            title: "Checkout"
-        )
-    }
-    
     var settings: some View {
         Button(action: {
             DispatchQueue.main.async {
