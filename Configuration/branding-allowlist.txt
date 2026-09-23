@@ -57,10 +57,6 @@ path|*theboringteam.imageset/*|-|upstream logo asset, referenced by no code
 # The extras menu links to the project this one was forked from.
 line|NotBoringNotch/components/Notch/NotchExtrasMenu.swift|boring.notch|links to the upstream project
 
-# YouTube Music is reached through a companion server on localhost:26538. This route belongs to
-# that process: renaming it would break the integration, not tidy the brand.
-line|NotBoringNotch/MediaControllers/YouTube Music Controller/YouTubeMusicNetworking.swift|/auth/boringNotch|the local companion server's route, not ours to name
-
 # Upstream's app still exists and still has this bundle identifier, looked up to show that
 # app's icon in a tip.
 line|NotBoringNotch/components/Tips/TipStore.swift|theboringteam.boringNotch|the upstream app's bundle identifier

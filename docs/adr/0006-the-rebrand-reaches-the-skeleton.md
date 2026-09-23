@@ -38,15 +38,24 @@ and no import changes. Only the embedded XPC service is renamed, to
 `com.allenreder.notboringnotch.NotBoringNotchXPCHelper`, together with the `serviceName` string
 its client looks it up by.
 
-**Four strings that look like the brand are not the brand**, and stay as they are:
+**Strings that look like the brand but name something else do not change:**
 
-- `http://localhost:26538/auth/boringNotch` is the auth route of the local YouTube Music
-  companion server. It is that process's contract, and renaming it would break the integration.
-- `theboringteam.boringNotch` is upstream's bundle identifier, read to show that app's icon.
+- `theboringteam.boringNotch` names upstream's app, whose icon a tip shows. Upstream's own
+  identifier is all lowercase and this copy is not; that discrepancy is left alone, because it is
+  a question about how Launch Services matches identifiers, not a question about the brand.
 - `theboringteam.imageset` and `TheBoringTeam.svg` are upstream's logo, kept for attribution.
 - `"boringShelf"` is a persisted `UserDefaults` key. The Swift property is renamed to
   `notchShelf`; the stored string is not, because changing it would silently reset the setting
   for everybody who has one.
+- `Application Support/boringNotch` is the shelf's directory on disk, which `ShelfStorage` adopts
+  on first launch rather than abandoning.
+
+**One string that looked like somebody else's turned out to be ours.** The YouTube Music
+integration authenticates by POSTing to `/auth/{id}` on the companion server. `{id}` is not a
+route that server defines — it is the client's own name, and the server puts it in front of the
+user in its approval dialog. So the app was introducing itself as `boringNotch`. It is renamed;
+an install that had already approved `boringNotch` is asked once more, which is the whole cost of
+getting that one right.
 
 **The old name is correct in the record.** The GPL copyright line, the historical ADRs and the
 one line in ADR 0004 that names the upstream repository all keep it. So does the Discord
