@@ -2,7 +2,7 @@
 //  LiquidGlassAvailabilityAndScrimTests.swift
 //  Tests
 //
-// SOURCES: boringNotch/components/Notch/LiquidGlass/LiquidGlassAvailability.swift boringNotch/components/Notch/LiquidGlass/NotchScrimCalculator.swift
+// SOURCES: NotBoringNotch/components/Notch/LiquidGlass/LiquidGlassAvailability.swift NotBoringNotch/components/Notch/LiquidGlass/NotchScrimCalculator.swift
 //
 
 import Foundation

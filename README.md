@@ -37,7 +37,7 @@ Forget about static black cutouts: with Not Boring Notch, your notch transforms 
 - 📆 **Calendar & Reminders**: Full monthly calendar view, upcoming events, and checkable system Reminders built directly into the notch.
 - 📚 **File Shelf**: Drop files into the notch to stage them, quick-look previews, and drag them out anywhere or share via AirDrop.
 - 🎚️ **System HUDs**: Sleek Dynamic Island replacements for volume, brightness, backlight, and battery charging animations.
-- 🪞 **Boring Mirror & Face**: Built-in camera mirror for quick appearance checks and playful animated notch expressions.
+- 🪞 **Notch Mirror & Face**: Built-in camera mirror for quick appearance checks and playful animated notch expressions.
 
 ---
 
@@ -76,7 +76,7 @@ Forget about static black cutouts: with Not Boring Notch, your notch transforms 
 
 2. Open the project in Xcode:
    ```bash
-   open boringNotch.xcodeproj
+   open NotBoringNotch.xcodeproj
    ```
 
 3. Press `Cmd + R` to build and run.

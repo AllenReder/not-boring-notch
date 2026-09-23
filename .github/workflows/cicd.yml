@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Boring Notch
+    name: Build Not Boring Notch
     strategy:
       matrix:
         platform:
@@ -27,7 +27,7 @@ jobs:
         xcode:
           - ^16
         scheme:
-          - boringNotch
+          - NotBoringNotch
     # macos-latest now resolves to macos-26, which does not ship Xcode 16.
     # Keep this legacy main-branch build on an image with the requested toolchain.
     runs-on: macos-15
@@ -37,6 +37,18 @@ jobs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - name: Run tests
       run: ./scripts/run-tests.sh
+    # Three promises this repository had no way to enforce: the rebrand stays rebranded, the
+    # version settings RELEASING.md asks you to bump by hand stay in step, and every source file
+    # under the app's source roots is actually in the project. Each is one check over the tree
+    # rather than a workflow of its own, because none of them deserves a job's worth of runner
+    # time. Two of them also read files nobody has committed yet, so a mistake can fail here
+    # before it is one.
+    - name: Check the brand
+      run: ./scripts/check-branding.sh
+    - name: Check the version settings
+      run: ./scripts/check-version.sh
+    - name: Check the sources
+      run: ./scripts/check-sources.sh
     - # TODO: pin to immutable SHA
       uses: mxcl/xcodebuild@d3ee9b419c1be9a988086c58fe0988f32d99cfc5 # v3.6.0
       with:

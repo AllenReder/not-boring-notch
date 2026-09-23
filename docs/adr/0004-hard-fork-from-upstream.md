@@ -10,7 +10,7 @@ This project is a **hard fork**. There is no regular sync from upstream, and ups
 
 - Development happens on `main`; contributors branch off it and open pull requests against it.
 - Releases are built locally by the maintainer and published as GitHub Releases. There is no CI signing, notarization, or appcast pipeline.
-- Translations live in `boringNotch/Localizable.xcstrings`. New strings are English; translation updates are welcome as pull requests that edit that file. Crowdin is not used.
+- Translations live in `NotBoringNotch/Localizable.xcstrings`. New strings are English; translation updates are welcome as pull requests that edit that file. Crowdin is not used.
 
 Upstream remains a reference and a source of security and system-compatibility fixes. If one is needed it is taken manually, never as a scheduled merge.
 

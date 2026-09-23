@@ -4,7 +4,7 @@ Thank you for taking the time to contribute! ❤️
 
 These guidelines help streamline the contribution process for everyone involved. By following them, you'll make it easier for maintainers to review your work and collaborate with you effectively.
 
-You can contribute in many ways: writing code, improving documentation, reporting bugs, requesting features, or creating tutorials and blog posts. Every contribution, large or small, helps make Boring Notch better.
+You can contribute in many ways: writing code, improving documentation, reporting bugs, requesting features, or creating tutorials and blog posts. Every contribution, large or small, helps make Not Boring Notch better.
 
 ## Table of Contents
 
@@ -21,7 +21,7 @@ You can contribute in many ways: writing code, improving documentation, reportin
 
 ## Localizations
 
-The interface is localized through `boringNotch/Localizable.xcstrings`. New strings are
+The interface is localized through `NotBoringNotch/Localizable.xcstrings`. New strings are
 added in English, and translation updates are welcome as pull requests that edit that file
 directly. This project does not use Crowdin.
 
@@ -63,7 +63,18 @@ directly. This project does not use Crowdin.
 
 1. **Make your changes**: Implement your feature or bug fix. Write clean, well-documented code <!-- following the project's style guidelines. -->
 
-2. **Test your changes**: Ensure your changes work as expected and don't break existing functionality.
+2. **Test your changes**:
+   ```bash
+   ./scripts/run-tests.sh      # the standalone runners in Tests/
+   ./scripts/check-branding.sh # fails if the old boringNotch name has crept back in
+   ./scripts/check-version.sh  # fails if the project's version settings disagree
+   ./scripts/check-sources.sh  # fails if a source file is in the tree but not in the project
+   ```
+   CI blocks on all four, so run them before you push — each is a grep or a few seconds of
+   `swiftc`, and the third one exists because a version bumped in only some of its four copies
+   is not a build error, just a lie the app tells about itself. The fourth exists because a
+   source file that nobody registered is not a build error either: the compiler never receives
+   it, so it has nothing to say.
 
 3. **Commit your changes**:
    ```bash
@@ -128,8 +139,7 @@ If you need help or have questions:
 - Check the project documentation
 - Search existing issues for similar questions
 - Open a new issue with the "question" label
-- Join our [community Discord server](https://discord.com/servers/boring-notch-1269588937320566815)
 
 ---
 
-Thank you for contributing to Boring Notch! Your efforts help make this project better for everyone. 🎉
+Thank you for contributing to Not Boring Notch! Your efforts help make this project better for everyone. 🎉

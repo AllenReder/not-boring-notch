@@ -20,10 +20,10 @@ This repo is **single-context**: one `CONTEXT.md` and one `docs/adr/` at the rep
 ├── docs/adr/
 │   ├── 0001-<decision>.md
 │   └── 0002-<decision>.md
-└── boringNotch/
+└── NotBoringNotch/
 ```
 
-The Xcode project (`boringNotch/`, `BoringNotchXPCHelper/`, `mediaremote-adapter/`) is one context, not several. Xcode targets and folders are build units, not bounded contexts — don't split the glossary per target. A multi-context layout (root `CONTEXT-MAP.md` pointing at per-context `CONTEXT.md` files) is only warranted if the repo later grows genuinely independent subsystems with their own vocabulary.
+The Xcode project (`NotBoringNotch/`, `NotBoringNotchXPCHelper/`, `mediaremote-adapter/`) is one context, not several. Xcode targets and folders are build units, not bounded contexts — don't split the glossary per target. A multi-context layout (root `CONTEXT-MAP.md` pointing at per-context `CONTEXT.md` files) is only warranted if the repo later grows genuinely independent subsystems with their own vocabulary.
 
 ## Use the glossary's vocabulary
 

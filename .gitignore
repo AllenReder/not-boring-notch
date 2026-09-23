@@ -53,6 +53,11 @@ _refs/
 *.xcodeproj/xcuserdata
 *.xcodeproj/project.xcuserdata
 
+# Shared schemes are the one scheme file that is not user state. CI builds by scheme name, and
+# a scheme that exists only in the maintainer's working copy makes the name in cicd.yml
+# impossible to check from the repository. This must come after the `*.xcscheme` rules above.
+!*.xcodeproj/xcshareddata/xcschemes/*.xcscheme
+
 # Build artifacts
 *.ipa
 *.xcarchive

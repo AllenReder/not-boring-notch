@@ -11,26 +11,36 @@ run from a clean `main`.
 git switch main
 git pull
 ./scripts/run-tests.sh
+./scripts/check-branding.sh
+./scripts/check-version.sh
+./scripts/check-sources.sh
 ```
 
-CI (`cicd.yml`) runs the same tests plus a Release build on every push and pull request.
+CI (`cicd.yml`) runs all four plus a Release build on every push and pull request.
 
 ## 2. Pick the version and bump it
 
 `MARKETING_VERSION` is what the app reports and what the DMG is named after.
 `CURRENT_PROJECT_VERSION` is the build number; bump it by one at the same time. Each appears
-**four times** — the app target and the `BoringNotchXPCHelper` target, Debug and Release
-configurations each — and all four copies are kept in step:
+**four times** — the app target and the `NotBoringNotchXPCHelper` target, Debug and Release
+configurations each — and all four copies have to agree:
 
 ```bash
-grep -nE "MARKETING_VERSION|CURRENT_PROJECT_VERSION" boringNotch.xcodeproj/project.pbxproj
+./scripts/set-version.sh X.Y.Z N     # writes all eight values, then checks them
 git commit -am "chore(release): bump version to X.Y.Z"
 ```
+
+Writing one and missing another is not a build error. It is a build that reports a version nobody
+released, which is what the About pane did once already. `set-version.sh` writes every copy in one
+go and then runs `check-version.sh`, whose predicate is exactly its own postcondition — so the
+step either ends with the eight values agreeing or with a named reason it could not make them.
+CI runs that same check on every push, so a copy edited by hand afterwards cannot quietly
+disagree either.
 
 ## 3. Build the release app
 
 ```bash
-xcodebuild -project boringNotch.xcodeproj -scheme boringNotch \
+xcodebuild -project NotBoringNotch.xcodeproj -scheme NotBoringNotch \
   -configuration Release -derivedDataPath build/DerivedData build
 
 APP="build/DerivedData/Build/Products/Release/Not Boring Notch.app"
@@ -95,8 +105,12 @@ notarization (`xcrun notarytool submit --wait`) belong here instead.
 
 ```bash
 git tag -a vX.Y.Z -m "Not Boring Notch X.Y.Z"
+./scripts/check-version.sh --expect-tag   # the tag and the built app have to agree
 git push origin main --tags
 ```
+
+`--expect-tag` is checked here rather than in CI because a branch is legitimately between a
+version bump and its tag, so on a topic branch that check would fail on a healthy tree.
 
 Then publish the Release for the tag and attach the DMG:
 
