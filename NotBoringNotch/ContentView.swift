@@ -20,6 +20,7 @@ struct ContentView: View {
 
     @ObservedObject var coordinator = NotchViewCoordinator.shared
     @ObservedObject var musicManager = MusicManager.shared
+    @ObservedObject var reminderChannel = ReminderChannel.shared
     @ObservedObject var batteryModel = BatteryStatusViewModel.shared
     @ObservedObject var brightnessManager = BrightnessManager.shared
     @ObservedObject var volumeManager = VolumeManager.shared
@@ -63,6 +64,18 @@ struct ContentView: View {
         )
     }
 
+    /// A Reminder belongs to the display the user chose, like the rest of the notch's content.
+    private var screenReminder: Reminder? {
+        vm.screenUUID == coordinator.selectedScreenUUID ? reminderChannel.visible : nil
+    }
+
+    /// The Reminder the closed notch would draw. One that arrives while the notch is hidden stays
+    /// queued and unlit — its clock only starts when it is actually on screen.
+    private var closedReminder: Reminder? {
+        guard vm.notchState == .closed, !vm.hideOnClosed else { return nil }
+        return screenReminder
+    }
+
     private var computedChinWidth: CGFloat {
         var chinWidth: CGFloat = vm.closedNotchSize.width
 
@@ -70,6 +83,8 @@ struct ContentView: View {
             && vm.notchState == .closed && Defaults[.showPowerStatusNotifications]
         {
             chinWidth = 640
+        } else if closedReminder != nil {
+            chinWidth += (2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20)
         } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music)
             && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle)
             && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed
@@ -313,6 +328,9 @@ struct ContentView: View {
                       } else if coordinator.sneakPeek.show && Defaults[.inlineHUD] && (coordinator.sneakPeek.type != .music) && (coordinator.sneakPeek.type != .battery) && vm.notchState == .closed {
                           InlineHUD(type: $coordinator.sneakPeek.type, value: $coordinator.sneakPeek.value, icon: $coordinator.sneakPeek.icon, hoverAnimation: $isHovering, gestureProgress: $gestureProgress)
                               .transition(.opacity)
+                      } else if let reminder = closedReminder {
+                          ReminderLiveActivity(reminder: reminder)
+                              .frame(alignment: .center)
                       } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music) && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle) && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed {
                           MusicLiveActivity()
                               .frame(alignment: .center)
@@ -370,11 +388,15 @@ struct ContentView: View {
               .zIndex(2)
             if vm.notchState == .open {
                 VStack {
-                    switch coordinator.currentView {
-                    case .home:
-                        NotchHomeView(albumArtNamespace: albumArtNamespace)
-                    case .shelf:
-                        ShelfView()
+                    if let reminder = screenReminder {
+                        ReminderDetailView(reminder: reminder)
+                    } else {
+                        switch coordinator.currentView {
+                        case .home:
+                            NotchHomeView(albumArtNamespace: albumArtNamespace)
+                        case .shelf:
+                            ShelfView()
+                        }
                     }
                 }
                 .transition(

@@ -69,3 +69,17 @@ _Avoid_: Current time, elapsed time
 **Seek Settle Window**:
 The grace period after a seek during which the notch keeps displaying the seek target instead of the Estimated Position, covering the gap before the player reports the new position.
 _Avoid_: Drag delay, debounce, seek timeout
+
+### Reminder Channel
+
+**Reminder**:
+One message delivered to the notch through the Reminder Channel — an icon, a title, an optional subtitle, a body, and how long it is meant to stay.
+_Avoid_: Notification, alert, toast, banner, ping
+
+**Reminder Channel**:
+The surface an external process delivers Reminders through.
+_Avoid_: Notification API, webhook, hook endpoint, bridge
+
+**Apple Reminder**:
+A reminder item from the user's own Reminders database, read by the Calendar tab. It never travels through the Reminder Channel.
+_Avoid_: Reminder, system reminder

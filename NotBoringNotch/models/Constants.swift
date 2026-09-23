@@ -174,6 +174,11 @@ extension Defaults.Keys {
     // Option key modifier behaviour for media keys
     static let optionKeyAction = Key<OptionKeyAction>("optionKeyAction", default: OptionKeyAction.openSettings)
     
+    // MARK: Reminder Channel
+    static let reminderChannelEnabled = Key<Bool>("reminderChannelEnabled", default: true)
+    static let reminderChannelPort = Key<Int>("reminderChannelPort", default: 45999)
+    static let reminderChannelToken = Key<String>("reminderChannelToken", default: "")
+
     // MARK: Shelf
     static let notchShelf = Key<Bool>("boringShelf", default: true)
     static let openShelfByDefault = Key<Bool>("openShelfByDefault", default: true)

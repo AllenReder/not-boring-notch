@@ -38,6 +38,13 @@
 		5EE3A0022FA1000000000002 /* TintPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE3A0012FA1000000000001 /* TintPipeline.swift */; };
 		5EE3A0042FA1000000000004 /* TintLegibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE3A0032FA1000000000003 /* TintLegibility.swift */; };
 		5EE3A0062FA1000000000006 /* EstimatedPosition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE3A0052FA1000000000005 /* EstimatedPosition.swift */; };
+		5EE3B0022FB2000000000002 /* Reminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE3B0012FB2000000000001 /* Reminder.swift */; };
+		5EE3B0042FB2000000000004 /* ReminderQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE3B0032FB2000000000003 /* ReminderQueue.swift */; };
+		5EE3B0062FB2000000000006 /* ReminderChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE3B0052FB2000000000005 /* ReminderChannel.swift */; };
+		5EE3B0082FB2000000000008 /* ReminderChannelServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE3B0072FB2000000000007 /* ReminderChannelServer.swift */; };
+		5EE3B00A2FB200000000000A /* ReminderLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE3B0092FB2000000000009 /* ReminderLiveActivity.swift */; };
+		5EE3B00C2FB200000000000C /* ReminderDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE3B00B2FB200000000000B /* ReminderDetailView.swift */; };
+		5EE3B00E2FB200000000000E /* IntegrationsSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EE3B00D2FB200000000000D /* IntegrationsSettings.swift */; };
 		1153BD932D986E4300979FB0 /* AppleMusicController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1153BD922D986E4300979FB0 /* AppleMusicController.swift */; };
 		1153BD982D9881F900979FB0 /* AppleScriptHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1153BD972D9881F900979FB0 /* AppleScriptHelper.swift */; };
 		1153BD9A2D98824300979FB0 /* SpotifyController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1153BD992D98824300979FB0 /* SpotifyController.swift */; };
@@ -215,6 +222,13 @@
 		5EE3A0012FA1000000000001 /* TintPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TintPipeline.swift; sourceTree = "<group>"; };
 		5EE3A0032FA1000000000003 /* TintLegibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TintLegibility.swift; sourceTree = "<group>"; };
 		5EE3A0052FA1000000000005 /* EstimatedPosition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EstimatedPosition.swift; sourceTree = "<group>"; };
+		5EE3B0012FB2000000000001 /* Reminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reminder.swift; sourceTree = "<group>"; };
+		5EE3B0032FB2000000000003 /* ReminderQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderQueue.swift; sourceTree = "<group>"; };
+		5EE3B0052FB2000000000005 /* ReminderChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderChannel.swift; sourceTree = "<group>"; };
+		5EE3B0072FB2000000000007 /* ReminderChannelServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderChannelServer.swift; sourceTree = "<group>"; };
+		5EE3B0092FB2000000000009 /* ReminderLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderLiveActivity.swift; sourceTree = "<group>"; };
+		5EE3B00B2FB200000000000B /* ReminderDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderDetailView.swift; sourceTree = "<group>"; };
+		5EE3B00D2FB200000000000D /* IntegrationsSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationsSettings.swift; sourceTree = "<group>"; };
 		1153BD922D986E4300979FB0 /* AppleMusicController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleMusicController.swift; sourceTree = "<group>"; };
 		1153BD972D9881F900979FB0 /* AppleScriptHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleScriptHelper.swift; sourceTree = "<group>"; };
 		1153BD992D98824300979FB0 /* SpotifyController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotifyController.swift; sourceTree = "<group>"; };
@@ -527,6 +541,8 @@
 			children = (
 				11D58EA12E760AE100FA8377 /* ImageService.swift */,
 				F38DE6472D8243E2008B5C6D /* BatteryActivityManager.swift */,
+				5EE3B0052FB2000000000005 /* ReminderChannel.swift */,
+				5EE3B0072FB2000000000007 /* ReminderChannelServer.swift */,
 				112FB7342CCF16F70015238C /* NotchSpaceManager.swift */,
 				147163992C5D35FF0068B555 /* MusicManager.swift */,
 				149E0B962C737D00006418B1 /* WebcamManager.swift */,
@@ -652,6 +668,8 @@
 				5EE3A0012FA1000000000001 /* TintPipeline.swift */,
 				5EE3A0032FA1000000000003 /* TintLegibility.swift */,
 				5EE3A0052FA1000000000005 /* EstimatedPosition.swift */,
+				5EE3B0012FB2000000000001 /* Reminder.swift */,
+				5EE3B0032FB2000000000003 /* ReminderQueue.swift */,
 			);
 			path = models;
 			sourceTree = "<group>";
@@ -741,6 +759,7 @@
 				14D570C52C5F38210011E668 /* NotchHeader.swift */,
 				14D570D12C5F6C6A0011E668 /* NotchExtrasMenu.swift */,
 				1471A8582C6281BD0058408D /* NotBoringNotchWindow.swift */,
+				5EE3B00B2FB200000000000B /* ReminderDetailView.swift */,
 			);
 			path = Notch;
 			sourceTree = "<group>";
@@ -754,6 +773,7 @@
 				B1D6FD422C6603730015F173 /* SoftwareUpdater.swift */,
 				B1B112902C6A572100093D8F /* EditPanelView.swift */,
 				B1C448972C972CC4001F0858 /* ListItemPopover.swift */,
+				5EE3B00D2FB200000000000D /* IntegrationsSettings.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -768,6 +788,7 @@
 				B1D365CF2C6A9A6C0047BDBC /* SystemEventIndicatorModifier.swift */,
 				14E9FEA92C70BF610062E83F /* DownloadView.swift */,
 				B172AABF2C95DA0B001623F1 /* InlineHUD.swift */,
+				5EE3B0092FB2000000000009 /* ReminderLiveActivity.swift */,
 			);
 			path = "Live activities";
 			sourceTree = "<group>";
@@ -1002,6 +1023,13 @@
 				5EE3A0022FA1000000000002 /* TintPipeline.swift in Sources */,
 				5EE3A0042FA1000000000004 /* TintLegibility.swift in Sources */,
 				5EE3A0062FA1000000000006 /* EstimatedPosition.swift in Sources */,
+				5EE3B0022FB2000000000002 /* Reminder.swift in Sources */,
+				5EE3B0042FB2000000000004 /* ReminderQueue.swift in Sources */,
+				5EE3B0062FB2000000000006 /* ReminderChannel.swift in Sources */,
+				5EE3B0082FB2000000000008 /* ReminderChannelServer.swift in Sources */,
+				5EE3B00A2FB200000000000A /* ReminderLiveActivity.swift in Sources */,
+				5EE3B00C2FB200000000000C /* ReminderDetailView.swift in Sources */,
+				5EE3B00E2FB200000000000E /* IntegrationsSettings.swift in Sources */,
 				B1A78C822C8BA08100BD51B0 /* FullscreenMediaDetection.swift in Sources */,
 				14E9FEAE2C7325770062E83F /* Button+Bouncing.swift in Sources */,
 				14D570C92C5F38890011E668 /* NotchViewModel.swift in Sources */,
