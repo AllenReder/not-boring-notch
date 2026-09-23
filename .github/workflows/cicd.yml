@@ -37,14 +37,17 @@ jobs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - name: Run tests
       run: ./scripts/run-tests.sh
-    # Two promises this repository had no way to enforce: the rebrand stays rebranded, and
-    # the version settings RELEASING.md asks you to bump by hand stay in step. Both are one
-    # grep over tracked files, and both are steps in this job rather than workflows of their
-    # own, because neither deserves a job's worth of runner time.
+    # Three promises this repository had no way to enforce: the rebrand stays rebranded, the
+    # version settings RELEASING.md asks you to bump by hand stay in step, and every source file
+    # under the app's source roots is actually in the project. Each is one grep over tracked
+    # files, and each is a step in this job rather than a workflow of its own, because none of
+    # them deserves a job's worth of runner time.
     - name: Check the brand
       run: ./scripts/check-branding.sh
     - name: Check the version settings
       run: ./scripts/check-version.sh
+    - name: Check the sources
+      run: ./scripts/check-sources.sh
     - # TODO: pin to immutable SHA
       uses: mxcl/xcodebuild@d3ee9b419c1be9a988086c58fe0988f32d99cfc5 # v3.6.0
       with:

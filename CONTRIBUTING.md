@@ -68,10 +68,13 @@ directly. This project does not use Crowdin.
    ./scripts/run-tests.sh      # the standalone runners in Tests/
    ./scripts/check-branding.sh # fails if the old boringNotch name has crept back in
    ./scripts/check-version.sh  # fails if the project's version settings disagree
+   ./scripts/check-sources.sh  # fails if a source file is in the tree but not in the project
    ```
-   CI blocks on all three, so run them before you push — each is a grep or a few seconds of
+   CI blocks on all four, so run them before you push — each is a grep or a few seconds of
    `swiftc`, and the third one exists because a version bumped in only some of its four copies
-   is not a build error, just a lie the app tells about itself.
+   is not a build error, just a lie the app tells about itself. The fourth exists because a
+   source file that nobody registered is not a build error either: the compiler never receives
+   it, so it has nothing to say.
 
 3. **Commit your changes**:
    ```bash

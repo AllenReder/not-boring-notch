@@ -60,10 +60,13 @@ getting that one right.
 **The old name is correct in the record.** The GPL copyright line, the historical ADRs and the
 one line in ADR 0004 that names the upstream repository all keep it.
 
-**Two greps enforce the boundary**, as steps in the existing CI build job:
+**Three checks enforce the boundary**, as steps in the existing CI build job:
 `scripts/check-branding.sh`, which searches tracked and untracked-but-not-ignored files for the
-token and answers with `Configuration/branding-allowlist.txt`, and `scripts/check-version.sh`,
-which fails when the project's version settings disagree with each other.
+token and answers with `Configuration/branding-allowlist.txt`; `scripts/check-version.sh`,
+which fails when the project's version settings disagree with each other; and
+`scripts/check-sources.sh`, which fails when a source file sits under the app's source roots and
+not in the project. The third came out of this work rather than out of the rename, and the
+Consequences below say how.
 
 The allowlist is the written answer to "why does this file still say boring?". It holds the
 attribution and external-identifier cases above, one entry and one reason each, and nothing may
@@ -96,6 +99,15 @@ be added to it without a reason a reviewer can disagree with.
 
 - Adding a target to the Xcode project means bumping the version in one more place;
   `scripts/check-version.sh` reports the count it found so that drift is visible.
+- **Making the skeleton the project's own turned up files the project was not building.** Four
+  files under `NotBoringNotch/` had never been registered in `project.pbxproj` in any commit of
+  this repository — `utils/Logger.swift`, 76 lines of logging and a `View` extension, among them —
+  so no build had ever compiled them and nothing had said so. Two were superseded rather than
+  merely unused: `NotchShape` draws the same bottom-rounded corners, and the menu bar item is
+  SwiftUI's `MenuBarExtra`. They are deleted, in a commit of their own; what this ADR keeps is the
+  reason four of them could sit there: a compiler has no complaint about a file it never received,
+  and the error arrives only when something calls a name from the missing file. That is
+  `scripts/check-sources.sh`, the third gate and the only one of the three that is not about the name.
 - The `--expect-tag` half of the version check belongs to the release sequence in
   [`RELEASING.md`](../RELEASING.md), not to CI. A branch is legitimately between a version bump
   and its tag, so asserting the tag in CI would fail on a healthy tree.
