@@ -1146,7 +1146,6 @@ struct Shelf: View {
 //        }
 //        .accentColor(.effectiveAccent)
 //        .navigationTitle("Extensions")
-//        // TipsView()
 //        // .padding(.horizontal, 19)
 //    }
 //}

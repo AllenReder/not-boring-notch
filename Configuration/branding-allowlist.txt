@@ -42,9 +42,6 @@ line|AGENTS.md|boring.notch|names the upstream repository, which is reference on
 # ADR 0006 is the record of this rename. It is expected to name what it renamed: the paths it
 # moved, the directories it adopted, the strings it left alone.
 file|docs/adr/0006-the-rebrand-reaches-the-skeleton.md|-|ADR 0006, whose subject is the old name
-
-# The Discord invite's vanity slug is owned by the server, not by this repository.
-line|CONTRIBUTING.md|boring-notch|Discord invite slug; editing it breaks the link
 # The contributor docs name the old brand on purpose, so whoever trips the gate knows what it
 # was looking for. The fragment is the sentence, not the token: elsewhere in this file the old
 # name would be a mistake.

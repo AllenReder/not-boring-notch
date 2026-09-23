@@ -58,8 +58,7 @@ an install that had already approved `boringNotch` is asked once more, which is 
 getting that one right.
 
 **The old name is correct in the record.** The GPL copyright line, the historical ADRs and the
-one line in ADR 0004 that names the upstream repository all keep it. So does the Discord
-invite's vanity slug, which the server owns.
+one line in ADR 0004 that names the upstream repository all keep it.
 
 **Two greps enforce the boundary**, as steps in the existing CI build job:
 `scripts/check-branding.sh`, which searches tracked and untracked-but-not-ignored files for the
@@ -107,3 +106,10 @@ be added to it without a reason a reviewer can disagree with.
   with it. The file name was the brand; the sound is unchanged.
 - Upstream attribution keeps working, but a reader looking for the old project name will find it
   only in the places this ADR lists — which is the point.
+- **The gate searches for a word, so a whole class of leftover is invisible to it.** Asking why
+  one string had not been renamed turned up three things inherited from upstream that mention no
+  brand at all: the contributor guide invited people to upstream's Discord, `.github/FUNDING.yml`
+  sent sponsors to upstream's maintainers, and two unreachable "upgrade now" tips looked up
+  upstream's bundle identifier to borrow its icon. All three are gone, and no grep would have
+  found any of them. The gate keeps the *name* changed; it cannot make the project its own, and
+  nothing here should be read as claiming it does.
