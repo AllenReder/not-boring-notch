@@ -93,4 +93,26 @@ reset_repo "1.0.3/4 1.0.3/4 1.0.3/4 1.0.3/4"
 expect_clean "is not an error" 1.0.3 4
 expect_marketing "and leaves the four copies alone" 1.0.3 4
 
+printf '\n=== a value the project quotes ===\n'
+
+# A project file may quote a setting's value, and both scripts that read one have to agree about
+# what it says. The writer's report is where the disagreement showed: it echoed the value it had
+# replaced back with its quotes still on.
+reset_repo '"1.0.2"/"3" "1.0.2"/"3" "1.0.2"/"3" "1.0.2"/"3"'
+expect_clean "a quoted value is written like any other" 1.0.3 4
+expect_marketing "all four copies carry the new version" 1.0.3 4
+expect_build "the build number moved with it" 4 4
+expect_not_reported "and the value it replaced is not echoed with its quotes" '"1.0.2" ->'
+
+printf '\n=== the fixture reader compares text, not patterns ===\n'
+
+# This runner reads the fixture itself rather than through the script's reader, so that a wrong
+# reader cannot make its own test agree with it — which means this reader has to be right itself.
+# Matched as a pattern, `1.0.2` counts as present in `1x0x2`.
+reset_repo "1x0x2/3"
+expect_equal "a value that is not the one asked for is not counted" \
+  "$(occurrences_of "$REPO" MARKETING_VERSION 1.0.2)" 0
+expect_equal "and the one that is, is" \
+  "$(occurrences_of "$REPO" MARKETING_VERSION 1x0x2)" 1
+
 report_and_exit

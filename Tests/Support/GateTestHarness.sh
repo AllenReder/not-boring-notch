@@ -1,9 +1,10 @@
 #
 # Shared harness for the shell runners that test the gates in scripts/.
 #
-# Sourced by Tests/BrandingGateTests.sh and Tests/VersionGateTests.sh — which is why it is not
-# named *Tests.sh, since scripts/run-tests.sh discovers Tests/*Tests.sh and would otherwise try
-# to run this file on its own.
+# Sourced by the shell runners in this directory — which is why it is not named *Tests.sh, since
+# scripts/run-tests.sh discovers Tests/*Tests.sh and would otherwise try to run this file on its
+# own. (Naming the sourcing files here was the mistake this line made: it listed two of them for a
+# while after there were four, which is what a list in a comment does.)
 #
 # The sourcing file must set:
 #
@@ -55,6 +56,19 @@ expect_reported() {  # expect_reported <description> <substring>
     printf '❌ %s\n   the report never mentions %s:\n' "$1" "$2"
     sed 's/^/   /' "$WORK/gate-output"
     failed=$((failed + 1))
+  fi
+}
+
+# The same, the other way round: for a report that has to read one way, where a match means
+# something was echoed back in a shape the reader should have normalised away.
+expect_not_reported() {  # expect_not_reported <description> <substring>
+  if grep -qF -- "$2" "$WORK/gate-output"; then
+    printf '❌ %s\n   the report mentions %s:\n' "$1" "$2"
+    sed 's/^/   /' "$WORK/gate-output"
+    failed=$((failed + 1))
+  else
+    printf '✅ %s\n' "$1"
+    passed=$((passed + 1))
   fi
 }
 

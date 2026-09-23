@@ -37,18 +37,13 @@ done
 
 PBXPROJ="$(pbxproject_in "$REPO")" || exit 1
 
-# Values of a build setting, in file order, without the surrounding quotes.
-values_of() {
-  sed -n "s/^[[:space:]]*$1 = \(.*\);[[:space:]]*$/\1/p" "$PBXPROJ" | tr -d '"'
-}
-
 # One line per distinct value, with how many times it occurs.
 tally() {
   printf '%s\n' "$1" | sort | uniq -c | sed 's/^ *//'
 }
 
-RELEASE_VALUES="$(values_of MARKETING_VERSION)"
-BUILD_VALUES="$(values_of CURRENT_PROJECT_VERSION)"
+RELEASE_VALUES="$(values_of "$PBXPROJ" MARKETING_VERSION)"
+BUILD_VALUES="$(values_of "$PBXPROJ" CURRENT_PROJECT_VERSION)"
 
 RELEASE_COUNT="$(printf '%s' "$RELEASE_VALUES" | grep -c . || true)"
 BUILD_COUNT="$(printf '%s' "$BUILD_VALUES" | grep -c . || true)"

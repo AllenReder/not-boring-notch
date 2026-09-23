@@ -40,9 +40,6 @@ its client looks it up by.
 
 **Strings that look like the brand but name something else do not change:**
 
-- `theboringteam.boringNotch` names upstream's app, whose icon a tip shows. Upstream's own
-  identifier is all lowercase and this copy is not; that discrepancy is left alone, because it is
-  a question about how Launch Services matches identifiers, not a question about the brand.
 - `theboringteam.imageset` and `TheBoringTeam.svg` are upstream's logo, kept for attribution.
 - `"boringShelf"` is a persisted `UserDefaults` key. The Swift property is renamed to
   `notchShelf`; the stored string is not, because changing it would silently reset the setting
@@ -123,5 +120,8 @@ be added to it without a reason a reviewer can disagree with.
   brand at all: the contributor guide invited people to upstream's Discord, `.github/FUNDING.yml`
   sent sponsors to upstream's maintainers, and two unreachable "upgrade now" tips looked up
   upstream's bundle identifier to borrow its icon. All three are gone, and no grep would have
-  found any of them. The gate keeps the *name* changed; it cannot make the project its own, and
-  nothing here should be read as claiming it does.
+  found any of them. Those tips were also the last thing in the tree that quoted upstream's
+  identifier `theboringteam.boringNotch`, and they took its misspelling with them: the string is
+  nowhere here now, and the allowlist has no entry for it, so a byte of it coming back is a
+  failure rather than an exemption. The gate keeps the *name* changed; it cannot make the project
+  its own, and nothing here should be read as claiming it does.

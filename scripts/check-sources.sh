@@ -14,8 +14,9 @@
 # This has happened here. `ShelfStorage.swift` was written, unit-tested, and green in Debug
 # before a Release build reported that it had never been compiled. `utils/Logger.swift` — 76
 # lines, a LogCategory enum, a View extension — was committed by upstream and never registered by
-# anybody, so no build this project has ever run has seen it. Four more files are in that state,
-# and finding them took grepping the project file by hand.
+# anybody, so no build this project has ever run has seen it. Finding that one, and the three files
+# beside it in the same state, took grepping the project file by hand; all four are deleted now,
+# and this check is what keeps the next one from sitting there.
 #
 # What this checks
 #

@@ -48,16 +48,12 @@ esac
 
 PBXPROJ="$(pbxproject_in "$REPO")" || exit 1
 
-values_of() {  # values_of <setting>
-  sed -n "s|^[[:space:]]*$1 = \([^;]*\);.*|\1|p" "$PBXPROJ"
-}
-
 count_values() {  # count_values <setting>
-  values_of "$1" | grep -c . || true
+  values_of "$PBXPROJ" "$1" | grep -c . || true
 }
 
 count_equal_to() {  # count_equal_to <setting> <value> — fixed string, so a "." in a version is a dot
-  values_of "$1" | grep -Fxc -- "$2" || true
+  values_of "$PBXPROJ" "$1" | grep -Fxc -- "$2" || true
 }
 
 # Both settings are checked before either is written. Writing one and then discovering the other
@@ -73,7 +69,7 @@ done
 
 write() {  # write <setting> <value> <how-many-expected>
   local setting="$1" value="$2" expected="$3" previous written
-  previous="$(values_of "$setting" | head -1)"
+  previous="$(values_of "$PBXPROJ" "$setting" | head -1)"
 
   # A temp file rather than `sed -i`: the two dialects of that flag disagree about whether it
   # takes an argument, and this script runs wherever the release is cut.

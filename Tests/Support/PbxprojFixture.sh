@@ -109,7 +109,19 @@ synchronize_directory() {
 # How many times the fixture states a setting with a given value.
 #
 # Read straight out of the file rather than through a script's own reader: a wrong reader would
-# otherwise make its own test agree with it.
+# otherwise make its own test agree with it. Compared as text, not as a pattern — `grep -E` would
+# let the value `1.0.2` match `1x0x2`, which is exactly the sort of agreement this file exists to
+# rule out.
 occurrences_of() {  # occurrences_of <repo-dir> <setting> <value>
-  grep -cE "^[[:space:]]*$2 = $3;" "$(fixture_pbxproj "$1")" || true
+  awk -v setting="$2" -v value="$3" '
+    {
+      line = $0
+      sub(/^[[:space:]]*/, "", line)
+      if (index(line, setting " = ") != 1) next
+      line = substr(line, length(setting) + 4)
+      sub(/;.*$/, "", line)
+      if (line == value) count++
+    }
+    END { print count + 0 }
+  ' "$(fixture_pbxproj "$1")"
 }
