@@ -270,6 +270,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
 
+        // One-time migration, and deliberately here rather than wherever the shelf is first
+        // touched: it has to happen whether or not anybody opens the shelf, and it has to be
+        // possible to see that it did. See ShelfStorage.
+        ShelfStorage.adoptLegacyDirectory()
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(screenConfigurationDidChange),
