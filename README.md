@@ -38,6 +38,7 @@ Forget about static black cutouts: with Not Boring Notch, your notch transforms 
 - 📚 **File Shelf**: Drop files into the notch to stage them, quick-look previews, and drag them out anywhere or share via AirDrop.
 - 🎚️ **System HUDs**: Sleek Dynamic Island replacements for volume, brightness, backlight, and battery charging animations.
 - 🪞 **Notch Mirror & Face**: Built-in camera mirror for quick appearance checks and playful animated notch expressions.
+- 🔔 **Reminder Channel**: Let another app or a script raise a reminder in the notch over a token-guarded loopback port. See [docs/reminder-channel.md](docs/reminder-channel.md).
 
 ---
 

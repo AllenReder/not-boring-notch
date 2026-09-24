@@ -415,6 +415,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         setupDragDetectors()
 
+        // The Reminder Channel listens from launch: a client should not have to wait for
+        // somebody to open Settings before its first Reminder can land.
+        ReminderChannel.shared.start()
+
         if coordinator.firstLaunch {
             DispatchQueue.main.async {
                 self.showOnboardingWindow()
