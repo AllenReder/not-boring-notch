@@ -39,6 +39,13 @@ final class ReminderChannelServer {
     private static let maximumReceives = 512
 
     func start(port: UInt16, token: String) {
+        // Same socket, so there is nothing to rebind. A new Channel Token is not a new socket:
+        // keep listening and start refusing the old token instead.
+        if listener != nil, requestedPort == port {
+            self.token = token
+            return
+        }
+
         stop()
         self.token = token
         self.requestedPort = port
@@ -66,7 +73,9 @@ final class ReminderChannelServer {
             guard let self else { return }
             switch state {
             case .ready:
-                self.onStateChange?(.ready(port: port))
+                // The port the socket actually took, which is what a caller asking for port 0 needs
+                // to hear about.
+                self.onStateChange?(.ready(port: listener.port?.rawValue ?? port))
             case let .failed(error):
                 self.onStateChange?(.failed(Self.stoppedMessage(error, port: port)))
                 self.stop()

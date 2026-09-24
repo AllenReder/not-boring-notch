@@ -64,13 +64,23 @@ final class ReminderChannel: ObservableObject {
             Task { @MainActor in self?.apply(state) }
         }
 
-        Defaults.publisher(.reminderChannelEnabled).sink { [weak self] _ in
+        // `options` defaults to `[.initial]`, which fires the moment we subscribe — applying the same
+        // settings a second and then a third time, back to back. `[]` means "only when the value
+        // actually changes", so the explicit call at the end of this method is the only initial
+        // application. Starting a listener twice in a row is what cost the channel its port (see
+        // ReminderChannelServerTests).
+        Defaults.publisher(.reminderChannelEnabled, options: []).sink { [weak self] _ in
             Task { @MainActor in self?.applySettings() }
         }.store(in: &cancellables)
 
-        Defaults.publisher(.reminderChannelPort).sink { [weak self] _ in
-            Task { @MainActor in self?.applySettings() }
-        }.store(in: &cancellables)
+        // Every keystroke in the port field is a change, and each one would stop and restart the
+        // listener. Only the value the user settles on should cause a rebind.
+        Defaults.publisher(.reminderChannelPort, options: [])
+            .debounce(for: .milliseconds(600), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { @MainActor in self?.applySettings() }
+            }
+            .store(in: &cancellables)
 
         applySettings()
     }
@@ -89,6 +99,12 @@ final class ReminderChannel: ObservableObject {
     func regenerateToken() {
         Defaults[.reminderChannelToken] = Self.newToken()
         applySettings()
+
+        // The socket does not change for a new token, so nothing will report `.ready` again. The
+        // discovery file has to be rewritten here, or a client would keep reading a retired token.
+        if case let .listening(port) = status {
+            writeDiscoveryFile(port: port)
+        }
     }
 
     private func applySettings() {
