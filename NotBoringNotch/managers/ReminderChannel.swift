@@ -10,6 +10,7 @@ import AppKit
 import Combine
 import Defaults
 import Foundation
+import SwiftUI
 
 /// The Reminder Channel: a loopback HTTP port an external process posts Reminders to.
 ///
@@ -114,7 +115,9 @@ final class ReminderChannel: ObservableObject {
             server.stop()
             dismissTask?.cancel()
             clocked = nil
-            queue = ReminderQueue()
+            withAnimation(.smooth(duration: 0.35)) {
+                queue = ReminderQueue()
+            }
             status = .off
             removeDiscoveryFile()
             return
@@ -185,7 +188,9 @@ final class ReminderChannel: ObservableObject {
     // MARK: - What is on screen
 
     func enqueue(_ reminder: Reminder) {
-        queue.enqueue(reminder)
+        withAnimation(.smooth(duration: 0.35)) {
+            queue.enqueue(reminder)
+        }
     }
 
     /// Called by whatever view is drawing the Reminder, which is the one place its clock can
@@ -214,7 +219,9 @@ final class ReminderChannel: ObservableObject {
         dismissTask?.cancel()
         dismissTask = nil
         clocked = nil
-        queue.dismissVisible()
+        withAnimation(.smooth(duration: 0.35)) {
+            queue.dismissVisible()
+        }
     }
 
     func performAction(_ action: ReminderAction) {

@@ -24,6 +24,7 @@ struct ReminderDetailView: View {
                         .foregroundStyle(.white)
                         .lineLimit(1)
                         .truncationMode(.tail)
+                        .contentTransition(.interpolate)
 
                     if let subtitle = reminder.subtitle {
                         Text(subtitle)
@@ -31,6 +32,7 @@ struct ReminderDetailView: View {
                             .foregroundStyle(.gray)
                             .lineLimit(1)
                             .truncationMode(.tail)
+                            .contentTransition(.interpolate)
                     }
                 }
 

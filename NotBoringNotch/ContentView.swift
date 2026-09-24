@@ -84,7 +84,7 @@ struct ContentView: View {
         {
             chinWidth = 640
         } else if closedReminder != nil {
-            chinWidth += (2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20)
+            chinWidth += 200
         } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music)
             && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle)
             && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed
@@ -330,7 +330,9 @@ struct ContentView: View {
                               .transition(.opacity)
                       } else if let reminder = closedReminder {
                           ReminderLiveActivity(reminder: reminder)
+                              .id(reminder.id)
                               .frame(alignment: .center)
+                              .transition(.opacity)
                       } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music) && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle) && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed {
                           MusicLiveActivity()
                               .frame(alignment: .center)
@@ -390,13 +392,23 @@ struct ContentView: View {
                 VStack {
                     if let reminder = screenReminder {
                         ReminderDetailView(reminder: reminder)
+                            .id(reminder.id)
+                            .transition(
+                                .asymmetric(
+                                    insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .top)),
+                                    removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .top))
+                                )
+                            )
                     } else {
-                        switch coordinator.currentView {
-                        case .home:
-                            NotchHomeView(albumArtNamespace: albumArtNamespace)
-                        case .shelf:
-                            ShelfView()
+                        Group {
+                            switch coordinator.currentView {
+                            case .home:
+                                NotchHomeView(albumArtNamespace: albumArtNamespace)
+                            case .shelf:
+                                ShelfView()
+                            }
                         }
+                        .transition(.opacity)
                     }
                 }
                 .transition(

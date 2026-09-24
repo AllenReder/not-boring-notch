@@ -23,6 +23,7 @@ struct ReminderIconView: View {
                 Image(nsImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
+                    .clipShape(RoundedRectangle(cornerRadius: 3.5))
             } else {
                 symbol(named: "bell")
             }
@@ -52,48 +53,58 @@ struct ReminderLiveActivity: View {
     @EnvironmentObject var vm: NotchViewModel
     let reminder: Reminder
 
-    private var sideWidth: CGFloat { max(0, vm.effectiveClosedNotchHeight - 12) }
+    private var wingWidth: CGFloat { 110 }
 
     var body: some View {
         HStack(spacing: 0) {
-            ReminderIconView(icon: reminder.icon)
-                .padding(sideWidth * 0.22)
-                .frame(width: sideWidth, height: sideWidth)
+            // Left wing: Icon + Title flanking the physical notch
+            HStack(spacing: 6) {
+                ReminderIconView(icon: reminder.icon)
+                    .frame(width: 18, height: 18)
 
+                Text(reminder.title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            .padding(.leading, 8)
+            .frame(width: wingWidth, alignment: .leading)
+
+            // Center: Black spacer matching the flat base of the physical camera notch
             Rectangle()
                 .fill(.black)
-                .overlay(
-                    HStack(spacing: 6) {
-                        Text(reminder.title)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
+                .frame(width: vm.closedNotchSize.width - 20)
 
-                        if let subtitle = reminder.subtitle {
-                            Text(subtitle)
-                                .font(.subheadline)
-                                .foregroundStyle(.gray)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                        }
-                    }
-                    .padding(.horizontal, 6)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                )
-                .frame(width: vm.closedNotchSize.width - cornerRadiusInsets.closed.top)
+            // Right wing: Subtitle (if any) + Dismiss button
+            HStack(spacing: 6) {
+                if let subtitle = reminder.subtitle {
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.gray)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                } else {
+                    Spacer(minLength: 0)
+                }
 
-            Button {
-                ReminderChannel.shared.dismissVisible()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.gray)
+                Button {
+                    ReminderChannel.shared.dismissVisible()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.gray)
+                        .frame(width: 18, height: 18)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
-            .frame(width: sideWidth, height: sideWidth, alignment: .center)
+            .padding(.trailing, 8)
+            .frame(width: wingWidth, alignment: .trailing)
         }
+        .fixedSize(horizontal: true, vertical: false)
         .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)
         .reminderClock(reminder)
     }
