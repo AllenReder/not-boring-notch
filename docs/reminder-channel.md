@@ -19,7 +19,8 @@ Three things live in that pane:
 - **Token** — a shared secret required on every request. Regenerate it to lock out a client that
   already has it.
 - **Discovery file** — the app publishes `{port, token, endpoint}` to
-  `reminder-channel.json` inside its sandbox container, and the pane can reveal it in Finder.
+  `Application Support/NotBoringNotch/reminder-channel.json` inside its sandbox container, and the
+  pane can reveal it in Finder.
 
 > **If your client is sandboxed** (for example a Mac App Store app), it cannot read that file —
 > sandbox containers are private to their app. Copy the port and token into the client's own
@@ -29,7 +30,7 @@ Three things live in that pane:
 ## Sending one
 
 ```bash
-TOKEN=$(python3 -c "import json,os;print(json.load(open(os.path.expanduser('~/Library/Containers/com.allenreder.notboringnotch/Data/Library/Application Support/reminder-channel.json')))['token'])")
+TOKEN=$(python3 -c "import json,os;print(json.load(open(os.path.expanduser('~/Library/Containers/com.allenreder.notboringnotch/Data/Library/Application Support/NotBoringNotch/reminder-channel.json')))['token'])")
 
 curl -X POST http://127.0.0.1:45999/reminder \
   -H "Authorization: Bearer $TOKEN" \

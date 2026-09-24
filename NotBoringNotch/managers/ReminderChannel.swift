@@ -134,8 +134,13 @@ final class ReminderChannel: ObservableObject {
 
     // MARK: - The discovery file
 
+    /// Where the channel publishes itself. `Application Support/NotBoringNotch/` is the directory
+    /// the app keeps its own state in; the shelf lives beside it.
+    private static let directoryName = "NotBoringNotch"
+
     private var discoveryURL: URL? {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+            .appendingPathComponent(Self.directoryName, isDirectory: true)
             .appendingPathComponent("reminder-channel.json")
     }
 
