@@ -8,7 +8,7 @@
 
 <p align="center">
   <em>为 macOS 深度重构、性能强劲的刘海伴侣。</em><br>
-  <strong>基于 <a href="https://github.com/TheBoredTeam/boring.notch">TheBoredTeam/boring.notch</a> 分叉 · 由 Allen Yi 维护</strong>
+  <strong>基于 <a href="https://github.com/TheBoredTeam/boring.notch">TheBoredTeam/boring.notch</a> 分叉 · 由 Allen Reder 维护</strong>
 </p>
 
 <p align="center">

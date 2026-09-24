@@ -8,7 +8,7 @@
 
 <p align="center">
   <em>A heavily modernized, high-performance notch companion for macOS.</em><br>
-  <strong>Forked from <a href="https://github.com/TheBoredTeam/boring.notch">TheBoredTeam/boring.notch</a> · Maintained by Allen Yi</strong>
+  <strong>Forked from <a href="https://github.com/TheBoredTeam/boring.notch">TheBoredTeam/boring.notch</a> · Maintained by Allen Reder</strong>
 </p>
 
 <p align="center">
