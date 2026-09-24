@@ -401,6 +401,9 @@
         }
       }
     },
+    "(Requires macOS 26+)" : {
+
+    },
     "%.0f seconds" : {
       "localizations" : {
         "ar" : {
@@ -901,6 +904,9 @@
         }
       }
     },
+    "%lld pt" : {
+
+    },
     "%lld%%" : {
       "localizations" : {
         "ar" : {
@@ -1000,57 +1006,6 @@
           }
         }
       }
-    },
-    "Any process running as you can read this. It keeps web pages and sandboxed apps out, which is what it is for." : {
-
-    },
-    "Channel" : {
-
-    },
-    "Connection" : {
-
-    },
-    "Copy example" : {
-
-    },
-    "Copy" : {
-
-    },
-    "Discovery file" : {
-
-    },
-    "Dismiss" : {
-
-    },
-    "Integrations" : {
-
-    },
-    "Let another app or a script raise a reminder in the notch. The channel listens on 127.0.0.1, so nothing on your network can reach it, and it needs the token below." : {
-
-    },
-    "Listening on 127.0.0.1:%u" : {
-
-    },
-    "Port" : {
-
-    },
-    "Regenerate" : {
-
-    },
-    "Reminder Channel" : {
-
-    },
-    "Send test reminder" : {
-
-    },
-    "Show in Finder" : {
-
-    },
-    "Token" : {
-
-    },
-    "Try it" : {
-
     },
     "• Bug fixes" : {
       "localizations" : {
@@ -2253,6 +2208,9 @@
         }
       }
     },
+    "Advanced Liquid Glass Tuning" : {
+
+    },
     "All-day" : {
       "localizations" : {
         "ar" : {
@@ -2653,6 +2611,9 @@
         }
       }
     },
+    "Any process running as you can read this. It keeps web pages and sandboxed apps out, which is what it is for." : {
+
+    },
     "App icon" : {
       "localizations" : {
         "ar" : {
@@ -2954,6 +2915,7 @@
       }
     },
     "Automatically check for updates" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3054,6 +3016,7 @@
       }
     },
     "Automatically download updates" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3653,7 +3616,11 @@
         }
       }
     },
+    "Blur" : {
+
+    },
     "Boost your productivity with Clipboard Manager" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -4053,6 +4020,9 @@
         }
       }
     },
+    "Camera Core Height" : {
+
+    },
     "Cancel" : {
       "localizations" : {
         "ar" : {
@@ -4253,6 +4223,9 @@
         }
       }
     },
+    "Channel" : {
+
+    },
     "Charging" : {
       "localizations" : {
         "ar" : {
@@ -4452,6 +4425,9 @@
           }
         }
       }
+    },
+    "Check for Updates on GitHub" : {
+
     },
     "Check for Updates…" : {
       "localizations" : {
@@ -5753,6 +5729,9 @@
         }
       }
     },
+    "Connection" : {
+
+    },
     "Continue" : {
       "localizations" : {
         "ar" : {
@@ -5852,6 +5831,12 @@
           }
         }
       }
+    },
+    "Copy" : {
+
+    },
+    "Copy example" : {
+
     },
     "Copy items on drag" : {
       "localizations" : {
@@ -7256,6 +7241,15 @@
         }
       }
     },
+    "Discovery file" : {
+
+    },
+    "Dismiss" : {
+
+    },
+    "Dispersion" : {
+
+    },
     "Download" : {
       "localizations" : {
         "ar" : {
@@ -7758,6 +7752,7 @@
       }
     },
     "Easily copy, store, and manage your most-used content. Upgrade now for advanced features like multi-item storage and quick access!" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -8053,106 +8048,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "启用专辑封面的模糊效果"
-          }
-        }
-      }
-    },
-    "Enable notch mirror" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Enable notch mirror"
-          }
-        },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Povolit notch zrcadlo"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Spiegelfunktion aktivieren"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enable notch mirror"
-          }
-        },
-        "en-GB" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enable notch mirror"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Habilitar espejo notch"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Activer le miroir ennuyeux"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Enable notch mirror"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Abilita specchio"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Notch 거울 켜기"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Włącz notch mirror"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Enable notch mirror"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Enable notch mirror"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Sıkıcı aynayı aktifleştir"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Enable notch mirror"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "启用虚拟镜像"
           }
         }
       }
@@ -8558,6 +8453,109 @@
         }
       }
     },
+    "Enable Liquid Glass" : {
+
+    },
+    "Enable notch mirror" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Enable notch mirror"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Povolit notch zrcadlo"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Spiegelfunktion aktivieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable notch mirror"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable notch mirror"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Habilitar espejo notch"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Activer le miroir ennuyeux"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Enable notch mirror"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Abilita specchio"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Notch 거울 켜기"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Włącz notch mirror"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Enable notch mirror"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Enable notch mirror"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sıkıcı aynayı aktifleştir"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Enable notch mirror"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "启用虚拟镜像"
+          }
+        }
+      }
+    },
     "Enable shelf" : {
       "localizations" : {
         "ar" : {
@@ -8759,6 +8757,7 @@
       }
     },
     "Enhance your experience with HUDs" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -9259,6 +9258,9 @@
         }
       }
     },
+    "Fade Softness" : {
+
+    },
     "Files dropped on the shelf will be shared via this service" : {
       "localizations" : {
         "ar" : {
@@ -9458,6 +9460,9 @@
           }
         }
       }
+    },
+    "Floor Transparency" : {
+
     },
     "Full screen behavior" : {
       "localizations" : {
@@ -11760,6 +11765,9 @@
         }
       }
     },
+    "Integrations" : {
+
+    },
     "Layout Preview" : {
       "localizations" : {
         "ar" : {
@@ -11859,6 +11867,18 @@
           }
         }
       }
+    },
+    "Lens Height" : {
+
+    },
+    "Let another app or a script raise a reminder in the notch. The channel listens on 127.0.0.1, so nothing on your network can reach it, and it needs the token below." : {
+
+    },
+    "Liquid Glass provides continuous GPU optical refraction and camera cutout concealment. Crystal clear with zero blur by default." : {
+
+    },
+    "Listening on 127.0.0.1:%u" : {
+
     },
     "Lottie JSON URL" : {
       "localizations" : {
@@ -13661,6 +13681,7 @@
       }
     },
     "More" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -14761,6 +14782,12 @@
         }
       }
     },
+    "Not Boring Notch" : {
+
+    },
+    "Not Boring Notch · Maintained with 🫶🏻 by Allen Yi & community" : {
+
+    },
     "Not Now" : {
       "localizations" : {
         "ar" : {
@@ -15260,6 +15287,9 @@
           }
         }
       }
+    },
+    "Notch Surface Material" : {
+
     },
     "Open Calendar Settings" : {
       "localizations" : {
@@ -15961,6 +15991,9 @@
         }
       }
     },
+    "Pin Notch Open (Keep notch open)" : {
+
+    },
     "Plugged In" : {
       "localizations" : {
         "ar" : {
@@ -16060,6 +16093,9 @@
           }
         }
       }
+    },
+    "Port" : {
+
     },
     "Preferred display" : {
       "localizations" : {
@@ -16661,6 +16697,12 @@
         }
       }
     },
+    "Refraction" : {
+
+    },
+    "Regenerate" : {
+
+    },
     "Remember last tab" : {
       "localizations" : {
         "ar" : {
@@ -16860,6 +16902,9 @@
           }
         }
       }
+    },
+    "Reminder Channel" : {
+
     },
     "Reminders" : {
       "localizations" : {
@@ -17460,6 +17505,9 @@
           }
         }
       }
+    },
+    "Reset to Recommended" : {
+
     },
     "Restart" : {
       "extractionState" : "stale",
@@ -18062,6 +18110,9 @@
           }
         }
       }
+    },
+    "Send test reminder" : {
+
     },
     "Settings" : {
       "localizations" : {
@@ -18862,6 +18913,9 @@
           }
         }
       }
+    },
+    "Show in Finder" : {
+
     },
     "Show lyrics below artist name" : {
       "localizations" : {
@@ -20263,6 +20317,9 @@
         }
       }
     },
+    "Specular Rim" : {
+
+    },
     "Speed" : {
       "localizations" : {
         "ar" : {
@@ -21265,6 +21322,12 @@
         }
       }
     },
+    "Token" : {
+
+    },
+    "Try it" : {
+
+    },
     "Two-finger swipe up on notch to close, two-finger swipe down on notch to open when **Open notch on hover** option is disabled" : {
       "localizations" : {
         "ar" : {
@@ -21467,6 +21530,7 @@
       }
     },
     "Unlock advanced features and improve your experience. Upgrade now for more customizations!" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
