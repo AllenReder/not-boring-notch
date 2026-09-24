@@ -148,7 +148,7 @@ struct IntegrationsSettings: View {
             title: "Test reminder",
             subtitle: "From the Integrations settings",
             body: "This is what a Reminder looks like. Hover the notch to read the whole thing, "
-                + "or press the × to dismiss it.",
+                + "or click Dismiss to close it.",
             duration: 8,
             isSticky: false,
             sound: .none,

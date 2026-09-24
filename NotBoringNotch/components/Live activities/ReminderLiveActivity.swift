@@ -77,7 +77,7 @@ struct ReminderLiveActivity: View {
                 .fill(.black)
                 .frame(width: vm.closedNotchSize.width - 20)
 
-            // Right wing: Subtitle (if any) + Dismiss button
+            // Right wing: Subtitle or indicator flanking the physical notch
             HStack(spacing: 6) {
                 if let subtitle = reminder.subtitle {
                     Text(subtitle)
@@ -86,22 +86,17 @@ struct ReminderLiveActivity: View {
                         .lineLimit(1)
                         .truncationMode(.tail)
                         .frame(maxWidth: .infinity, alignment: .trailing)
+                } else if reminder.isSticky {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.gray.opacity(0.7))
                 } else {
-                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.gray.opacity(0.5))
                 }
-
-                Button {
-                    ReminderChannel.shared.dismissVisible()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.gray)
-                        .frame(width: 18, height: 18)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(PlainButtonStyle())
             }
-            .padding(.trailing, 8)
+            .padding(.trailing, 10)
             .frame(width: wingWidth, alignment: .trailing)
         }
         .fixedSize(horizontal: true, vertical: false)

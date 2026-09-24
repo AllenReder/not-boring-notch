@@ -115,8 +115,8 @@ cap bounds memory, not what you are allowed to say.
 ## What the user sees
 
 - **Closed notch** — the icon, title, and subtitle slide out beside the camera housing, taking the
-  same slot the music live activity uses. A `×` dismisses early. A title too long for the slot
-  ends in an ellipsis; the body is never truncated, only scrolled.
+  same slot the music live activity uses. A title too long for the slot ends in an ellipsis; the
+  body is never truncated, only scrolled.
 - **Hover** — the notch opens onto the full body, the action button if there is one, and Dismiss.
 - **One at a time** — a further five Reminders wait their turn; past that the oldest waiter is
   dropped, so a sender in a loop cannot flood the notch.
