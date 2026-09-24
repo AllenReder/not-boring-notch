@@ -83,8 +83,9 @@ struct ContentView: View {
             && vm.notchState == .closed && Defaults[.showPowerStatusNotifications]
         {
             chinWidth = 640
-        } else if closedReminder != nil {
-            chinWidth += 200
+        } else if let reminder = closedReminder {
+            let wing = ReminderLiveActivity.calculatedWingWidth(for: reminder)
+            chinWidth += (2 * wing - 20)
         } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music)
             && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle)
             && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed

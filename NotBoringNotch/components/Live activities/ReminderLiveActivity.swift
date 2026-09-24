@@ -49,59 +49,170 @@ struct ReminderIconView: View {
     }
 }
 
+/// Smoothly renders notification text: static text when it fits, or continuous marquee ticker
+/// when the text length exceeds the available frame width.
+struct ScrollableNotificationText: View {
+    let text: String
+    let font: Font
+    var fontWeight: Font.Weight = .medium
+    let nsFont: NSFont.TextStyle
+    let textColor: Color
+    let frameWidth: CGFloat
+
+    private var textWidth: CGFloat {
+        ReminderLiveActivity.measureTextWidth(
+            text,
+            size: 11.5,
+            weight: fontWeight == .medium ? .medium : .regular
+        )
+    }
+
+    var body: some View {
+        if textWidth > frameWidth {
+            MarqueeText(
+                .constant(text),
+                font: font.weight(fontWeight),
+                nsFont: nsFont,
+                textColor: textColor,
+                minDuration: 1.5,
+                frameWidth: frameWidth
+            )
+            .frame(width: frameWidth, height: 18)
+        } else {
+            Text(text)
+                .font(font)
+                .fontWeight(fontWeight)
+                .foregroundStyle(textColor)
+                .lineLimit(1)
+        }
+    }
+}
+
 struct ReminderLiveActivity: View {
     @EnvironmentObject var vm: NotchViewModel
     let reminder: Reminder
 
-    private var wingWidth: CGFloat { 110 }
+    static func measureTextWidth(_ text: String, size: CGFloat = 11.5, weight: NSFont.Weight = .medium) -> CGFloat {
+        let singleLine = text.replacingOccurrences(of: "\n", with: " ")
+        let font = NSFont.systemFont(ofSize: size, weight: weight)
+        let attributes = [NSAttributedString.Key.font: font]
+        return ceil((singleLine as NSString).size(withAttributes: attributes).width)
+    }
+
+    /// Adapts the wing width dynamically to fit the content:
+    /// - With subtitle: left wing holds icon + title, right wing holds subtitle.
+    /// - Without subtitle: left wing holds icon only, right wing holds the main title.
+    /// Both wings are kept strictly symmetrical to maintain physical camera alignment.
+    static func calculatedWingWidth(for reminder: Reminder) -> CGFloat {
+        let maxWidth: CGFloat = 210
+
+        if let subtitle = reminder.subtitle {
+            let titleWidth = measureTextWidth(reminder.title, size: 11.5, weight: .medium)
+            let leftNeeded = 38 + titleWidth
+
+            let subtitleWidth = measureTextWidth(subtitle, size: 11.5, weight: .regular)
+            let rightNeeded = 16 + subtitleWidth + (reminder.isSticky ? 16 : 0)
+
+            let needed = max(leftNeeded, rightNeeded)
+            return min(maxWidth, max(110, needed))
+        } else {
+            let titleWidth = measureTextWidth(reminder.title, size: 11.5, weight: .medium)
+            let rightNeeded = 20 + titleWidth + (reminder.isSticky ? 16 : 0)
+
+            return min(maxWidth, max(75, rightNeeded))
+        }
+    }
+
+    var wingWidth: CGFloat {
+        Self.calculatedWingWidth(for: reminder)
+    }
 
     var body: some View {
         HStack(spacing: 0) {
-            // Left wing: Icon + Title flanking the physical notch
-            HStack(spacing: 6) {
-                ReminderIconView(icon: reminder.icon)
-                    .frame(width: 18, height: 18)
-
-                Text(reminder.title)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-            }
-            .padding(.leading, 8)
-            .frame(width: wingWidth, alignment: .leading)
+            // Left wing
+            leftWing
+                .frame(width: wingWidth, alignment: reminder.subtitle != nil ? .leading : .center)
 
             // Center: Black spacer matching the flat base of the physical camera notch
             Rectangle()
                 .fill(.black)
                 .frame(width: vm.closedNotchSize.width - 20)
 
-            // Right wing: Subtitle or indicator flanking the physical notch
-            HStack(spacing: 6) {
-                if let subtitle = reminder.subtitle {
-                    Text(subtitle)
-                        .font(.subheadline)
-                        .foregroundStyle(.gray)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                } else if reminder.isSticky {
-                    Image(systemName: "pin.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.gray.opacity(0.7))
-                } else {
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(.gray.opacity(0.5))
-                }
-            }
-            .padding(.trailing, 10)
-            .frame(width: wingWidth, alignment: .trailing)
+            // Right wing
+            rightWing
+                .frame(width: wingWidth, alignment: reminder.subtitle != nil ? .trailing : .leading)
         }
         .fixedSize(horizontal: true, vertical: false)
         .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)
         .reminderClock(reminder)
+    }
+
+    @ViewBuilder
+    private var leftWing: some View {
+        if reminder.subtitle != nil {
+            HStack(spacing: 6) {
+                ReminderIconView(icon: reminder.icon)
+                    .frame(width: 18, height: 18)
+
+                ScrollableNotificationText(
+                    text: reminder.title,
+                    font: .subheadline,
+                    fontWeight: .medium,
+                    nsFont: .subheadline,
+                    textColor: .white,
+                    frameWidth: max(30, wingWidth - 32)
+                )
+            }
+            .padding(.leading, 8)
+        } else {
+            // No subtitle: icon sits cleanly centered in the left wing
+            ReminderIconView(icon: reminder.icon)
+                .frame(width: 20, height: 20)
+                .frame(maxWidth: .infinity, alignment: .center)
+        }
+    }
+
+    @ViewBuilder
+    private var rightWing: some View {
+        if let subtitle = reminder.subtitle {
+            HStack(spacing: 6) {
+                ScrollableNotificationText(
+                    text: subtitle,
+                    font: .subheadline,
+                    fontWeight: .regular,
+                    nsFont: .subheadline,
+                    textColor: .gray,
+                    frameWidth: max(30, wingWidth - 16 - (reminder.isSticky ? 16 : 0))
+                )
+
+                if reminder.isSticky {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.gray.opacity(0.7))
+                }
+            }
+            .padding(.trailing, 10)
+        } else {
+            // No subtitle: main title takes the right wing
+            HStack(spacing: 6) {
+                ScrollableNotificationText(
+                    text: reminder.title,
+                    font: .subheadline,
+                    fontWeight: .medium,
+                    nsFont: .subheadline,
+                    textColor: .white,
+                    frameWidth: max(30, wingWidth - 18 - (reminder.isSticky ? 16 : 0))
+                )
+
+                if reminder.isSticky {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.gray.opacity(0.7))
+                }
+            }
+            .padding(.leading, 6)
+            .padding(.trailing, 10)
+        }
     }
 }
 
