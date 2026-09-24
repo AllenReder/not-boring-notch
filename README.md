@@ -12,6 +12,10 @@
 </p>
 
 <p align="center">
+  <a href="README.md">English</a> | <a href="README_zh.md">简体中文</a>
+</p>
+
+<p align="center">
   <a href="https://github.com/AllenReder/not-boring-notch/actions/workflows/cicd.yml"><img src="https://github.com/AllenReder/not-boring-notch/actions/workflows/cicd.yml/badge.svg" alt="Build Status" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg" alt="License" /></a>
   <img src="https://img.shields.io/badge/macOS-14.0%2B-black?logo=apple" alt="macOS 14+" />
@@ -33,12 +37,31 @@ Forget about static black cutouts: with Not Boring Notch, your notch transforms 
 ## ✨ Features
 
 - 💎 **Liquid Glass Surface**: Native CoreAnimation GPU ray-bending refraction, sub-pixel chromatic dispersion, and crystal-clear transparency with zero blur.
+- 🔔 **Custom Reminder Channel**: Let command-line scripts, automated hooks, and AI agents raise glanceable, dynamic notifications in the notch over a local HTTP port (`127.0.0.1:45999`). Supports auto-adaptive wings, smooth marquee scrolling, in-place status updates without spam, and interactive action buttons. See [docs/reminder-channel.md](docs/reminder-channel.md).
 - 🎵 **Media Powerhouse**: Deep integration with Apple Music, Spotify, and YouTube Music. Features real-time lyrics, high-frame-rate spectrogram visualizers, and album art ambient color tinting.
 - 📆 **Calendar & Reminders**: Full monthly calendar view, upcoming events, and checkable system Reminders built directly into the notch.
 - 📚 **File Shelf**: Drop files into the notch to stage them, quick-look previews, and drag them out anywhere or share via AirDrop.
 - 🎚️ **System HUDs**: Sleek Dynamic Island replacements for volume, brightness, backlight, and battery charging animations.
 - 🪞 **Notch Mirror & Face**: Built-in camera mirror for quick appearance checks and playful animated notch expressions.
-- 🔔 **Reminder Channel**: Let another app or a script raise a reminder in the notch over a token-guarded loopback port. See [docs/reminder-channel.md](docs/reminder-channel.md).
+
+---
+
+### 🔔 Quick Start: Sending a Notch Reminder
+
+With Not Boring Notch running, any script or tool can trigger a glanceable notification in your notch via a single `curl`:
+
+```bash
+# Read the auto-generated local token
+TOKEN=$(cat "$HOME/Library/Containers/com.allenreder.notboringnotch/Data/Library/Application Support/NotBoringNotch/reminder-channel.json" | grep -o '"token" *: *"[^"]*"' | cut -d'"' -f4)
+
+# Raise a reminder
+curl -X POST http://127.0.0.1:45999/reminder \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"icon":{"kind":"sf_symbol","value":"hammer.fill"},"title":"Build Finished","subtitle":"12s"}'
+```
+
+For detailed API documentation, custom icon support, and queue behavior, check out the [Reminder Channel Guide](docs/reminder-channel.md).
 
 ---
 

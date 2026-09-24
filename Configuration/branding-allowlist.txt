@@ -35,6 +35,7 @@ line|docs/adr/0002-liquid-glass-layering-and-states.md|Boring Notch|historical A
 # ADR 0004 is the hard-fork decision, so it has to say which repository this forked from.
 line|docs/adr/0004-hard-fork-from-upstream.md|boring.notch|names the upstream repository this fork came from
 line|README.md|boring.notch|upstream attribution in the heritage section
+line|README_zh.md|boring.notch|upstream attribution in the heritage section
 line|SECURITY.md|boring.notch|upstream attribution next to the ADR 0004 reference
 line|docs/agents/issue-tracker.md|boring.notch|upstream tracker, deliberately referenced by full name
 line|AGENTS.md|boring.notch|names the upstream repository, which is reference only
