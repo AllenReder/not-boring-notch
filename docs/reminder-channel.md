@@ -63,7 +63,7 @@ than two.
 | `icon` | object | the notch's bell | `{ "kind": …, "value": … }` — see below. |
 | `title` | string | **required** | The line the closed notch shows. Cannot be empty. |
 | `subtitle` | string | none | Shown beside the title, in grey. |
-| `body` | string | none | Shown only when the notch is open, in full. |
+| `body` | string | none | Shown in full when the notch is open. In the closed notch, if no subtitle is given, the first non-empty line of the body is shown as a preview on the right wing. |
 | `duration` | number | `4` | Seconds on screen. Ignored when `sticky` is true. |
 | `sticky` | boolean | `false` | Stays until dismissed. |
 | `sound` | string | `"none"` | `"none"` or `"default"` (the notch's own alert). |
@@ -114,9 +114,11 @@ cap bounds memory, not what you are allowed to say.
 
 ## What the user sees
 
-- **Closed notch** — the icon, title, and subtitle slide out beside the camera housing, taking the
-  same slot the music live activity uses. A title too long for the slot ends in an ellipsis; the
-  body is never truncated, only scrolled.
+- **Closed notch** — the icon, title, and subtitle slide out beside the camera housing,
+  dynamically adapting to text length. A title or subtitle too long for the slot smoothly
+  scrolls as a marquee ticker after a brief pause, rather than truncating with an ellipsis; the
+  body is shown in full in the open notch, with its first line previewed in the closed slot if no
+  subtitle was given.
 - **Hover** — the notch opens onto the full body, the action button if there is one, and Dismiss.
 - **One at a time** — a further five Reminders wait their turn; past that the oldest waiter is
   dropped, so a sender in a loop cannot flood the notch.

@@ -49,9 +49,9 @@ struct ReminderIconView: View {
     }
 }
 
-/// Smoothly renders notification text: static text when it fits, or continuous marquee ticker
-/// when the text length exceeds the available frame width.
-struct ScrollableNotificationText: View {
+/// Smoothly renders text in the closed reminder slot: static text when it fits, or continuous
+/// marquee ticker when the text length exceeds the available frame width.
+struct ScrollableReminderText: View {
     let text: String
     let font: Font
     var fontWeight: Font.Weight = .medium
@@ -59,8 +59,15 @@ struct ScrollableNotificationText: View {
     let textColor: Color
     let frameWidth: CGFloat
 
+    static func measureWidth(_ text: String, size: CGFloat = 11.5, weight: NSFont.Weight = .medium) -> CGFloat {
+        let singleLine = text.replacingOccurrences(of: "\n", with: " ")
+        let font = NSFont.systemFont(ofSize: size, weight: weight)
+        let attributes = [NSAttributedString.Key.font: font]
+        return ceil((singleLine as NSString).size(withAttributes: attributes).width)
+    }
+
     private var textWidth: CGFloat {
-        ReminderLiveActivity.measureTextWidth(
+        Self.measureWidth(
             text,
             size: 11.5,
             weight: fontWeight == .medium ? .medium : .regular
@@ -93,10 +100,7 @@ struct ReminderLiveActivity: View {
     let reminder: Reminder
 
     static func measureTextWidth(_ text: String, size: CGFloat = 11.5, weight: NSFont.Weight = .medium) -> CGFloat {
-        let singleLine = text.replacingOccurrences(of: "\n", with: " ")
-        let font = NSFont.systemFont(ofSize: size, weight: weight)
-        let attributes = [NSAttributedString.Key.font: font]
-        return ceil((singleLine as NSString).size(withAttributes: attributes).width)
+        ScrollableReminderText.measureWidth(text, size: size, weight: weight)
     }
 
     /// Determines the secondary text shown on the right wing:
@@ -170,23 +174,24 @@ struct ReminderLiveActivity: View {
             ReminderIconView(icon: reminder.icon)
                 .frame(width: 18, height: 18)
 
-            ScrollableNotificationText(
+            ScrollableReminderText(
                 text: reminder.title,
                 font: .subheadline,
                 fontWeight: .medium,
                 nsFont: .subheadline,
                 textColor: .white,
-                frameWidth: max(20, wingWidth - 32)
+                frameWidth: max(20, wingWidth - 38)
             )
         }
         .padding(.leading, 8)
+        .padding(.trailing, 6)
     }
 
     @ViewBuilder
     private var rightWing: some View {
         HStack(spacing: 6) {
             if let preview = Self.previewText(for: reminder) {
-                ScrollableNotificationText(
+                ScrollableReminderText(
                     text: preview,
                     font: .subheadline,
                     fontWeight: .regular,
