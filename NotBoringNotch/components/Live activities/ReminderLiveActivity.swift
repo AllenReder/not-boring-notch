@@ -99,28 +99,45 @@ struct ReminderLiveActivity: View {
         return ceil((singleLine as NSString).size(withAttributes: attributes).width)
     }
 
-    /// Adapts the wing width dynamically to fit the content:
-    /// - With subtitle: left wing holds icon + title, right wing holds subtitle.
-    /// - Without subtitle: left wing holds icon only, right wing holds the main title.
+    /// Determines the secondary text shown on the right wing:
+    /// - Explicit `subtitle` if given;
+    /// - Otherwise, the first non-empty line of `body` as an automatic preview;
+    /// - Otherwise `nil`.
+    static func previewText(for reminder: Reminder) -> String? {
+        if let subtitle = reminder.subtitle, !subtitle.isEmpty {
+            return subtitle
+        }
+        if let body = reminder.body {
+            let lines = body.components(separatedBy: .newlines)
+            if let first = lines.first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
+                return first.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+        return nil
+    }
+
+    /// Adapts the wing width dynamically to fit the content without any arbitrary minimum width.
+    /// Left wing holds icon + title; right wing holds subtitle (or body preview).
     /// Both wings are kept strictly symmetrical to maintain physical camera alignment.
     static func calculatedWingWidth(for reminder: Reminder) -> CGFloat {
         let maxWidth: CGFloat = 210
+        let minPhysicalWidth: CGFloat = 28
 
-        if let subtitle = reminder.subtitle {
-            let titleWidth = measureTextWidth(reminder.title, size: 11.5, weight: .medium)
-            let leftNeeded = 38 + titleWidth
+        // Left wing has: padding(8) + icon(18) + spacing(6) + title + padding(6) = 38 + titleWidth
+        let titleWidth = measureTextWidth(reminder.title, size: 11.5, weight: .medium)
+        let leftNeeded = 38 + titleWidth
 
-            let subtitleWidth = measureTextWidth(subtitle, size: 11.5, weight: .regular)
-            let rightNeeded = 16 + subtitleWidth + (reminder.isSticky ? 16 : 0)
-
-            let needed = max(leftNeeded, rightNeeded)
-            return min(maxWidth, max(110, needed))
+        // Right wing has: preview text or status
+        let rightNeeded: CGFloat
+        if let preview = previewText(for: reminder) {
+            let previewWidth = measureTextWidth(preview, size: 11.5, weight: .regular)
+            rightNeeded = 16 + previewWidth + (reminder.isSticky ? 16 : 0)
         } else {
-            let titleWidth = measureTextWidth(reminder.title, size: 11.5, weight: .medium)
-            let rightNeeded = 20 + titleWidth + (reminder.isSticky ? 16 : 0)
-
-            return min(maxWidth, max(75, rightNeeded))
+            rightNeeded = reminder.isSticky ? 26 : minPhysicalWidth
         }
+
+        let needed = max(leftNeeded, rightNeeded)
+        return min(maxWidth, max(minPhysicalWidth, needed))
     }
 
     var wingWidth: CGFloat {
@@ -129,18 +146,18 @@ struct ReminderLiveActivity: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            // Left wing
+            // Left wing: Icon + Title
             leftWing
-                .frame(width: wingWidth, alignment: reminder.subtitle != nil ? .leading : .center)
+                .frame(width: wingWidth, alignment: .leading)
 
             // Center: Black spacer matching the flat base of the physical camera notch
             Rectangle()
                 .fill(.black)
                 .frame(width: vm.closedNotchSize.width - 20)
 
-            // Right wing
+            // Right wing: Subtitle / preview / indicator
             rightWing
-                .frame(width: wingWidth, alignment: reminder.subtitle != nil ? .trailing : .leading)
+                .frame(width: wingWidth, alignment: .trailing)
         }
         .fixedSize(horizontal: true, vertical: false)
         .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)
@@ -149,70 +166,49 @@ struct ReminderLiveActivity: View {
 
     @ViewBuilder
     private var leftWing: some View {
-        if reminder.subtitle != nil {
-            HStack(spacing: 6) {
-                ReminderIconView(icon: reminder.icon)
-                    .frame(width: 18, height: 18)
-
-                ScrollableNotificationText(
-                    text: reminder.title,
-                    font: .subheadline,
-                    fontWeight: .medium,
-                    nsFont: .subheadline,
-                    textColor: .white,
-                    frameWidth: max(30, wingWidth - 32)
-                )
-            }
-            .padding(.leading, 8)
-        } else {
-            // No subtitle: icon sits cleanly centered in the left wing
+        HStack(spacing: 6) {
             ReminderIconView(icon: reminder.icon)
-                .frame(width: 20, height: 20)
-                .frame(maxWidth: .infinity, alignment: .center)
+                .frame(width: 18, height: 18)
+
+            ScrollableNotificationText(
+                text: reminder.title,
+                font: .subheadline,
+                fontWeight: .medium,
+                nsFont: .subheadline,
+                textColor: .white,
+                frameWidth: max(20, wingWidth - 32)
+            )
         }
+        .padding(.leading, 8)
     }
 
     @ViewBuilder
     private var rightWing: some View {
-        if let subtitle = reminder.subtitle {
-            HStack(spacing: 6) {
+        HStack(spacing: 6) {
+            if let preview = Self.previewText(for: reminder) {
                 ScrollableNotificationText(
-                    text: subtitle,
+                    text: preview,
                     font: .subheadline,
                     fontWeight: .regular,
                     nsFont: .subheadline,
                     textColor: .gray,
-                    frameWidth: max(30, wingWidth - 16 - (reminder.isSticky ? 16 : 0))
+                    frameWidth: max(20, wingWidth - 16 - (reminder.isSticky ? 16 : 0))
                 )
-
-                if reminder.isSticky {
-                    Image(systemName: "pin.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.gray.opacity(0.7))
-                }
+            } else {
+                Spacer(minLength: 0)
             }
-            .padding(.trailing, 10)
-        } else {
-            // No subtitle: main title takes the right wing
-            HStack(spacing: 6) {
-                ScrollableNotificationText(
-                    text: reminder.title,
-                    font: .subheadline,
-                    fontWeight: .medium,
-                    nsFont: .subheadline,
-                    textColor: .white,
-                    frameWidth: max(30, wingWidth - 18 - (reminder.isSticky ? 16 : 0))
-                )
 
-                if reminder.isSticky {
-                    Image(systemName: "pin.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.gray.opacity(0.7))
-                }
+            if reminder.isSticky {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.gray.opacity(0.7))
+            } else if Self.previewText(for: reminder) == nil {
+                Image(systemName: "chevron.compact.down")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.gray.opacity(0.35))
             }
-            .padding(.leading, 6)
-            .padding(.trailing, 10)
         }
+        .padding(.trailing, 10)
     }
 }
 
