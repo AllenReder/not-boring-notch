@@ -130,3 +130,18 @@ Publishing the release, or pushing the tag, runs `update-version-dropdown.yml`: 
 version dropdown in `.github/ISSUE_TEMPLATE/bug-report.yml` with the five most recent
 tags. Check that the new version shows up in the form. If that job failed, the dropdown simply
 still lists the old tags — nothing else breaks.
+
+## 8. Bump the Homebrew cask
+
+Not Boring Notch is also distributed through the
+[`AllenReder/homebrew-tap`](https://github.com/AllenReder/homebrew-tap) tap, in
+`Casks/not-boring-notch.rb`. That file pins both the version and the DMG's checksum, so a new
+release needs it bumped by hand:
+
+```bash
+shasum -a 256 build/release/Not-Boring-Notch-vX.Y.Z.dmg   # -> new sha256
+```
+
+Update `version` and `sha256` in the cask, then commit and push the tap repository. Forgetting
+this step does not break anything, but `brew install --cask` keeps serving the previous release
+until the cask catches up.
