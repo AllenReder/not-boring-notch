@@ -71,6 +71,20 @@ curl -X POST http://127.0.0.1:45999/reminder \
 - macOS **14 Sonoma** 或更高版本（硬件级流体玻璃折射效果需要 macOS 26+）
 - 支持 Apple Silicon (M系列芯片) 及 Intel Mac
 
+### 使用 Homebrew 安装（推荐）
+
+最简单、且能随版本自动更新的安装方式：
+
+```bash
+brew install --cask AllenReder/tap/not-boring-notch
+```
+
+本项目为 ad-hoc 签名，macOS Gatekeeper 会拦截首次启动。加 `--no-quarantine` 可跳过该提示：
+
+```bash
+brew install --cask --no-quarantine AllenReder/tap/not-boring-notch
+```
+
 ### 从 GitHub Releases 下载预编译版本
 
 1. 前往 [**Releases 页面**](https://github.com/AllenReder/not-boring-notch/releases/latest) 下载最新的 `.dmg` 安装包；

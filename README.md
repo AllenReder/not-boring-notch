@@ -71,6 +71,20 @@ For detailed API documentation, custom icon support, and queue behavior, check o
 - macOS **14 Sonoma** or later (macOS 26+ for full Liquid Glass hardware refraction)
 - Apple Silicon or Intel Mac
 
+### Install with Homebrew
+
+The easiest way to install and keep Not Boring Notch up to date:
+
+```bash
+brew install --cask AllenReder/tap/not-boring-notch
+```
+
+The build is ad-hoc signed, so macOS Gatekeeper blocks the first launch. Pass `--no-quarantine` to skip that prompt:
+
+```bash
+brew install --cask --no-quarantine AllenReder/tap/not-boring-notch
+```
+
 ### Download from GitHub Releases
 
 1. Download the latest `.dmg` from [**Releases**](https://github.com/AllenReder/not-boring-notch/releases/latest);
