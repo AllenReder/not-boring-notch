@@ -127,6 +127,7 @@ struct ContentView: View {
                             shape: currentNotchShape,
                             topRadius: topCornerRadius,
                             bottomRadius: bottomCornerRadius,
+                            closedNotchHeight: vm.effectiveClosedNotchHeight,
                             ambientColor: ambientColor
                         )
                     }

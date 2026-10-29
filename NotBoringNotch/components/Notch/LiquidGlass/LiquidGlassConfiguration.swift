@@ -36,91 +36,62 @@ extension LiquidGlassRimTone: Defaults.Serializable {}
 
 // MARK: - Liquid Glass Configuration
 
-struct LiquidGlassConfiguration: Equatable, Codable {
-    // Bounds Limits (Source of Truth)
+/// The single source of truth for the surface's parameter bounds and shipped
+/// values. The renderer and the Appearance pane both read from here, so a slider
+/// can never describe a value the surface cannot take.
+enum LiquidGlassConfiguration {
+    // MARK: Bounds
+
     static let refractionRange: ClosedRange<Double> = 0.0...100.0
     static let blurRange: ClosedRange<Double> = 0.0...30.0
     static let dispersionRange: ClosedRange<Double> = 0.0...15.0
     static let lensHeightRange: ClosedRange<Double> = 10.0...60.0
-    static let coreHeightRange: ClosedRange<CGFloat> = 20.0...80.0
-    static let fadeSoftnessRange: ClosedRange<CGFloat> = 10.0...100.0
-    static let floorTransparencyRange: ClosedRange<CGFloat> = 0.0...0.50
+
+    /// The lowest fade start the slider offers. The camera housing pushes the
+    /// effective lower bound higher on displays that have a closed notch.
+    static let fadeStartLowerBound: Double = 20.0
+
+    static let fadeEndOpacityRange: ClosedRange<Double> = 0.0...0.80
     static let rimIntensityRange: ClosedRange<Double> = 0.0...2.0
 
-    // Properties
-    var refraction: Double
-    var blur: Double
-    var dispersion: Double
-    var lensHeight: Double
-    var coreHeight: CGFloat
-    var fadeSoftness: CGFloat
-    var floorTransparency: CGFloat
-    var rimTone: LiquidGlassRimTone
-    var rimIntensity: Double
-
-    // Recommended Golden Configuration
-    static let recommended = LiquidGlassConfiguration(
-        refraction: 24.0,
-        blur: 0.0,
-        dispersion: 4.0,
-        lensHeight: 23.0,
-        coreHeight: 80.0,
-        fadeSoftness: 100.0,
-        floorTransparency: 0.23,
-        rimTone: .neutralWhite,
-        rimIntensity: 0.2
-    )
-
-    init(
-        refraction: Double = 24.0,
-        blur: Double = 0.0,
-        dispersion: Double = 4.0,
-        lensHeight: Double = 23.0,
-        coreHeight: CGFloat = 80.0,
-        fadeSoftness: CGFloat = 100.0,
-        floorTransparency: CGFloat = 0.23,
-        rimTone: LiquidGlassRimTone = .neutralWhite,
-        rimIntensity: Double = 0.2
-    ) {
-        self.refraction = refraction
-        self.blur = blur
-        self.dispersion = dispersion
-        self.lensHeight = lensHeight
-        self.coreHeight = coreHeight
-        self.fadeSoftness = fadeSoftness
-        self.floorTransparency = floorTransparency
-        self.rimTone = rimTone
-        self.rimIntensity = rimIntensity
+    /// Slider range for the fade start on a display whose closed notch is
+    /// `closedNotchHeight` points tall and whose open panel is `openNotchHeight`
+    /// points tall. The fade never starts above the closed notch, or the camera
+    /// housing would let the desktop show through.
+    static func fadeStartRange(
+        closedNotchHeight: CGFloat,
+        openNotchHeight: CGFloat
+    ) -> ClosedRange<Double> {
+        let upper = max(Double(openNotchHeight), fadeStartLowerBound)
+        let lower = min(max(Double(closedNotchHeight), fadeStartLowerBound), upper)
+        return lower...upper
     }
 
-    mutating func clampToBounds() {
-        refraction = min(max(refraction, Self.refractionRange.lowerBound), Self.refractionRange.upperBound)
-        blur = min(max(blur, Self.blurRange.lowerBound), Self.blurRange.upperBound)
-        dispersion = min(max(dispersion, Self.dispersionRange.lowerBound), Self.dispersionRange.upperBound)
-        lensHeight = min(max(lensHeight, Self.lensHeightRange.lowerBound), Self.lensHeightRange.upperBound)
-        coreHeight = min(max(coreHeight, Self.coreHeightRange.lowerBound), Self.coreHeightRange.upperBound)
-        fadeSoftness = min(max(fadeSoftness, Self.fadeSoftnessRange.lowerBound), Self.fadeSoftnessRange.upperBound)
-        floorTransparency = min(max(floorTransparency, Self.floorTransparencyRange.lowerBound), Self.floorTransparencyRange.upperBound)
-        rimIntensity = min(max(rimIntensity, Self.rimIntensityRange.lowerBound), Self.rimIntensityRange.upperBound)
-    }
+    // MARK: Shipped values
 
-    func clamped() -> LiquidGlassConfiguration {
-        var copy = self
-        copy.clampToBounds()
-        return copy
+    /// The values a fresh install starts with and the Reset button restores.
+    /// The persisted keys in `Constants` read their defaults from here.
+    enum Recommended {
+        static let refraction: Double = 24.0
+        static let blur: Double = 0.5
+        static let dispersion: Double = 4.0
+        static let lensHeight: Double = 23.0
+        static let fadeStart: Double = fadeStartLowerBound
+        static let fadeEndOpacity: Double = 0.50
+        static let rimTone: LiquidGlassRimTone = .neutralWhite
+        static let rimIntensity: Double = 0.2
     }
 
     #if canImport(Defaults)
     static func resetToDefaults() {
-        Defaults[.glassRefraction] = recommended.refraction
-        Defaults[.glassBlur] = recommended.blur
-        Defaults[.glassDispersion] = recommended.dispersion
-        Defaults[.glassLensHeight] = recommended.lensHeight
-        Defaults[.glassCoreHeight] = recommended.coreHeight
-        Defaults[.glassFadeSoftness] = recommended.fadeSoftness
-        Defaults[.glassFloorTransparency] = recommended.floorTransparency
-        Defaults[.glassRimTone] = recommended.rimTone
-        Defaults[.glassRimIntensity] = recommended.rimIntensity
+        Defaults[.glassRefraction] = Recommended.refraction
+        Defaults[.glassBlur] = Recommended.blur
+        Defaults[.glassDispersion] = Recommended.dispersion
+        Defaults[.glassLensHeight] = Recommended.lensHeight
+        Defaults[.glassFadeStart] = Recommended.fadeStart
+        Defaults[.glassFadeEndOpacity] = Recommended.fadeEndOpacity
+        Defaults[.glassRimTone] = Recommended.rimTone
+        Defaults[.glassRimIntensity] = Recommended.rimIntensity
     }
     #endif
 }
