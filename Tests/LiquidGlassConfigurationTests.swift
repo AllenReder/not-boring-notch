@@ -24,72 +24,64 @@ func assertTrue(_ condition: Bool, _ message: String = "", file: StaticString = 
 @main
 struct LiquidGlassConfigurationTestsRunner {
     static func main() {
-        testRecommendedConfiguration()
-        testClampingOutOfBounds()
+        testRecommendedValues()
+        testRecommendedValuesAreInsideTheirRanges()
+        testFadeStartRangeForClosedNotch()
         testRimToneCases()
         print("🎉 All LiquidGlassConfigurationTests passed!")
     }
 
-    static func testRecommendedConfiguration() {
-        let config = LiquidGlassConfiguration.recommended
-        assertEqual(config.refraction, 24.0, "Recommended refraction should be 24.0")
-        assertEqual(config.blur, 0.0, "Recommended blur should be 0.0")
-        assertEqual(config.dispersion, 4.0, "Recommended dispersion should be 4.0")
-        assertEqual(config.lensHeight, 23.0, "Recommended lensHeight should be 23.0")
-        assertEqual(config.coreHeight, 80.0, "Recommended coreHeight should be 80.0")
-        assertEqual(config.fadeSoftness, 100.0, "Recommended fadeSoftness should be 100.0")
-        assertEqual(config.floorTransparency, 0.23, "Recommended floorTransparency should be 0.23")
-        assertEqual(config.rimTone, .neutralWhite, "Recommended rimTone should be neutralWhite")
-        assertEqual(config.rimIntensity, 0.2, "Recommended rimIntensity should be 0.2")
-        print("✅ testRecommendedConfiguration passed")
+    static func testRecommendedValues() {
+        let recommended = LiquidGlassConfiguration.Recommended.self
+        assertEqual(recommended.refraction, 24.0, "Recommended refraction should be 24.0")
+        assertEqual(recommended.blur, 0.5, "Recommended blur should be 0.5")
+        assertEqual(recommended.dispersion, 4.0, "Recommended dispersion should be 4.0")
+        assertEqual(recommended.lensHeight, 23.0, "Recommended lensHeight should be 23.0")
+        assertEqual(recommended.fadeStart, 20.0, "Recommended fadeStart should be the slider minimum")
+        assertEqual(recommended.fadeEndOpacity, 0.50, "Recommended fadeEndOpacity should be 0.50")
+        assertEqual(recommended.rimTone, .neutralWhite, "Recommended rimTone should be neutralWhite")
+        assertEqual(recommended.rimIntensity, 0.2, "Recommended rimIntensity should be 0.2")
+        print("✅ testRecommendedValues passed")
     }
 
-    static func testClampingOutOfBounds() {
-        var config = LiquidGlassConfiguration(
-            refraction: 250.0,
-            blur: 99.0,
-            dispersion: 50.0,
-            lensHeight: 120.0,
-            coreHeight: 200.0,
-            fadeSoftness: 500.0,
-            floorTransparency: 1.5,
-            rimTone: .neutralWhite,
-            rimIntensity: 10.0
+    /// A default outside its own slider range would make the control jump the
+    /// first time it is touched, so the two have to agree.
+    static func testRecommendedValuesAreInsideTheirRanges() {
+        let recommended = LiquidGlassConfiguration.Recommended.self
+        assertTrue(LiquidGlassConfiguration.refractionRange.contains(recommended.refraction))
+        assertTrue(LiquidGlassConfiguration.blurRange.contains(recommended.blur))
+        assertTrue(LiquidGlassConfiguration.dispersionRange.contains(recommended.dispersion))
+        assertTrue(LiquidGlassConfiguration.lensHeightRange.contains(recommended.lensHeight))
+        assertTrue(LiquidGlassConfiguration.fadeEndOpacityRange.contains(recommended.fadeEndOpacity))
+        assertTrue(LiquidGlassConfiguration.rimIntensityRange.contains(recommended.rimIntensity))
+        print("✅ testRecommendedValuesAreInsideTheirRanges passed")
+    }
+
+    static func testFadeStartRangeForClosedNotch() {
+        let notched = LiquidGlassConfiguration.fadeStartRange(
+            closedNotchHeight: 32,
+            openNotchHeight: 190
         )
-        config.clampToBounds()
+        assertEqual(notched.lowerBound, 32.0, "Range should start at the closed notch height")
+        assertEqual(notched.upperBound, 190.0, "Range should end at the open notch height")
 
-        assertEqual(config.refraction, 100.0, "Refraction should clamp to 100.0")
-        assertEqual(config.blur, 30.0, "Blur should clamp to 30.0")
-        assertEqual(config.dispersion, 15.0, "Dispersion should clamp to 15.0")
-        assertEqual(config.lensHeight, 60.0, "LensHeight should clamp to 60.0")
-        assertEqual(config.coreHeight, 80.0, "CoreHeight should clamp to 80.0")
-        assertEqual(config.fadeSoftness, 100.0, "FadeSoftness should clamp to 100.0")
-        assertEqual(config.floorTransparency, 0.50, "FloorTransparency should clamp to 0.50")
-        assertEqual(config.rimIntensity, 2.0, "RimIntensity should clamp to 2.0")
-
-        var negativeConfig = LiquidGlassConfiguration(
-            refraction: -50.0,
-            blur: -10.0,
-            dispersion: -5.0,
-            lensHeight: 2.0,
-            coreHeight: 5.0,
-            fadeSoftness: 2.0,
-            floorTransparency: -0.5,
-            rimTone: .off,
-            rimIntensity: -1.0
+        let nonNotched = LiquidGlassConfiguration.fadeStartRange(
+            closedNotchHeight: 0,
+            openNotchHeight: 190
         )
-        negativeConfig.clampToBounds()
+        assertEqual(nonNotched.lowerBound, 20.0, "Range should never start below the control's minimum")
+        assertTrue(
+            nonNotched.contains(LiquidGlassConfiguration.Recommended.fadeStart),
+            "The shipped default must be selectable on a display without a camera housing"
+        )
 
-        assertEqual(negativeConfig.refraction, 0.0, "Refraction should clamp to 0.0")
-        assertEqual(negativeConfig.blur, 0.0, "Blur should clamp to 0.0")
-        assertEqual(negativeConfig.dispersion, 0.0, "Dispersion should clamp to 0.0")
-        assertEqual(negativeConfig.lensHeight, 10.0, "LensHeight should clamp to 10.0")
-        assertEqual(negativeConfig.coreHeight, 20.0, "CoreHeight should clamp to 20.0")
-        assertEqual(negativeConfig.fadeSoftness, 10.0, "FadeSoftness should clamp to 10.0")
-        assertEqual(negativeConfig.floorTransparency, 0.0, "FloorTransparency should clamp to 0.0")
-        assertEqual(negativeConfig.rimIntensity, 0.0, "RimIntensity should clamp to 0.0")
+        let tallerThanOpen = LiquidGlassConfiguration.fadeStartRange(
+            closedNotchHeight: 500,
+            openNotchHeight: 190
+        )
+        assertEqual(tallerThanOpen.lowerBound, 190.0, "Range lower bound should cap at the open notch height")
 
-        print("✅ testClampingOutOfBounds passed")
+        print("✅ testFadeStartRangeForClosedNotch passed")
     }
 
     static func testRimToneCases() {

@@ -106,15 +106,40 @@ extension Defaults.Keys {
     // MARK: Liquid Glass
     static let enableLiquidGlass = Key<Bool>("enableLiquidGlass", default: true)
     static let preventAutoClose = Key<Bool>("preventAutoClose", default: false)
-    static let glassRefraction = Key<Double>("glassRefraction", default: 24.0)
-    static let glassBlur = Key<Double>("glassBlur", default: 0.0)
-    static let glassDispersion = Key<Double>("glassDispersion", default: 4.0)
-    static let glassLensHeight = Key<Double>("glassLensHeight", default: 23.0)
-    static let glassCoreHeight = Key<CGFloat>("glassCoreHeight", default: 80.0)
-    static let glassFadeSoftness = Key<CGFloat>("glassFadeSoftness", default: 100.0)
-    static let glassFloorTransparency = Key<CGFloat>("glassFloorTransparency", default: 0.23)
-    static let glassRimTone = Key<LiquidGlassRimTone>("glassRimTone", default: .neutralWhite)
-    static let glassRimIntensity = Key<Double>("glassRimIntensity", default: 0.2)
+    static let glassRefraction = Key<Double>(
+        "glassRefraction",
+        default: LiquidGlassConfiguration.Recommended.refraction
+    )
+    static let glassBlur = Key<Double>(
+        "glassBlur",
+        default: LiquidGlassConfiguration.Recommended.blur
+    )
+    static let glassDispersion = Key<Double>(
+        "glassDispersion",
+        default: LiquidGlassConfiguration.Recommended.dispersion
+    )
+    static let glassLensHeight = Key<Double>(
+        "glassLensHeight",
+        default: LiquidGlassConfiguration.Recommended.lensHeight
+    )
+    /// Height where the solid black band gives way to the glass fade, in points.
+    static let glassFadeStart = Key<Double>(
+        "glassFadeStart",
+        default: LiquidGlassConfiguration.Recommended.fadeStart
+    )
+    /// Opacity the fade ends on at the bottom edge of the open panel.
+    static let glassFadeEndOpacity = Key<Double>(
+        "glassFadeEndOpacity",
+        default: LiquidGlassConfiguration.Recommended.fadeEndOpacity
+    )
+    static let glassRimTone = Key<LiquidGlassRimTone>(
+        "glassRimTone",
+        default: LiquidGlassConfiguration.Recommended.rimTone
+    )
+    static let glassRimIntensity = Key<Double>(
+        "glassRimIntensity",
+        default: LiquidGlassConfiguration.Recommended.rimIntensity
+    )
 
     static let showNotHumanFace = Key<Bool>("showNotHumanFace", default: false)
     static let tileShowLabels = Key<Bool>("tileShowLabels", default: false)

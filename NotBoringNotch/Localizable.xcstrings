@@ -4020,9 +4020,6 @@
         }
       }
     },
-    "Camera Core Height" : {
-
-    },
     "Cancel" : {
       "localizations" : {
         "ar" : {
@@ -9258,7 +9255,10 @@
         }
       }
     },
-    "Fade Softness" : {
+    "Fade End Opacity" : {
+
+    },
+    "Fade Start" : {
 
     },
     "Files dropped on the shelf will be shared via this service" : {
@@ -9460,9 +9460,6 @@
           }
         }
       }
-    },
-    "Floor Transparency" : {
-
     },
     "Full screen behavior" : {
       "localizations" : {
@@ -11874,7 +11871,7 @@
     "Let another app or a script raise a reminder in the notch. The channel listens on 127.0.0.1, so nothing on your network can reach it, and it needs the token below." : {
 
     },
-    "Liquid Glass provides continuous GPU optical refraction and camera cutout concealment. Crystal clear with zero blur by default." : {
+    "Liquid Glass provides continuous GPU optical refraction and camera cutout concealment. The surface stays nearly clear, with only a touch of blur by default." : {
 
     },
     "Listening on 127.0.0.1:%u" : {

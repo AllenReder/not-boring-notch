@@ -1169,13 +1169,31 @@ struct Appearance: View {
     @Default(.glassBlur) var glassBlur
     @Default(.glassDispersion) var glassDispersion
     @Default(.glassLensHeight) var glassLensHeight
-    @Default(.glassCoreHeight) var glassCoreHeight
-    @Default(.glassFadeSoftness) var glassFadeSoftness
-    @Default(.glassFloorTransparency) var glassFloorTransparency
+    @Default(.glassFadeStart) var glassFadeStart
+    @Default(.glassFadeEndOpacity) var glassFadeEndOpacity
     @Default(.glassRimTone) var glassRimTone
     @Default(.glassRimIntensity) var glassRimIntensity
 
     @State private var showAdvancedGlassSettings: Bool = true
+
+    /// The surface clamps the fade start to the closed notch height, so offering
+    /// anything below it would be a slider the renderer ignores.
+    @MainActor private var glassFadeStartRange: ClosedRange<Double> {
+        LiquidGlassConfiguration.fadeStartRange(
+            closedNotchHeight: getClosedNotchSize(screenUUID: coordinator.selectedScreenUUID).height,
+            openNotchHeight: openNotchSize.height
+        )
+    }
+
+    /// The renderer never fades above the closed notch, so the control shows and
+    /// stores the same clamped value the surface actually uses.
+    @MainActor private var glassFadeStartBinding: Binding<Double> {
+        let range = glassFadeStartRange
+        return Binding(
+            get: { min(max(glassFadeStart, range.lowerBound), range.upperBound) },
+            set: { glassFadeStart = min(max($0, range.lowerBound), range.upperBound) }
+        )
+    }
 
     let icons: [String] = ["logo2"]
     @State private var selectedIcon: String = "logo2"
@@ -1226,6 +1244,7 @@ struct Appearance: View {
                                         .foregroundStyle(.secondary)
                                 }
                                 Slider(value: $glassRefraction, in: LiquidGlassConfiguration.refractionRange, step: 1)
+                                    .accessibilityLabel("Refraction")
                             }
 
                             // 2. Blur (0.0 ~ 30.0)
@@ -1238,6 +1257,7 @@ struct Appearance: View {
                                         .foregroundStyle(.secondary)
                                 }
                                 Slider(value: $glassBlur, in: LiquidGlassConfiguration.blurRange, step: 0.5)
+                                    .accessibilityLabel("Blur")
                             }
 
                             // 3. Dispersion (0 ~ 15)
@@ -1250,6 +1270,7 @@ struct Appearance: View {
                                         .foregroundStyle(.secondary)
                                 }
                                 Slider(value: $glassDispersion, in: LiquidGlassConfiguration.dispersionRange, step: 1)
+                                    .accessibilityLabel("Dispersion")
                             }
 
                             // 4. Lens Height (10 ~ 60)
@@ -1262,45 +1283,36 @@ struct Appearance: View {
                                         .foregroundStyle(.secondary)
                                 }
                                 Slider(value: $glassLensHeight, in: LiquidGlassConfiguration.lensHeightRange, step: 1)
+                                    .accessibilityLabel("Lens Height")
                             }
 
-                            // 5. Core Height (20 ~ 80)
+                            // 5. Fade Start (closed notch height ~ open notch height)
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack {
-                                    Text("Camera Core Height")
+                                    Text("Fade Start")
                                     Spacer()
-                                    Text("\(Int(glassCoreHeight)) pt")
+                                    Text("\(Int(glassFadeStartBinding.wrappedValue)) pt")
                                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                                         .foregroundStyle(.secondary)
                                 }
-                                Slider(value: $glassCoreHeight, in: LiquidGlassConfiguration.coreHeightRange, step: 1)
+                                Slider(value: glassFadeStartBinding, in: glassFadeStartRange, step: 1)
+                                    .accessibilityLabel("Fade Start")
                             }
 
-                            // 6. Fade Softness (10 ~ 100)
+                            // 6. Fade End Opacity (0.0 ~ 0.80)
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack {
-                                    Text("Fade Softness")
+                                    Text("Fade End Opacity")
                                     Spacer()
-                                    Text("\(Int(glassFadeSoftness)) pt")
+                                    Text("\(Int(glassFadeEndOpacity * 100))%")
                                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                                         .foregroundStyle(.secondary)
                                 }
-                                Slider(value: $glassFadeSoftness, in: LiquidGlassConfiguration.fadeSoftnessRange, step: 1)
+                                Slider(value: $glassFadeEndOpacity, in: LiquidGlassConfiguration.fadeEndOpacityRange, step: 0.01)
+                                    .accessibilityLabel("Fade End Opacity")
                             }
 
-                            // 7. Floor Transparency (0.0 ~ 0.50)
-                            VStack(alignment: .leading, spacing: 2) {
-                                HStack {
-                                    Text("Floor Transparency")
-                                    Spacer()
-                                    Text("\(Int(glassFloorTransparency * 100))%")
-                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                        .foregroundStyle(.secondary)
-                                }
-                                Slider(value: $glassFloorTransparency, in: LiquidGlassConfiguration.floorTransparencyRange, step: 0.01)
-                            }
-
-                            // 8. Specular Rim
+                            // 7. Specular Rim
                             HStack {
                                 Picker("Specular Rim", selection: $glassRimTone) {
                                     ForEach(LiquidGlassRimTone.allCases) { tone in
@@ -1317,6 +1329,7 @@ struct Appearance: View {
 
                             if glassRimTone != .off {
                                 Slider(value: $glassRimIntensity, in: LiquidGlassConfiguration.rimIntensityRange, step: 0.05)
+                                    .accessibilityLabel("Specular Rim Intensity")
                             }
 
                             // Reset Button
@@ -1336,7 +1349,7 @@ struct Appearance: View {
             } header: {
                 Text("Notch Surface Material")
             } footer: {
-                Text("Liquid Glass provides continuous GPU optical refraction and camera cutout concealment. Crystal clear with zero blur by default.")
+                Text("Liquid Glass provides continuous GPU optical refraction and camera cutout concealment. The surface stays nearly clear, with only a touch of blur by default.")
             }
 
             Section {

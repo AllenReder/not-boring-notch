@@ -6,52 +6,18 @@
 import Defaults
 import SwiftUI
 
-// MARK: - Layer 2: Hardware Scrim (Pure Camera Concealment)
+// MARK: - Gradient Layers
 
-struct NotchBlackFadeScrim: View {
+/// A gradient clipped to the notch shape. Its stops depend on the surface height,
+/// which the layer reads from a `GeometryReader`.
+private struct NotchGradientLayer: View {
     let shape: NotchShape
-    let coreHeight: CGFloat
-    let fadeSoftness: CGFloat
-    let floorTransparency: CGFloat
+    let stops: (CGFloat) -> [Gradient.Stop]
 
     var body: some View {
         GeometryReader { geo in
-            let stops = NotchScrimCalculator.hardwareScrimStops(
-                totalHeight: geo.size.height,
-                coreHeight: coreHeight,
-                fadeSoftness: fadeSoftness,
-                floorTransparency: floorTransparency
-            )
-
             LinearGradient(
-                stops: stops,
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .clipShape(shape)
-        }
-    }
-}
-
-// MARK: - Layer 3: Ambient Music Tint (Separate Middle-Band Atmosphere)
-
-struct NotchAmbientMusicTint: View {
-    let shape: NotchShape
-    let coreHeight: CGFloat
-    let fadeSoftness: CGFloat
-    let ambientColor: Color
-
-    var body: some View {
-        GeometryReader { geo in
-            let stops = NotchScrimCalculator.ambientTintStops(
-                totalHeight: geo.size.height,
-                coreHeight: coreHeight,
-                fadeSoftness: fadeSoftness,
-                ambientColor: ambientColor
-            )
-
-            LinearGradient(
-                stops: stops,
+                stops: stops(geo.size.height),
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -134,21 +100,29 @@ struct LiquidGlassNotchBackground: View {
     let shape: NotchShape
     let topRadius: CGFloat
     let bottomRadius: CGFloat
+    /// Height of the closed notch surface, which the scrim always keeps opaque.
+    let closedNotchHeight: CGFloat
     let ambientColor: Color?
 
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Default(.enableLiquidGlass) var enableLiquidGlass
     @Default(.glassRefraction) var glassRefraction
     @Default(.glassBlur) var glassBlur
     @Default(.glassDispersion) var glassDispersion
     @Default(.glassLensHeight) var glassLensHeight
-    @Default(.glassCoreHeight) var glassCoreHeight
-    @Default(.glassFadeSoftness) var glassFadeSoftness
-    @Default(.glassFloorTransparency) var glassFloorTransparency
+    @Default(.glassFadeStart) var glassFadeStart
+    @Default(.glassFadeEndOpacity) var glassFadeEndOpacity
     @Default(.glassRimTone) var glassRimTone
     @Default(.glassRimIntensity) var glassRimIntensity
 
+    /// The glass surface is only drawn when the user enabled it, accessibility
+    /// allows transparency, and the host can render the private backdrop.
+    private var usesGlassSurface: Bool {
+        enableLiquidGlass && !reduceTransparency && LiquidGlassAvailability.isSupported
+    }
+
     var body: some View {
-        if enableLiquidGlass && LiquidGlassAvailability.isSupported {
+        if usesGlassSurface {
             ZStack {
                 // Layer 1: CoreAnimation Physical Refraction Backdrop
                 LiquidGlassBackdropRepresentable(
@@ -162,21 +136,25 @@ struct LiquidGlassNotchBackground: View {
                 .clipShape(shape)
 
                 // Layer 2: Hardware Scrim (Guaranteed Solid Black Camera Concealment)
-                NotchBlackFadeScrim(
-                    shape: shape,
-                    coreHeight: glassCoreHeight,
-                    fadeSoftness: glassFadeSoftness,
-                    floorTransparency: glassFloorTransparency
-                )
+                NotchGradientLayer(shape: shape) { height in
+                    NotchScrimCalculator.hardwareScrimStops(
+                        totalHeight: height,
+                        fadeStart: glassFadeStart,
+                        solidBlackHeight: closedNotchHeight,
+                        fadeEndOpacity: glassFadeEndOpacity
+                    )
+                }
 
                 // Layer 3: Ambient Music Tint (Subtle Artwork Atmosphere in Mid-Band)
                 if let ambient = ambientColor {
-                    NotchAmbientMusicTint(
-                        shape: shape,
-                        coreHeight: glassCoreHeight,
-                        fadeSoftness: glassFadeSoftness,
-                        ambientColor: ambient
-                    )
+                    NotchGradientLayer(shape: shape) { height in
+                        NotchScrimCalculator.ambientTintStops(
+                            totalHeight: height,
+                            fadeStart: glassFadeStart,
+                            solidBlackHeight: closedNotchHeight,
+                            ambientColor: ambient
+                        )
+                    }
                 }
 
                 // Layer 4: Specular Rim Highlight
