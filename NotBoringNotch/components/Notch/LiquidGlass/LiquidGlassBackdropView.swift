@@ -146,14 +146,20 @@ final class LiquidGlassBackdropView: NSView {
         filter.setValue(0.0, forKey: "inputRefractionDistance1")
         filter.setValue(1.0, forKey: "inputRefractionOpacity")
 
-        // 2. Controlled Blur
+        // 2. Controlled Blur: the slider drives the glass frost only.
+        //    `inputBlurFill*` is a second, wider blur composited outside the
+        //    SDF refraction. Turning it on draws a translucent, unrefracted
+        //    copy of the notch beneath the refracted surface, so every fill
+        //    opacity stays at zero and Blur cannot reintroduce that layer.
         filter.setValue(blur, forKey: "inputBlurRadius")
-        filter.setValue(blur * 1.5, forKey: "inputBlurFillBlurRadius")
+        filter.setValue(0.0, forKey: "inputBlurFillBlurRadius")
+        filter.setValue(0.0, forKey: "inputBlurFillNormalOpacity")
+        filter.setValue(0.0, forKey: "inputBlurFillLightenOpacity")
+        filter.setValue(0.0, forKey: "inputBlurFillDarkenOpacity")
         filter.setValue(0.85, forKey: "inputBlurOpacity0")
         filter.setValue(0.85, forKey: "inputBlurOpacity1")
         filter.setValue(1.0, forKey: "inputBlurOpacity2")
         filter.setValue(1.0, forKey: "inputBlurOpacity3")
-        filter.setValue(blur > 0 ? 0.60 : 0.0, forKey: "inputBlurFillNormalOpacity")
 
         // 3. Delicate sub-pixel chromatic dispersion along refractive perimeter
         filter.setValue(aberration, forKey: "inputAberrationAmount")
