@@ -408,6 +408,8 @@ struct ContentView: View {
                                 NotchHomeView(albumArtNamespace: albumArtNamespace)
                             case .shelf:
                                 ShelfView()
+                            case .performance:
+                                PerformanceView()
                             }
                         }
                         .transition(.opacity)

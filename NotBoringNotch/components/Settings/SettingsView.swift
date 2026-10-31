@@ -38,6 +38,9 @@ struct SettingsView: View {
                 NavigationLink(value: "Battery") {
                     Label("Battery", systemImage: "battery.100.bolt")
                 }
+                NavigationLink(value: "Performance") {
+                    Label("Performance", systemImage: "speedometer")
+                }
 //                NavigationLink(value: "Downloads") {
 //                    Label("Downloads", systemImage: "square.and.arrow.down")
 //                }
@@ -79,6 +82,8 @@ struct SettingsView: View {
                     HUD()
                 case "Battery":
                     Charge()
+                case "Performance":
+                    PerformanceSettings()
                 case "Shelf":
                     Shelf()
                 case "Shortcuts":
@@ -369,6 +374,92 @@ struct Charge: View {
         }
         .accentColor(.effectiveAccent)
         .navigationTitle("Battery")
+    }
+}
+
+struct PerformanceSettings: View {
+    @Default(.performanceTabEnabled) private var performanceTabEnabled
+    @Default(.performanceInterval) private var performanceInterval
+    @Default(.performanceCardOrder) private var cardOrder: [PerformanceMetric]
+
+    var body: some View {
+        Form {
+            Section {
+                Defaults.Toggle(key: .performanceTabEnabled) {
+                    Text("Enable performance tab")
+                }
+                Picker("Refresh interval", selection: $performanceInterval) {
+                    ForEach(PerformanceInterval.allCases) { interval in
+                        Text(interval.label).tag(interval)
+                    }
+                }
+                .pickerStyle(.menu)
+                .disabled(!performanceTabEnabled)
+            } header: {
+                Text("Performance")
+            } footer: {
+                Text("The tab samples CPU, memory, GPU, network, disk, and temperature only while it is visible.")
+            }
+
+            Section {
+                ForEach(Array(cardOrder.enumerated()), id: \.element) { index, metric in
+                    HStack(spacing: 8) {
+                        Image(systemName: metric.icon)
+                            .frame(width: 18)
+                            .foregroundStyle(.secondary)
+                        Text(metric.title)
+                        Spacer()
+                        Button {
+                            move(metric, by: -1)
+                        } label: {
+                            Image(systemName: "chevron.up")
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(index == 0)
+                        .accessibilityLabel("Move \(metric.title) up")
+
+                        Button {
+                            move(metric, by: 1)
+                        } label: {
+                            Image(systemName: "chevron.down")
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(index == cardOrder.count - 1)
+                        .accessibilityLabel("Move \(metric.title) down")
+                    }
+                }
+                Button("Reset order") {
+                    cardOrder = PerformanceMetric.defaultOrder
+                }
+                .disabled(cardOrder == PerformanceMetric.defaultOrder)
+            } header: {
+                Text("Card order")
+            } footer: {
+                Text("The first three cards fill the top row; the last three fill the bottom row.")
+            }
+
+            Section {
+                LabeledContent("Metrics", value: "CPU · GPU · Memory · Network · Disk · Temperature")
+            } footer: {
+                Text("Fan speed, power draw, and per-process statistics are not included.")
+            }
+        }
+        .formStyle(.grouped)
+        .accentColor(.effectiveAccent)
+        .navigationTitle("Performance")
+        .onAppear {
+            let expected = Set(PerformanceMetric.allCases)
+            if cardOrder.count != expected.count || Set(cardOrder) != expected {
+                cardOrder = PerformanceMetric.defaultOrder
+            }
+        }
+    }
+
+    private func move(_ metric: PerformanceMetric, by offset: Int) {
+        guard let index = cardOrder.firstIndex(of: metric) else { return }
+        let target = index + offset
+        guard cardOrder.indices.contains(target) else { return }
+        cardOrder.swapAt(index, target)
     }
 }
 
