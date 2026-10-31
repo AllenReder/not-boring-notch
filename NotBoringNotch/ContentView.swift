@@ -64,9 +64,11 @@ struct ContentView: View {
         )
     }
 
-    /// A Reminder belongs to the display the user chose, like the rest of the notch's content.
+    /// A Reminder follows the notch's display rule, so it appears wherever the notch's content does.
     private var screenReminder: Reminder? {
-        vm.screenUUID == coordinator.selectedScreenUUID ? reminderChannel.visible : nil
+        guard let reminder = reminderChannel.visible,
+              coordinator.showsReminder(on: vm.screenUUID) else { return nil }
+        return reminder
     }
 
     /// The Reminder the closed notch would draw. One that arrives while the notch is hidden stays

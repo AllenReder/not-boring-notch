@@ -97,6 +97,12 @@ class NotchViewCoordinator: ObservableObject {
 
     @Published var selectedScreenUUID: String = NSScreen.main?.displayUUID ?? ""
 
+    /// A Reminder follows the notch's display rule: every screen when Show on all displays is on,
+    /// otherwise only the chosen display.
+    func showsReminder(on screenUUID: String?) -> Bool {
+        Defaults[.showOnAllDisplays] || screenUUID == selectedScreenUUID
+    }
+
     @Published var optionKeyPressed: Bool = true
     private var accessibilityObserver: Any?
     private var hudReplacementCancellable: AnyCancellable?

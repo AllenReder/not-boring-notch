@@ -122,6 +122,7 @@ cap bounds memory, not what you are allowed to say.
 - **Hover** — the notch opens onto the full body, the action button if there is one, and Dismiss.
 - **One at a time** — a further five Reminders wait their turn; past that the oldest waiter is
   dropped, so a sender in a loop cannot flood the notch.
-- **Only on the chosen display** — the same screen every other notch feature uses.
+- **On the chosen display** — or on every display when *Show on all displays* is on, like every
+  other notch feature.
 - **Hidden notch** — a Reminder that arrives while the notch is hidden by fullscreen detection
   waits, and gets its full duration once it can be seen.
