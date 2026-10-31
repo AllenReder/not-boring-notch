@@ -12,21 +12,39 @@ private typealias SetDoubleFunc = @convention(c) (AnyObject, Selector, Double) -
 private typealias SetObjFunc = @convention(c) (AnyObject, Selector, AnyObject) -> Void
 
 final class LiquidGlassBackdropView: NSView {
-    var refraction: Double = -20.0
-    var lensHeight: Double = 23.0
-    var blur: Double = 0.0
-    var aberration: Double = 4.0
-    var topRadius: CGFloat = 19.0
-    var bottomRadius: CGFloat = 24.0
+    /// The values the filter is built from. The representable supplies them
+    /// from `LiquidGlassConfiguration`, so the view carries no defaults of its
+    /// own that could drift from the shipped ones.
+    var refraction: Double
+    var lensHeight: Double
+    var blur: Double
+    var dispersion: Double
+    var topRadius: CGFloat
+    var bottomRadius: CGFloat
 
     private var backdrop: CALayer?
     private var sdfLayer: CALayer?
     private var sdfElement: CALayer?
 
-    override init(frame: NSRect) {
+    init(
+        frame: NSRect,
+        refraction: Double,
+        lensHeight: Double,
+        blur: Double,
+        dispersion: Double,
+        topRadius: CGFloat,
+        bottomRadius: CGFloat
+    ) {
+        self.refraction = refraction
+        self.lensHeight = lensHeight
+        self.blur = blur
+        self.dispersion = dispersion
+        self.topRadius = topRadius
+        self.bottomRadius = bottomRadius
         super.init(frame: frame)
         wantsLayer = true
         setup()
+        rebuild()
     }
 
     required init?(coder: NSCoder) {
@@ -103,8 +121,6 @@ final class LiquidGlassBackdropView: NSView {
         self.backdrop = backdropInstance
         self.sdfLayer = sdfLayerInstance
         self.sdfElement = sdfElementInstance
-
-        rebuild()
     }
 
     func updateGeometry() {
@@ -139,44 +155,66 @@ final class LiquidGlassBackdropView: NSView {
         filter.setValue("glassBackground", forKey: "name")
         filter.setValue("@0", forKey: "inputSourceSublayerName")
 
-        // 1. Natural optical ray-bending refraction (continuous across left, right, and bottom)
-        filter.setValue(refraction, forKey: "inputInnerRefractionAmount")
-        filter.setValue(lensHeight, forKey: "inputInnerRefractionHeight")
-        filter.setValue(-1.0, forKey: "inputRefractionDistance0")
-        filter.setValue(0.0, forKey: "inputRefractionDistance1")
-        filter.setValue(1.0, forKey: "inputRefractionOpacity")
-
-        // 2. Controlled Blur: the slider drives the glass frost only.
-        //    `inputBlurFill*` is a second, wider blur composited outside the
-        //    SDF refraction. Turning it on draws a translucent, unrefracted
-        //    copy of the notch beneath the refracted surface, so every fill
-        //    opacity stays at zero and Blur cannot reintroduce that layer.
-        filter.setValue(blur, forKey: "inputBlurRadius")
-        filter.setValue(0.0, forKey: "inputBlurFillBlurRadius")
-        filter.setValue(0.0, forKey: "inputBlurFillNormalOpacity")
-        filter.setValue(0.0, forKey: "inputBlurFillLightenOpacity")
-        filter.setValue(0.0, forKey: "inputBlurFillDarkenOpacity")
-        filter.setValue(0.85, forKey: "inputBlurOpacity0")
-        filter.setValue(0.85, forKey: "inputBlurOpacity1")
-        filter.setValue(1.0, forKey: "inputBlurOpacity2")
-        filter.setValue(1.0, forKey: "inputBlurOpacity3")
-
-        // 3. Delicate sub-pixel chromatic dispersion along refractive perimeter
-        filter.setValue(aberration, forKey: "inputAberrationAmount")
-        filter.setValue(lensHeight, forKey: "inputAberrationHeight")
-        filter.setValue(0.0, forKey: "inputAberrationOffset")
-        filter.setValue(0.0, forKey: "inputAberrationAngle")
-
-        // 4. Clarity: 100% face opacity, 0 bleed = crystal clear!
-        filter.setValue(0.0, forKey: "inputBleedAmount")
-        filter.setValue(1.0, forKey: "inputFaceOpacity")
-        filter.setValue(75.0, forKey: "inputShadowAmount")
-        filter.setValue(0.50, forKey: "inputKeyFillHighlightAmount")
+        for (key, value) in Self.glassFilterInputs(
+            refraction: refraction,
+            lensHeight: lensHeight,
+            blur: blur,
+            dispersion: dispersion
+        ) {
+            filter.setValue(value, forKey: key)
+        }
 
         backdrop.filters = [filter]
         backdrop.setNeedsDisplay()
 
         CATransaction.commit()
+    }
+
+    /// The numeric inputs for the private `glassBackground` filter, keyed by
+    /// their CoreAnimation names. Held as data so the pipeline's rules can be
+    /// read and checked without the private classes or a window server.
+    static func glassFilterInputs(
+        refraction: Double,
+        lensHeight: Double,
+        blur: Double,
+        dispersion: Double
+    ) -> [String: Double] {
+        [
+            // Optical ray bending around the SDF shape. Continuous across the
+            // left, right and bottom walls, so no direction control is set.
+            "inputInnerRefractionAmount": refraction,
+            "inputInnerRefractionHeight": lensHeight,
+            "inputRefractionDistance0": -1.0,
+            "inputRefractionDistance1": 0.0,
+            "inputRefractionOpacity": 1.0,
+
+            // `Blur` drives the frost only. The blur-fill pass is a second,
+            // wider blur composited outside the SDF refraction: any non-zero
+            // fill opacity draws a translucent, unrefracted copy of the notch
+            // beneath the refracted surface, so the whole pass stays off.
+            "inputBlurRadius": blur,
+            "inputBlurOpacity0": 0.85,
+            "inputBlurOpacity1": 0.85,
+            "inputBlurOpacity2": 1.0,
+            "inputBlurOpacity3": 1.0,
+            "inputBlurFillBlurRadius": 0.0,
+            "inputBlurFillNormalOpacity": 0.0,
+            "inputBlurFillLightenOpacity": 0.0,
+            "inputBlurFillDarkenOpacity": 0.0,
+
+            // The colour fringe hugs the same perimeter as the refraction, so
+            // both passes share the lens height.
+            "inputAberrationAmount": dispersion,
+            "inputAberrationHeight": lensHeight,
+            "inputAberrationOffset": 0.0,
+            "inputAberrationAngle": 0.0,
+
+            // Crystal clear: an opaque face with nothing bleeding past it.
+            "inputBleedAmount": 0.0,
+            "inputFaceOpacity": 1.0,
+            "inputShadowAmount": 75.0,
+            "inputKeyFillHighlightAmount": 0.50,
+        ]
     }
 }
 
@@ -186,27 +224,27 @@ struct LiquidGlassBackdropRepresentable: NSViewRepresentable {
     var refraction: Double
     var lensHeight: Double
     var blur: Double
-    var aberration: Double
+    var dispersion: Double
     var topRadius: CGFloat
     var bottomRadius: CGFloat
 
     func makeNSView(context: Context) -> LiquidGlassBackdropView {
-        let view = LiquidGlassBackdropView(frame: NSRect(x: 0, y: 0, width: 640, height: 195))
-        view.refraction = -refraction
-        view.lensHeight = lensHeight
-        view.blur = blur
-        view.aberration = aberration
-        view.topRadius = topRadius
-        view.bottomRadius = bottomRadius
-        view.rebuild()
-        return view
+        LiquidGlassBackdropView(
+            frame: NSRect(x: 0, y: 0, width: 640, height: 195),
+            refraction: -refraction,
+            lensHeight: lensHeight,
+            blur: blur,
+            dispersion: dispersion,
+            topRadius: topRadius,
+            bottomRadius: bottomRadius
+        )
     }
 
     func updateNSView(_ nsView: LiquidGlassBackdropView, context: Context) {
         nsView.refraction = -refraction
         nsView.lensHeight = lensHeight
         nsView.blur = blur
-        nsView.aberration = aberration
+        nsView.dispersion = dispersion
         nsView.topRadius = topRadius
         nsView.bottomRadius = bottomRadius
         nsView.updateGeometry()

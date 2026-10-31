@@ -129,7 +129,7 @@ struct LiquidGlassNotchBackground: View {
                     refraction: glassRefraction,
                     lensHeight: glassLensHeight,
                     blur: glassBlur,
-                    aberration: glassDispersion,
+                    dispersion: glassDispersion,
                     topRadius: topRadius,
                     bottomRadius: bottomRadius
                 )
