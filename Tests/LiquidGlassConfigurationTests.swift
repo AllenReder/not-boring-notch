@@ -36,7 +36,7 @@ struct LiquidGlassConfigurationTestsRunner {
         assertEqual(recommended.refraction, 24.0, "Recommended refraction should be 24.0")
         assertEqual(recommended.blur, 0.5, "Recommended blur should be 0.5")
         assertEqual(recommended.dispersion, 4.0, "Recommended dispersion should be 4.0")
-        assertEqual(recommended.lensHeight, 23.0, "Recommended lensHeight should be 23.0")
+        assertEqual(recommended.lensHeight, 36.0, "Recommended lensHeight should be 36.0")
         assertEqual(recommended.fadeStart, 20.0, "Recommended fadeStart should be the slider minimum")
         assertEqual(recommended.fadeEndOpacity, 0.50, "Recommended fadeEndOpacity should be 0.50")
         assertEqual(recommended.rimTone, .neutralWhite, "Recommended rimTone should be neutralWhite")

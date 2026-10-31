@@ -75,7 +75,7 @@ enum LiquidGlassConfiguration {
         static let refraction: Double = 24.0
         static let blur: Double = 0.5
         static let dispersion: Double = 4.0
-        static let lensHeight: Double = 23.0
+        static let lensHeight: Double = 36.0
         static let fadeStart: Double = fadeStartLowerBound
         static let fadeEndOpacity: Double = 0.50
         static let rimTone: LiquidGlassRimTone = .neutralWhite
