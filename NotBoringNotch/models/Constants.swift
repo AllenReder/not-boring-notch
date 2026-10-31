@@ -55,8 +55,55 @@ enum MediaControllerType: String, CaseIterable, Identifiable, Defaults.Serializa
 enum SneakPeekStyle: String, CaseIterable, Identifiable, Defaults.Serializable {
     case standard = "Default"
     case inline = "Inline"
-    
+
     var id: String { self.rawValue }
+}
+
+enum PerformanceInterval: Double, CaseIterable, Identifiable, Defaults.Serializable {
+    case oneSecond = 1
+    case twoSeconds = 2
+    case fiveSeconds = 5
+
+    var id: Double { rawValue }
+
+    var label: String { "\(Int(rawValue)) s" }
+}
+
+enum PerformanceMetric: String, CaseIterable, Identifiable, Codable, Hashable, Defaults.Serializable {
+    case cpu
+    case gpu
+    case memory
+    case temperature
+    case network
+    case disk
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .cpu: return "CPU"
+        case .gpu: return "GPU"
+        case .memory: return "Memory"
+        case .temperature: return "Temp"
+        case .network: return "Network"
+        case .disk: return "Disk"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .cpu: return "cpu"
+        case .gpu: return "square.stack.3d.up.fill"
+        case .memory: return "memorychip"
+        case .temperature: return "thermometer"
+        case .network: return "network"
+        case .disk: return "internaldrive"
+        }
+    }
+
+    static let defaultOrder: [PerformanceMetric] = [
+        .cpu, .gpu, .memory, .temperature, .network, .disk
+    ]
 }
 
 // Action to perform when Option (⌥) is held while pressing media keys
@@ -225,6 +272,17 @@ extension Defaults.Keys {
     // MARK: Media Controller
     static let mediaController = Key<MediaControllerType>("mediaController", default: defaultMediaController)
     
+    // MARK: Performance
+    static let performanceTabEnabled = Key<Bool>("performanceTabEnabled", default: false)
+    static let performanceInterval = Key<PerformanceInterval>(
+        "performanceInterval",
+        default: .oneSecond
+    )
+    static let performanceCardOrder = Key<[PerformanceMetric]>(
+        "performanceCardOrder",
+        default: PerformanceMetric.defaultOrder
+    )
+
     // MARK: Advanced Settings
     static let useCustomAccentColor = Key<Bool>("useCustomAccentColor", default: false)
     static let customAccentColorData = Key<Data?>("customAccentColorData", default: nil)

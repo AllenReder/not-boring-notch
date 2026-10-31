@@ -100,6 +100,7 @@ class NotchViewCoordinator: ObservableObject {
     @Published var optionKeyPressed: Bool = true
     private var accessibilityObserver: Any?
     private var hudReplacementCancellable: AnyCancellable?
+    private var performanceTabCancellable: AnyCancellable?
 
     private init() {
         // Perform migration from name-based to UUID-based storage
@@ -158,6 +159,16 @@ class NotchViewCoordinator: ObservableObject {
                     } else {
                         MediaKeyInterceptor.shared.stop()
                     }
+                }
+            }
+
+        // Return to Home if the performance tab is turned off while it is open.
+        performanceTabCancellable = Defaults.publisher(.performanceTabEnabled)
+            .sink { [weak self] change in
+                guard !change.newValue else { return }
+                Task { @MainActor in
+                    guard let self, self.currentView == .performance else { return }
+                    self.currentView = .home
                 }
             }
 
