@@ -16,6 +16,10 @@ struct CameraPreviewView: View {
     // Track if authorization request is in progress to avoid multiple requests
     @State private var isRequestingAuthorization: Bool = false
 
+    private var statusLabel: LocalizedStringKey {
+        webcamManager.authorizationStatus == .denied ? "Access Denied" : "Mirror"
+    }
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -37,7 +41,7 @@ struct CameraPreviewView: View {
                             Image(systemName: webcamManager.authorizationStatus == .denied ? "exclamationmark.triangle" : "web.camera")
                                 .foregroundStyle(.gray)
                                 .font(.system(size: geometry.size.width/3.5))
-                            Text(webcamManager.authorizationStatus == .denied ? "Access Denied" : "Mirror")
+                            Text(statusLabel)
                                 .font(.caption2)
                                 .foregroundColor(.gray)
                         }

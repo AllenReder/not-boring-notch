@@ -15,6 +15,11 @@ struct InlineHUD: View {
     @Binding var icon: String
     @Binding var hoverAnimation: Bool
     @Binding var gestureProgress: CGFloat
+
+    private var micLabel: LocalizedStringKey {
+        value.isZero ? "muted" : "unmuted"
+    }
+
     var body: some View {
         HStack {
             HStack(spacing: 5) {
@@ -69,7 +74,7 @@ struct InlineHUD: View {
             
             HStack {
                 if (type == .mic) {
-                    Text(value.isZero ? "muted" : "unmuted")
+                    Text(micLabel)
                         .foregroundStyle(.gray)
                         .lineLimit(1)
                         .allowsTightening(true)

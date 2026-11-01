@@ -42,7 +42,7 @@ extension Notification.Name {
 }
 
 // Media controller types for selection in settings
-enum MediaControllerType: String, CaseIterable, Identifiable, Defaults.Serializable {
+enum MediaControllerType: String, CaseIterable, Identifiable, Defaults.Serializable, SelfLabeling {
     case nowPlaying = "Now Playing"
     case appleMusic = "Apple Music"
     case spotify = "Spotify"
@@ -52,7 +52,7 @@ enum MediaControllerType: String, CaseIterable, Identifiable, Defaults.Serializa
 }
 
 // Sneak peek styles for selection in settings
-enum SneakPeekStyle: String, CaseIterable, Identifiable, Defaults.Serializable {
+enum SneakPeekStyle: String, CaseIterable, Identifiable, Defaults.Serializable, SelfLabeling {
     case standard = "Default"
     case inline = "Inline"
 
@@ -66,7 +66,7 @@ enum PerformanceInterval: Double, CaseIterable, Identifiable, Defaults.Serializa
 
     var id: Double { rawValue }
 
-    var label: String { "\(Int(rawValue)) s" }
+    var label: String { String(localized: "\(Int(rawValue)) s") }
 }
 
 enum PerformanceMetric: String, CaseIterable, Identifiable, Codable, Hashable, Defaults.Serializable {
@@ -79,14 +79,17 @@ enum PerformanceMetric: String, CaseIterable, Identifiable, Codable, Hashable, D
 
     var id: String { rawValue }
 
+    /// Localized here rather than at the call site: the notch's cards hand this
+    /// string to a plain `Text`, and interpolate it into an accessibility label,
+    /// so the text has to be translated before it reaches either.
     var title: String {
         switch self {
         case .cpu: return "CPU"
         case .gpu: return "GPU"
-        case .memory: return "Memory"
-        case .temperature: return "Temp"
-        case .network: return "Network"
-        case .disk: return "Disk"
+        case .memory: return String(localized: "Memory")
+        case .temperature: return String(localized: "Temp")
+        case .network: return String(localized: "Network")
+        case .disk: return String(localized: "Disk")
         }
     }
 
@@ -107,7 +110,7 @@ enum PerformanceMetric: String, CaseIterable, Identifiable, Codable, Hashable, D
 }
 
 // Action to perform when Option (⌥) is held while pressing media keys
-enum OptionKeyAction: String, CaseIterable, Identifiable, Defaults.Serializable {
+enum OptionKeyAction: String, CaseIterable, Identifiable, Defaults.Serializable, SelfLabeling {
     case openSettings = "Open System Settings"
     case showHUD = "Show HUD"
     case none = "No Action"

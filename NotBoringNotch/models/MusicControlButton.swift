@@ -6,6 +6,7 @@
 //
 
 import Defaults
+import SwiftUI
 
 enum MusicControlButton: String, CaseIterable, Identifiable, Codable, Defaults.Serializable {
     case shuffle
@@ -44,7 +45,7 @@ enum MusicControlButton: String, CaseIterable, Identifiable, Codable, Defaults.S
         .goForward
     ]
 
-    var label: String {
+    var label: LocalizedStringKey {
         switch self {
         case .shuffle:
             return "Shuffle"

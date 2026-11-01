@@ -56,7 +56,7 @@ struct LauncherSettings: View {
         .navigationTitle("Launcher")
     }
 
-    private func footer(_ text: String) -> some View {
+    private func footer(_ text: LocalizedStringKey) -> some View {
         Text(text)
             .multilineTextAlignment(.trailing)
             .foregroundStyle(.secondary)

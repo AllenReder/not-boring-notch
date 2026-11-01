@@ -7,7 +7,7 @@
 import SwiftUI
 
 struct EmptyStateView: View {
-    var message: String
+    var message: LocalizedStringKey
     @State private var isVisible = true
     
     var body: some View {

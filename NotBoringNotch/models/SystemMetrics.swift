@@ -42,11 +42,13 @@ enum MemoryPressure: String, Equatable {
     case warning
     case critical
 
+    /// Localized here because the notch folds this word into a comma-separated
+    /// subtitle string instead of showing it as its own `Text`.
     var label: String {
         switch self {
-        case .normal: return "Normal"
-        case .warning: return "Warning"
-        case .critical: return "Critical"
+        case .normal: return String(localized: "Normal")
+        case .warning: return String(localized: "Warning")
+        case .critical: return String(localized: "Critical")
         }
     }
 }

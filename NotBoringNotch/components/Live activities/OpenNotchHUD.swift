@@ -14,7 +14,11 @@ struct OpenNotchHUD: View {
     @Binding var value: CGFloat
     @Binding var icon: String
     @Default(.showOpenNotchHUDPercentage) var showPercentage
-    
+
+    private var micLabel: LocalizedStringKey {
+        value > 0 ? "Unmuted" : "Muted"
+    }
+
     var body: some View {
         HStack(spacing: 8) {
             // Icon
@@ -53,7 +57,7 @@ struct OpenNotchHUD: View {
                 })
                 .frame(width: showPercentage ? 65 : 108) // Fixed width for consistency
             } else {
-                Text(value > 0 ? "Unmuted" : "Muted")
+                Text(micLabel)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.white)
                     .fixedSize()

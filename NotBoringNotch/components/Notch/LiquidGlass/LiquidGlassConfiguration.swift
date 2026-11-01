@@ -12,22 +12,13 @@ import Defaults
 
 // MARK: - Specular Rim Tone
 
-enum LiquidGlassRimTone: String, CaseIterable, Identifiable, Codable {
+enum LiquidGlassRimTone: String, CaseIterable, Identifiable, Codable, SelfLabeling {
     case neutralWhite = "Neutral White"
     case sunsetGold = "Sunset Gold"
     case siriGlow = "Siri Glow"
     case off = "Off"
 
     var id: String { rawValue }
-
-    var localizedName: String {
-        switch self {
-        case .neutralWhite: return "Neutral White"
-        case .sunsetGold: return "Sunset Gold"
-        case .siriGlow: return "Siri Glow"
-        case .off: return "Off"
-        }
-    }
 }
 
 #if canImport(Defaults)
