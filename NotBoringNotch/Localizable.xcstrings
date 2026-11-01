@@ -23326,6 +23326,286 @@
           }
         }
       }
+    },
+    "Launcher" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Launcher"
+          }
+        }
+      }
+    },
+    "Launch" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Launch"
+          }
+        }
+      }
+    },
+    "Search apps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search apps"
+          }
+        }
+      }
+    },
+    "Recent" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent"
+          }
+        }
+      }
+    },
+    "No apps found" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No apps found"
+          }
+        }
+      }
+    },
+    "No app matches “%@”" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No app matches “%@”"
+          }
+        }
+      }
+    },
+    "Toggle the launcher:" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toggle the launcher:"
+          }
+        }
+      }
+    },
+    "List" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "List"
+          }
+        }
+      }
+    },
+    "Row height" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Row height"
+          }
+        }
+      }
+    },
+    "%.0f pt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%.0f pt"
+          }
+        }
+      }
+    },
+    "Recent apps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent apps"
+          }
+        }
+      }
+    },
+    "Opens the notch on the launcher, ready to type in, and closes it again when pressed a second time." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the notch on the launcher, ready to type in, and closes it again when pressed a second time."
+          }
+        }
+      }
+    },
+    "The icon and the name grow with the row. Recent apps are the ones you switched to last, newest first; setting it to zero leaves them out." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The icon and the name grow with the row. Recent apps are the ones you switched to last, newest first; setting it to zero leaves them out."
+          }
+        }
+      }
+    },
+    "Show the Shelf tab when it is empty" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the Shelf tab when it is empty"
+          }
+        }
+      }
+    },
+    "Stats" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stats"
+          }
+        }
+      }
+    },
+    "Performance" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Performance"
+          }
+        }
+      }
+    },
+    "Enable performance tab" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable performance tab"
+          }
+        }
+      }
+    },
+    "Refresh interval" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh interval"
+          }
+        }
+      }
+    },
+    "The tab samples CPU, memory, GPU, network, disk, and temperature only while it is visible." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The tab samples CPU, memory, GPU, network, disk, and temperature only while it is visible."
+          }
+        }
+      }
+    },
+    "Move %@ up" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move %@ up"
+          }
+        }
+      }
+    },
+    "Move %@ down" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move %@ down"
+          }
+        }
+      }
+    },
+    "Reset order" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset order"
+          }
+        }
+      }
+    },
+    "Card order" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Card order"
+          }
+        }
+      }
+    },
+    "The first three cards fill the top row; the last three fill the bottom row." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The first three cards fill the top row; the last three fill the bottom row."
+          }
+        }
+      }
+    },
+    "Metrics" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Metrics"
+          }
+        }
+      }
+    },
+    "CPU · GPU · Memory · Network · Disk · Temperature" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CPU · GPU · Memory · Network · Disk · Temperature"
+          }
+        }
+      }
+    },
+    "Fan speed, power draw, and per-process statistics are not included." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fan speed, power draw, and per-process statistics are not included."
+          }
+        }
+      }
+    },
+    "Sampling…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sampling…"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

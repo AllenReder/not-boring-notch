@@ -38,15 +38,9 @@ struct SettingsView: View {
                 NavigationLink(value: "Battery") {
                     Label("Battery", systemImage: "battery.100.bolt")
                 }
-                NavigationLink(value: "Performance") {
-                    Label("Performance", systemImage: "speedometer")
-                }
 //                NavigationLink(value: "Downloads") {
 //                    Label("Downloads", systemImage: "square.and.arrow.down")
 //                }
-                NavigationLink(value: "Shelf") {
-                    Label("Shelf", systemImage: "books.vertical")
-                }
                 NavigationLink(value: "Shortcuts") {
                     Label("Shortcuts", systemImage: "keyboard")
                 }
@@ -55,6 +49,15 @@ struct SettingsView: View {
                 // }
                 NavigationLink(value: "Integrations") {
                     Label("Integrations", systemImage: "bell.badge")
+                }
+                NavigationLink(value: "Shelf") {
+                    Label("Shelf", systemImage: "books.vertical")
+                }
+                NavigationLink(value: "Launcher") {
+                    Label("Launcher", systemImage: "magnifyingglass")
+                }
+                NavigationLink(value: "Performance") {
+                    Label("Performance", systemImage: "speedometer")
                 }
                 NavigationLink(value: "Advanced") {
                     Label("Advanced", systemImage: "gearshape.2")
@@ -82,14 +85,16 @@ struct SettingsView: View {
                     HUD()
                 case "Battery":
                     Charge()
-                case "Performance":
-                    PerformanceSettings()
-                case "Shelf":
-                    Shelf()
                 case "Shortcuts":
                     Shortcuts()
                 case "Integrations":
                     IntegrationsSettings()
+                case "Shelf":
+                    Shelf()
+                case "Launcher":
+                    LauncherSettings()
+                case "Performance":
+                    PerformanceSettings()
                 case "Extensions":
                     GeneralSettings()
                 case "Advanced":
@@ -1296,7 +1301,7 @@ struct Appearance: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Always show tabs", isOn: $coordinator.alwaysShowTabs)
+                Toggle("Show the Shelf tab when it is empty", isOn: $coordinator.showsEmptyShelfTab)
                 Defaults.Toggle(key: .settingsIconInNotch) {
                     Text("Show settings icon in notch")
                 }

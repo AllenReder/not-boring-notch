@@ -109,6 +109,9 @@ class NotBoringNotchSkyLightWindow: NSPanel {
     
     private var observers: Set<AnyCancellable> = []
     
-    override var canBecomeKey: Bool { false }
+    /// Only the launcher asks for the keyboard: it is the one surface with a field to type in.
+    /// Answering yes for every state would let a click on the notch take the keyboard from the app
+    /// the user is working in.
+    override var canBecomeKey: Bool { NotchViewCoordinator.shared.currentView == .launcher }
     override var canBecomeMain: Bool { false }
 }

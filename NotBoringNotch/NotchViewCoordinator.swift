@@ -50,7 +50,19 @@ struct ExpandedItem {
 class NotchViewCoordinator: ObservableObject {
     static let shared = NotchViewCoordinator()
 
-    @Published var currentView: NotchViews = .home
+    @Published var currentView: NotchViews = .home {
+        didSet {
+            guard currentView != oldValue else { return }
+            // A height belongs to the tab that chose it, so it goes with it.
+            contentHeight = nil
+        }
+    }
+
+    /// The height the current tab asked to be drawn at, when it knows how tall what it is showing
+    /// is. It is the tab's own content: the notch adds the header and the padding around it.
+    /// Nothing else may hold it — the tab that sets it is the tab on screen, and changing tabs
+    /// clears it.
+    @Published var contentHeight: CGFloat?
     @Published var helloAnimationRunning: Bool = false
     private var sneakPeekDispatch: DispatchWorkItem?
     private var expandingViewDispatch: DispatchWorkItem?
@@ -61,9 +73,11 @@ class NotchViewCoordinator: ObservableObject {
     @AppStorage("musicLiveActivityEnabled") var musicLiveActivityEnabled: Bool = true
     @AppStorage("currentMicStatus") var currentMicStatus: Bool = true
 
-    @AppStorage("alwaysShowTabs") var alwaysShowTabs: Bool = true {
+    /// Whether the Shelf tab stays in the bar when it has nothing in it. The launcher tab is
+    /// always there, so this is the only thing the bar's contents still depend on.
+    @AppStorage("alwaysShowTabs") var showsEmptyShelfTab: Bool = true {
         didSet {
-            if !alwaysShowTabs {
+            if !showsEmptyShelfTab {
                 openLastTabByDefault = false
                 if ShelfStateViewModel.shared.isEmpty || !Defaults[.openShelfByDefault] {
                     currentView = .home
@@ -75,7 +89,7 @@ class NotchViewCoordinator: ObservableObject {
     @AppStorage("openLastTabByDefault") var openLastTabByDefault: Bool = false {
         didSet {
             if openLastTabByDefault {
-                alwaysShowTabs = true
+                showsEmptyShelfTab = true
             }
         }
     }

@@ -57,3 +57,11 @@ third tab and does not change the shelf's visibility rules.
   second by default, and by reading a filtered temperature sensor list.
 - Adding fan speed, power, or frequency later requires extending the helper;
   the snapshot type has room for those fields.
+
+## Update
+
+Since this decision, an always-present Launcher tab was added ahead of the
+performance tab. Performance is therefore the fourth tab in the bar, not the
+third, and the bar no longer depends on the shelf alone for something to show.
+Nothing above changes: the tab is still opt-in, and it still samples in process
+while it is the tab on screen.

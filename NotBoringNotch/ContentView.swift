@@ -13,6 +13,14 @@ import KeyboardShortcuts
 import SwiftUI
 import SwiftUIIntrospect
 
+/// The two facts the notch's surface animation reacts to. They travel together so that a tab
+/// asking for a different size and the notch opening or closing cannot install two competing
+/// animations on the same frame.
+private struct NotchSurface: Equatable {
+    let isOpen: Bool
+    let size: CGSize
+}
+
 @MainActor
 struct ContentView: View {
     @EnvironmentObject var vm: NotchViewModel
@@ -44,6 +52,14 @@ struct ContentView: View {
 
     private let extendedHoverPadding: CGFloat = 30
     private let zeroHeightHoverPadding: CGFloat = 10
+
+    /// The launcher scrolls a list of its own, so the two-finger swipe up belongs to that list
+    /// while it is on screen.
+    ///
+    /// Read by the gesture's handler rather than by the modifier that installs it: a modifier that
+    /// comes and goes with the tab gives the surface a new identity on every switch, and a surface
+    /// with a new identity does not animate its size — it only fades.
+    private var swipeUpBelongsToTheList: Bool { coordinator.currentView == .launcher }
 
     private var topCornerRadius: CGFloat {
        ((vm.notchState == .open) && Defaults[.cornerRadiusScaling])
@@ -122,7 +138,7 @@ struct ContentView: View {
                         ? (cornerRadiusInsets.opened.top) : (cornerRadiusInsets.opened.bottom)
                         : cornerRadiusInsets.closed.bottom
                     )
-                    .padding([.horizontal, .bottom], vm.notchState == .open ? 12 : 0)
+                    .padding([.horizontal, .bottom], vm.notchState == .open ? openNotchBottomPadding : 0)
                     .background {
                         let ambientColor = (musicManager.isPlaying && Defaults[.playerColorTinting]) ? musicManager.avgColor.map { Color(nsColor: $0) } : nil
                         LiquidGlassNotchBackground(
@@ -150,13 +166,19 @@ struct ContentView: View {
                     )
                 
                 mainLayout
-                    .frame(height: vm.notchState == .open ? vm.notchSize.height : nil)
+                    .frame(
+                        width: vm.notchState == .open ? vm.notchSize.width : nil,
+                        height: vm.notchState == .open ? vm.notchSize.height : nil
+                    )
                     .conditionalModifier(true) { view in
                         let openAnimation = Animation.spring(response: 0.42, dampingFraction: 0.8, blendDuration: 0)
                         let closeAnimation = Animation.spring(response: 0.45, dampingFraction: 1.0, blendDuration: 0)
                         
                         return view
-                            .animation(vm.notchState == .open ? openAnimation : closeAnimation, value: vm.notchState)
+                            .animation(
+                                vm.notchState == .open ? openAnimation : closeAnimation,
+                                value: NotchSurface(isOpen: vm.notchState == .open, size: vm.notchSize)
+                            )
                             .animation(.smooth, value: gestureProgress)
                     }
                     .contentShape(Rectangle())
@@ -256,7 +278,7 @@ struct ContentView: View {
             anchor: .top
         )
         .animation(.smooth, value: gestureProgress)
-        .background(dragDetector)
+        .background(alignment: .top) { dragDetector }
         .preferredColorScheme(.dark)
         .environmentObject(vm)
         .onChange(of: vm.anyDropZoneTargeting) { _, isTargeted in
@@ -344,7 +366,7 @@ struct ContentView: View {
                           NotchFaceAnimation()
                        } else if vm.notchState == .open {
                            NotchHeader()
-                               .frame(height: max(24, vm.effectiveClosedNotchHeight))
+                               .frame(height: vm.notchHeaderHeight)
                                .opacity(gestureProgress != 0 ? 1.0 - min(abs(gestureProgress) * 0.1, 0.3) : 1.0)
                        } else {
                            Rectangle().fill(.clear).frame(width: vm.closedNotchSize.width - 20, height: vm.effectiveClosedNotchHeight)
@@ -410,6 +432,8 @@ struct ContentView: View {
                                 NotchHomeView(albumArtNamespace: albumArtNamespace)
                             case .shelf:
                                 ShelfView()
+                            case .launcher:
+                                LauncherView()
                             case .performance:
                                 PerformanceView()
                             }
@@ -556,7 +580,10 @@ struct ContentView: View {
     var dragDetector: some View {
         if Defaults[.notchShelf] && vm.notchState == .closed {
             Color.clear
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // The window is sized for the tallest tab. The drop target stays the height of
+                // the standard surface so a taller window does not swallow clicks and drags
+                // well below the notch.
+                .frame(maxWidth: .infinity, maxHeight: openNotchSize.height + shadowPadding)
                 .contentShape(Rectangle())
         .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText, .data], isTargeted: $vm.dragDetectorTargeting) { providers in
             vm.dropEvent = true
@@ -615,7 +642,9 @@ struct ContentView: View {
                         self.isHovering = false
                     }
                     
-                    if self.vm.notchState == .open && !self.vm.isBatteryPopoverActive && !SharingStateManager.shared.preventNotchClose && !Defaults[.preventAutoClose] {
+                    // The launcher is a keyboard surface: the pointer leaving it is not the user
+                    // finishing, so it closes on Escape or on losing focus instead.
+                    if self.vm.notchState == .open && !self.vm.isBatteryPopoverActive && !SharingStateManager.shared.preventNotchClose && !Defaults[.preventAutoClose] && self.coordinator.currentView != .launcher {
                         self.vm.close()
                     }
                 }
@@ -649,6 +678,7 @@ struct ContentView: View {
     }
 
     private func handleUpGesture(translation: CGFloat, phase: NSEvent.Phase) {
+        guard !swipeUpBelongsToTheList else { return }
         guard vm.notchState == .open && !vm.isHoveringCalendar else { return }
 
         withAnimation(animationSpring) {

@@ -140,6 +140,14 @@ extension Defaults.Keys {
     static let showOnLockScreen = Key<Bool>("showOnLockScreen", default: false)
     static let hideFromScreenRecording = Key<Bool>("hideFromScreenRecording", default: false)
     
+    // MARK: Launcher
+    /// Bundle identifiers of the apps the user switched to most recently, newest first.
+    static let launcherRecents = Key<[String]>("launcherRecents", default: [])
+    /// The height of one row in the launcher, which the icon and the name inside it scale with.
+    static let launcherRowHeight = Key<CGFloat>("launcherRowHeight", default: 36)
+    /// How many of the recent apps the launcher shows.
+    static let launcherRecentsLimit = Key<Int>("launcherRecentsLimit", default: 5)
+
     // MARK: Appearance
     static let showEmojis = Key<Bool>("showEmojis", default: false)
     //static let alwaysShowTabs = Key<Bool>("alwaysShowTabs", default: true)

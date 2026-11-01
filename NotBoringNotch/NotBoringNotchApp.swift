@@ -274,6 +274,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // possible to see that it did. See ShelfStorage.
         ShelfStorage.adoptLegacyDirectory()
 
+        // Started here, not on the launcher's first appearance: the recents list is built from
+        // what happens while the app runs, so it has to be listening before it is first asked.
+        _ = LauncherRecents.shared
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(screenConfigurationDidChange),
@@ -359,47 +363,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         KeyboardShortcuts.onKeyDown(for: .toggleNotchOpen) { [weak self] in
-            Task { [weak self] in
-                guard let self = self else { return }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
 
-                let mouseLocation = NSEvent.mouseLocation
-
-                var viewModel = self.vm
-
-                if Defaults[.showOnAllDisplays] {
-                    for screen in NSScreen.screens {
-                        if screen.frame.contains(mouseLocation) {
-                            if let uuid = screen.displayUUID, let screenViewModel = self.viewModels[uuid] {
-                                viewModel = screenViewModel
-                                break
-                            }
-                        }
-                    }
-                }
-
-                self.closeNotchTask?.cancel()
-                self.closeNotchTask = nil
-
+                self.cancelPendingClose()
+                let viewModel = self.notchUnderPointer()
                 switch viewModel.notchState {
                 case .closed:
-                    await MainActor.run {
-                        viewModel.open()
-                    }
-
-                    let task = Task { [weak viewModel] in
+                    viewModel.open()
+                    self.closeNotchTask = Task { [weak viewModel] in
                         do {
                             try await Task.sleep(for: .seconds(3))
-                            await MainActor.run {
-                                viewModel?.close()
-                            }
-                        } catch { }
+                            viewModel?.close()
+                        } catch {}
                     }
-                    self.closeNotchTask = task
                 case .open:
-                    await MainActor.run {
-                        viewModel.close()
-                    }
+                    viewModel.close()
                 }
+            }
+        }
+
+        KeyboardShortcuts.onKeyDown(for: .toggleLauncher) { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.cancelPendingClose()
+                self.notchUnderPointer().toggleLauncher()
             }
         }
 
@@ -433,6 +421,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         previousScreens = NSScreen.screens
+    }
+
+    /// A close the notch toggle scheduled for itself must not take the launcher away mid-search.
+    @MainActor
+    private func cancelPendingClose() {
+        closeNotchTask?.cancel()
+        closeNotchTask = nil
+    }
+
+    /// The notch a shortcut acts on: the one on the display the pointer is over, when every display
+    /// has one of its own.
+    @MainActor
+    private func notchUnderPointer() -> NotchViewModel {
+        guard Defaults[.showOnAllDisplays] else { return vm }
+
+        let mouseLocation = NSEvent.mouseLocation
+        for screen in NSScreen.screens where screen.frame.contains(mouseLocation) {
+            if let uuid = screen.displayUUID, let screenViewModel = viewModels[uuid] {
+                return screenViewModel
+            }
+        }
+        return vm
     }
 
     func playWelcomeSound() {
@@ -523,7 +533,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
 
             vm.screenUUID = selectedScreen.displayUUID
-            vm.notchSize = getClosedNotchSize(screenUUID: selectedScreen.displayUUID)
+            vm.closedNotchSize = getClosedNotchSize(screenUUID: selectedScreen.displayUUID)
 
             if window == nil {
                 window = createNotBoringNotchWindow(for: selectedScreen, with: vm)

@@ -34,8 +34,23 @@ class NotchViewModel: NSObject, ObservableObject {
 
     @Published var screenUUID: String?
 
-    @Published var notchSize: CGSize = getClosedNotchSize()
     @Published var closedNotchSize: CGSize = getClosedNotchSize()
+
+    /// The surface the notch is drawing: the closed notch, or the size the open tab asks for.
+    /// Derived, so the open state and the tab can never disagree about it.
+    var notchSize: CGSize {
+        guard notchState == .open else { return closedNotchSize }
+        let declared = coordinator.currentView.expandedSize
+        // A tab that knows how tall what it is showing is asks for that instead of the whole
+        // surface: the header and the padding below the content are the notch's, not the tab's.
+        guard let content = coordinator.contentHeight else { return declared }
+        let height = notchHeaderHeight + content + openNotchBottomPadding
+        // Never taller than the tab declared: that height is what the window was sized for.
+        return CGSize(width: declared.width, height: min(height, declared.height))
+    }
+
+    /// The strip above a tab's content, which carries the tab bar.
+    var notchHeaderHeight: CGFloat { max(24, effectiveClosedNotchHeight) }
     
     let webcamManager = WebcamManager.shared
     @Published var isCameraExpanded: Bool = false
@@ -56,8 +71,7 @@ class NotchViewModel: NSObject, ObservableObject {
         super.init()
         
         self.screenUUID = screenUUID
-        notchSize = getClosedNotchSize(screenUUID: screenUUID)
-        closedNotchSize = notchSize
+        closedNotchSize = getClosedNotchSize(screenUUID: screenUUID)
 
         Publishers.CombineLatest3($dropZoneTargeting, $dragDetectorTargeting, $generalDropTargeting)
             .map { shelf, drag, general in
@@ -190,11 +204,22 @@ class NotchViewModel: NSObject, ObservableObject {
     }
 
     func open() {
-        self.notchSize = openNotchSize
         self.notchState = .open
         
         // Force music information update when notch is opened
         MusicManager.shared.forceUpdate()
+    }
+
+    /// The launcher's key: it opens the tab, and takes it away again if the tab is already there.
+    /// A notch open on another tab switches instead of closing, because the user asked for the
+    /// launcher rather than for a dismissal.
+    func toggleLauncher() {
+        if notchState == .open, coordinator.currentView == .launcher {
+            close()
+            return
+        }
+        coordinator.currentView = .launcher
+        open()
     }
 
     func close() {
@@ -202,8 +227,7 @@ class NotchViewModel: NSObject, ObservableObject {
         if SharingStateManager.shared.preventNotchClose {
             return
         }
-        self.notchSize = getClosedNotchSize(screenUUID: self.screenUUID)
-        self.closedNotchSize = self.notchSize
+        self.closedNotchSize = getClosedNotchSize(screenUUID: self.screenUUID)
         self.notchState = .closed
         self.isBatteryPopoverActive = false
         self.coordinator.sneakPeek.show = false
@@ -211,9 +235,11 @@ class NotchViewModel: NSObject, ObservableObject {
 
         // Set the current view to shelf if it contains files and the user enables openShelfByDefault
         // Otherwise, if the user has not enabled openLastShelfByDefault, set the view to home
-    if !ShelfStateViewModel.shared.isEmpty && Defaults[.openShelfByDefault] {
+        if !ShelfStateViewModel.shared.isEmpty && Defaults[.openShelfByDefault] {
             coordinator.currentView = .shelf
-        } else if !coordinator.openLastTabByDefault {
+        } else if !coordinator.openLastTabByDefault || coordinator.currentView == .launcher {
+            // The launcher keeps nothing to come back to, and reopening onto it would take the
+            // keyboard from whatever the user is doing.
             coordinator.currentView = .home
         }
     }
