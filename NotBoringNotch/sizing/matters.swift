@@ -14,9 +14,8 @@ let batterySneakSize: CGSize = .init(width: 160, height: 1)
 
 let shadowPadding: CGFloat = 20
 let openNotchSize: CGSize = .init(width: 640, height: 190)
-/// The launcher's surface. It is a placeholder height, chosen to be obviously taller than the
-/// standard surface so the height transition can be seen and tuned before the launcher itself
-/// exists.
+/// The launcher's surface: a search field and a screenful of rows, which the standard surface has
+/// no room for.
 let launcherNotchSize: CGSize = .init(width: openNotchSize.width, height: 440)
 /// The tallest surface any tab asks for, read from the tabs themselves so a new tab cannot be
 /// forgotten here. The window is sized to it, so a tab growing taller never clips.

@@ -634,7 +634,9 @@ struct ContentView: View {
                         self.isHovering = false
                     }
                     
-                    if self.vm.notchState == .open && !self.vm.isBatteryPopoverActive && !SharingStateManager.shared.preventNotchClose && !Defaults[.preventAutoClose] {
+                    // The launcher is a keyboard surface: the pointer leaving it is not the user
+                    // finishing, so it closes on Escape or on losing focus instead.
+                    if self.vm.notchState == .open && !self.vm.isBatteryPopoverActive && !SharingStateManager.shared.preventNotchClose && !Defaults[.preventAutoClose] && self.coordinator.currentView != .launcher {
                         self.vm.close()
                     }
                 }

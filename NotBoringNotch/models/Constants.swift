@@ -140,6 +140,10 @@ extension Defaults.Keys {
     static let showOnLockScreen = Key<Bool>("showOnLockScreen", default: false)
     static let hideFromScreenRecording = Key<Bool>("hideFromScreenRecording", default: false)
     
+    // MARK: Launcher
+    /// Bundle identifiers of the apps the user switched to most recently, newest first.
+    static let launcherRecents = Key<[String]>("launcherRecents", default: [])
+
     // MARK: Appearance
     static let showEmojis = Key<Bool>("showEmojis", default: false)
     //static let alwaysShowTabs = Key<Bool>("alwaysShowTabs", default: true)

@@ -215,7 +215,9 @@ class NotchViewModel: NSObject, ObservableObject {
         // Otherwise, if the user has not enabled openLastShelfByDefault, set the view to home
     if !ShelfStateViewModel.shared.isEmpty && Defaults[.openShelfByDefault] {
             coordinator.currentView = .shelf
-        } else if !coordinator.openLastTabByDefault {
+        } else if !coordinator.openLastTabByDefault || coordinator.currentView == .launcher {
+            // The launcher keeps nothing to come back to, and reopening onto it would take the
+            // keyboard from whatever the user is doing.
             coordinator.currentView = .home
         }
     }

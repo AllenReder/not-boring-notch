@@ -109,6 +109,9 @@ class NotBoringNotchSkyLightWindow: NSPanel {
     
     private var observers: Set<AnyCancellable> = []
     
-    override var canBecomeKey: Bool { false }
+    /// A borderless panel refuses key by default, which leaves the launcher's search field unable
+    /// to become first responder. Key is only meaningful once the app is active, so answering yes
+    /// here changes nothing until something asks for it.
+    override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 }

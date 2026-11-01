@@ -274,6 +274,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // possible to see that it did. See ShelfStorage.
         ShelfStorage.adoptLegacyDirectory()
 
+        // Started here, not on the launcher's first appearance: the recents list is built from
+        // what happens while the app runs, so it has to be listening before it is first asked.
+        _ = LauncherRecents.shared
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(screenConfigurationDidChange),
