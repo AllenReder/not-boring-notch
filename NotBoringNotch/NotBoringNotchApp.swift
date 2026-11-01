@@ -385,8 +385,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        // The launcher opens rather than toggles: the field takes the keyboard, so the way out of
-        // a keyboard surface is Escape or clicking away, not the key that summoned it.
+        // The launcher toggles: the key that summoned it takes it away again, because a summon key
+        // that does nothing when pressed twice reads as a broken key. A notch open on another tab
+        // is switched rather than closed — the user asked for the launcher, not for a dismissal.
         KeyboardShortcuts.onKeyDown(for: .openLauncher) { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self else { return }
@@ -394,8 +395,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self.closeNotchTask?.cancel()
                 self.closeNotchTask = nil
 
-                self.coordinator.currentView = .launcher
-                self.notchUnderPointer().open()
+                let viewModel = self.notchUnderPointer()
+                if viewModel.notchState == .open, self.coordinator.currentView == .launcher {
+                    viewModel.close()
+                } else {
+                    self.coordinator.currentView = .launcher
+                    viewModel.open()
+                }
             }
         }
 
