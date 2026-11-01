@@ -13,6 +13,8 @@ let downloadSneakSize: CGSize = .init(width: 65, height: 1)
 let batterySneakSize: CGSize = .init(width: 160, height: 1)
 
 let shadowPadding: CGFloat = 20
+/// The room the open notch leaves below whatever its tab draws.
+let openNotchBottomPadding: CGFloat = 12
 let openNotchSize: CGSize = .init(width: 640, height: 190)
 /// The launcher's surface: a search field and a screenful of rows, which the standard surface has
 /// no room for.

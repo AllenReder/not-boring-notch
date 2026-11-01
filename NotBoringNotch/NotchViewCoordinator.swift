@@ -50,7 +50,19 @@ struct ExpandedItem {
 class NotchViewCoordinator: ObservableObject {
     static let shared = NotchViewCoordinator()
 
-    @Published var currentView: NotchViews = .home
+    @Published var currentView: NotchViews = .home {
+        didSet {
+            guard currentView != oldValue else { return }
+            // A height belongs to the tab that chose it, so it goes with it.
+            contentHeight = nil
+        }
+    }
+
+    /// The height the current tab asked to be drawn at, when it knows how tall what it is showing
+    /// is. It is the tab's own content: the notch adds the header and the padding around it.
+    /// Nothing else may hold it — the tab that sets it is the tab on screen, and changing tabs
+    /// clears it.
+    @Published var contentHeight: CGFloat?
     @Published var helloAnimationRunning: Bool = false
     private var sneakPeekDispatch: DispatchWorkItem?
     private var expandingViewDispatch: DispatchWorkItem?

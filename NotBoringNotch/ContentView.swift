@@ -130,7 +130,7 @@ struct ContentView: View {
                         ? (cornerRadiusInsets.opened.top) : (cornerRadiusInsets.opened.bottom)
                         : cornerRadiusInsets.closed.bottom
                     )
-                    .padding([.horizontal, .bottom], vm.notchState == .open ? 12 : 0)
+                    .padding([.horizontal, .bottom], vm.notchState == .open ? openNotchBottomPadding : 0)
                     .background {
                         let ambientColor = (musicManager.isPlaying && Defaults[.playerColorTinting]) ? musicManager.avgColor.map { Color(nsColor: $0) } : nil
                         LiquidGlassNotchBackground(
@@ -358,7 +358,7 @@ struct ContentView: View {
                           NotchFaceAnimation()
                        } else if vm.notchState == .open {
                            NotchHeader()
-                               .frame(height: max(24, vm.effectiveClosedNotchHeight))
+                               .frame(height: vm.notchHeaderHeight)
                                .opacity(gestureProgress != 0 ? 1.0 - min(abs(gestureProgress) * 0.1, 0.3) : 1.0)
                        } else {
                            Rectangle().fill(.clear).frame(width: vm.closedNotchSize.width - 20, height: vm.effectiveClosedNotchHeight)

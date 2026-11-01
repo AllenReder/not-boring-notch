@@ -39,8 +39,18 @@ class NotchViewModel: NSObject, ObservableObject {
     /// The surface the notch is drawing: the closed notch, or the size the open tab asks for.
     /// Derived, so the open state and the tab can never disagree about it.
     var notchSize: CGSize {
-        notchState == .open ? coordinator.currentView.expandedSize : closedNotchSize
+        guard notchState == .open else { return closedNotchSize }
+        let declared = coordinator.currentView.expandedSize
+        // A tab that knows how tall what it is showing is asks for that instead of the whole
+        // surface: the header and the padding below the content are the notch's, not the tab's.
+        guard let content = coordinator.contentHeight else { return declared }
+        let height = notchHeaderHeight + content + openNotchBottomPadding
+        // Never taller than the tab declared: that height is what the window was sized for.
+        return CGSize(width: declared.width, height: min(height, declared.height))
     }
+
+    /// The strip above a tab's content, which carries the tab bar.
+    var notchHeaderHeight: CGFloat { max(24, effectiveClosedNotchHeight) }
     
     let webcamManager = WebcamManager.shared
     @Published var isCameraExpanded: Bool = false
