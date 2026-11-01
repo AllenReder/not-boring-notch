@@ -22,7 +22,13 @@ struct SystemEventIndicatorModifier: View {
     @Binding var icon: String
     let showSlider: Bool = false
     var sendEventBack: (CGFloat) -> Void
-    
+
+    /// One sentence per state. `Text("Mic \(flag)")` reads the flag as a plain
+    /// `String`, so every language would get an English word inside its sentence.
+    private var micLabel: LocalizedStringKey {
+        value > 0 ? "Mic unmuted" : "Mic muted"
+    }
+
     var body: some View {
         HStack(spacing: 14) {
             switch (eventType) {
@@ -68,7 +74,7 @@ struct SystemEventIndicatorModifier: View {
                         .frame(width: 35, alignment: .trailing)
                 }
             } else {
-                Text("Mic \(value > 0 ? "unmuted" : "muted")")
+                Text(micLabel)
                     .foregroundStyle(.gray)
                     .lineLimit(1)
                     .allowsTightening(true)

@@ -76,7 +76,7 @@ struct IntegrationsSettings: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Discovery file")
-                            Text(channel.discoveryPath ?? "Written once the channel is listening.")
+                            Text(channel.discoveryPath ?? String(localized: "Written once the channel is listening."))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .textSelection(.enabled)

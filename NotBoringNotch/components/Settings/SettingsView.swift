@@ -159,7 +159,9 @@ struct GeneralSettings: View {
                     Text("Show menu bar icon")
                 }
                 .tint(.effectiveAccent)
-                LaunchAtLogin.Toggle("Launch at login")
+                LaunchAtLogin.Toggle {
+                    Text("Launch at login")
+                }
                 Defaults.Toggle(key: .showOnAllDisplays) {
                     Text("Show on all displays")
                 }
@@ -597,7 +599,7 @@ struct HUD: View {
             Section {
                 Picker("Option key behaviour", selection: $optionKeyAction) {
                     ForEach(OptionKeyAction.allCases) { opt in
-                        Text(opt.rawValue).tag(opt)
+                        Text(opt.label).tag(opt)
                     }
                 }
                 
@@ -692,7 +694,7 @@ struct Media: View {
             Section {
                 Picker("Music Source", selection: $mediaController) {
                     ForEach(availableMediaControllers) { controller in
-                        Text(controller.rawValue).tag(controller)
+                        Text(controller.label).tag(controller)
                     }
                 }
                 .onChange(of: mediaController) { _, _ in
@@ -733,7 +735,7 @@ struct Media: View {
                 Toggle("Show sneak peek on playback changes", isOn: $enableSneakPeek)
                 Picker("Sneak Peek Style", selection: $sneakPeekStyles) {
                     ForEach(SneakPeekStyle.allCases) { style in
-                        Text(style.rawValue).tag(style)
+                        Text(style.label).tag(style)
                     }
                 }
                 HStack {
@@ -932,7 +934,7 @@ struct About: View {
                             Text("(\(Bundle.main.buildVersionNumber ?? ""))")
                                 .foregroundStyle(.secondary)
                         }
-                        Text(Bundle.main.releaseVersionNumber ?? "unknown")
+                        Text(Bundle.main.releaseVersionNumber ?? String(localized: "unknown"))
                             .foregroundStyle(.secondary)
                     }
                     .onTapGesture {
@@ -1412,7 +1414,7 @@ struct Appearance: View {
                             HStack {
                                 Picker("Specular Rim", selection: $glassRimTone) {
                                     ForEach(LiquidGlassRimTone.allCases) { tone in
-                                        Text(tone.localizedName).tag(tone)
+                                        Text(tone.label).tag(tone)
                                     }
                                 }
                                 Spacer()
@@ -1452,14 +1454,17 @@ struct Appearance: View {
                 Defaults.Toggle(key: .coloredSpectrogram) {
                     Text("Colored spectrogram")
                 }
-                Defaults
-                    .Toggle("Player tinting", key: .playerColorTinting)
+                // The `Defaults.Toggle("...", key:)` overload takes a `String` and shows it
+                // verbatim, so the label has to come through the view builder to localize.
+                Defaults.Toggle(key: .playerColorTinting) {
+                    Text("Player tinting")
+                }
                 Defaults.Toggle(key: .lightingEffect) {
                     Text("Enable blur effect behind album art")
                 }
                 Picker("Slider color", selection: $sliderColor) {
                     ForEach(SliderColorEnum.allCases, id: \.self) { option in
-                        Text(option.rawValue)
+                        Text(option.label)
                     }
                 }
             } header: {
@@ -2031,7 +2036,7 @@ func comingSoonTag() -> some View {
         .clipShape(.capsule)
 }
 
-func customBadge(text: String) -> some View {
+func customBadge(text: LocalizedStringKey) -> some View {
     Text(text)
         .foregroundStyle(.secondary)
         .font(.footnote.bold())

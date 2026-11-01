@@ -109,28 +109,37 @@ struct PerformanceView: View {
             return "↓ \(MetricFormatter.rate(snapshot.network.downloadBytesPerSecond))"
         case .disk:
             return snapshot.disk.readBytesPerSecond >= snapshot.disk.writeBytesPerSecond
-                ? "R \(MetricFormatter.rate(snapshot.disk.readBytesPerSecond))"
-                : "W \(MetricFormatter.rate(snapshot.disk.writeBytesPerSecond))"
+                ? String(localized: "R \(MetricFormatter.rate(snapshot.disk.readBytesPerSecond))")
+                : String(localized: "W \(MetricFormatter.rate(snapshot.disk.writeBytesPerSecond))")
         }
     }
 
+    /// The subtitles are assembled from several words and a number, so they are
+    /// localized as whole sentences: translating the fragments separately would
+    /// leave the word order and the separators up to English.
     private func subtitle(for metric: PerformanceMetric, snapshot: SystemMetricsSnapshot) -> String {
         switch metric {
         case .cpu:
-            return "User \(MetricFormatter.percent(snapshot.cpu.userUsage)) · Sys \(MetricFormatter.percent(snapshot.cpu.systemUsage))"
+            let user = MetricFormatter.percent(snapshot.cpu.userUsage)
+            let system = MetricFormatter.percent(snapshot.cpu.systemUsage)
+            return String(localized: "User \(user) · Sys \(system)")
         case .gpu:
             return gpuSubtitle(snapshot.gpu)
         case .memory:
-            return "\(MetricFormatter.bytes(snapshot.memory.used, style: .memory)) / \(MetricFormatter.bytes(snapshot.memory.total, style: .memory)) · \(snapshot.memory.pressure.label)"
+            let used = MetricFormatter.bytes(snapshot.memory.used, style: .memory)
+            let total = MetricFormatter.bytes(snapshot.memory.total, style: .memory)
+            return String(localized: "\(used) / \(total) · \(snapshot.memory.pressure.label)")
         case .temperature:
             return thermalSubtitle(snapshot.thermal)
         case .network:
-            return "↑ \(MetricFormatter.rate(snapshot.network.uploadBytesPerSecond)) · \(snapshot.network.interfaceName ?? "No interface")"
+            let interface = snapshot.network.interfaceName ?? String(localized: "No interface")
+            return String(localized: "↑ \(MetricFormatter.rate(snapshot.network.uploadBytesPerSecond)) · \(interface)")
         case .disk:
             let other = snapshot.disk.readBytesPerSecond >= snapshot.disk.writeBytesPerSecond
-                ? "W \(MetricFormatter.rate(snapshot.disk.writeBytesPerSecond))"
-                : "R \(MetricFormatter.rate(snapshot.disk.readBytesPerSecond))"
-            return "\(other) · \(MetricFormatter.bytes(snapshot.disk.freeBytes)) free"
+                ? String(localized: "W \(MetricFormatter.rate(snapshot.disk.writeBytesPerSecond))")
+                : String(localized: "R \(MetricFormatter.rate(snapshot.disk.readBytesPerSecond))")
+            let free = MetricFormatter.bytes(snapshot.disk.freeBytes)
+            return String(localized: "\(other) · \(free) free")
         }
     }
 
@@ -170,9 +179,9 @@ struct PerformanceView: View {
     }
 
     private func gpuSubtitle(_ gpu: GPUMetrics?) -> String {
-        guard let gpu else { return "Unavailable" }
+        guard let gpu else { return String(localized: "Unavailable") }
         guard let memory = gpu.inUseMemory else { return "GPU" }
-        return "\(MetricFormatter.bytes(memory, style: .memory)) in use"
+        return String(localized: "\(MetricFormatter.bytes(memory, style: .memory)) in use")
     }
 
     private func thermalSubtitle(_ thermal: ThermalMetrics) -> String {
@@ -184,9 +193,9 @@ struct PerformanceView: View {
             parts.append("SSD \(MetricFormatter.temperature(storage))")
         }
         if let battery = thermal.batteryTemperature {
-            parts.append("Batt \(MetricFormatter.temperature(battery))")
+            parts.append(String(localized: "Batt \(MetricFormatter.temperature(battery))"))
         }
-        return parts.isEmpty ? "Unavailable" : parts.prefix(2).joined(separator: " · ")
+        return parts.isEmpty ? String(localized: "Unavailable") : parts.prefix(2).joined(separator: " · ")
     }
 
     private func rateMax(_ values: [Double]) -> Double {

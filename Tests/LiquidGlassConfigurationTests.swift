@@ -2,7 +2,7 @@
 //  LiquidGlassConfigurationTests.swift
 //  Tests
 //
-// SOURCES: NotBoringNotch/components/Notch/LiquidGlass/LiquidGlassConfiguration.swift NotBoringNotch/components/Notch/LiquidGlass/LiquidGlassAvailability.swift
+// SOURCES: NotBoringNotch/components/Notch/LiquidGlass/LiquidGlassConfiguration.swift NotBoringNotch/components/Notch/LiquidGlass/LiquidGlassAvailability.swift NotBoringNotch/enums/SelfLabeling.swift
 //
 
 import Foundation

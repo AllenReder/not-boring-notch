@@ -248,13 +248,17 @@ struct CalendarView: View {
 
 struct EmptyEventsView: View {
     let selectedDate: Date
-    
+
+    private var emptyLabel: LocalizedStringKey {
+        Calendar.current.isDateInToday(selectedDate) ? "No events today" : "No events"
+    }
+
     var body: some View {
         VStack {
             Image(systemName: "calendar.badge.checkmark")
                 .font(.title)
                 .foregroundColor(Color(white: 0.65))
-            Text(Calendar.current.isDateInToday(selectedDate) ? "No events today" : "No events")
+            Text(emptyLabel)
                 .font(.subheadline)
                 .foregroundColor(.white)
             Text("Enjoy your free time!")
