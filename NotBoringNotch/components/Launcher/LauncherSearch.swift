@@ -17,12 +17,15 @@ enum LauncherSearch {
     /// The best matches, strongest first. An empty query matches nothing — what an empty field
     /// shows is the caller's business, not this function's.
     static func ranked(_ apps: [LauncherApp], query: String) -> [LauncherApp] {
-        let needle = fold(query.trimmingCharacters(in: .whitespacesAndNewlines))
+        let needle = matchingForm(query)
         guard !needle.isEmpty else { return [] }
 
         var scored: [(app: LauncherApp, score: Int)] = []
         for app in apps {
-            if let score = score(needle, in: fold(app.name)) {
+            // A name in another script is matched as the letters it is typed with, so `weixin`
+            // reaches 微信 the same way `saf` reaches Safari.
+            let haystack = app.latinName ?? fold(app.name)
+            if let score = score(needle, in: haystack) {
                 scored.append((app, score))
             }
         }
@@ -32,6 +35,13 @@ enum LauncherSearch {
                 : left.score > right.score
         }
         return scored.prefix(limit).map(\.app)
+    }
+
+    /// What a query is compared in: the Latin reading when it is written in another script,
+    /// folded either way, so both sides of a match fold through the same rule.
+    private static func matchingForm(_ query: String) -> String {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        return LauncherRomanization.latin(trimmed) ?? fold(trimmed)
     }
 
     /// How well a folded query fits a folded name, or nil when it does not fit at all.
@@ -53,7 +63,7 @@ enum LauncherSearch {
     }
 
     /// Lowercase, accent- and width-blind: `cafe` finds Café, and a full-width `Ａ` finds A.
-    private static func fold(_ text: String) -> String {
+    static func fold(_ text: String) -> String {
         text.precomposedStringWithCanonicalMapping
             .folding(
                 options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: nil)

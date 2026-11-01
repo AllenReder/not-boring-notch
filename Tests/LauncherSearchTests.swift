@@ -6,7 +6,7 @@
 //  declared below. The Tests folder is not part of an Xcode target, so each runner is compiled on
 //  its own.
 //
-// SOURCES: NotBoringNotch/components/Launcher/LauncherSearch.swift NotBoringNotch/components/Launcher/LauncherApps.swift
+// SOURCES: NotBoringNotch/components/Launcher/LauncherSearch.swift NotBoringNotch/components/Launcher/LauncherApps.swift NotBoringNotch/components/Launcher/LauncherRomanization.swift
 //
 //  Helper names are prefixed (`check*` for the assertions, `launcher*` for this runner's fixtures)
 //  so they stay distinguishable from the helpers in the other standalone runners in this folder,
@@ -45,6 +45,7 @@ struct LauncherSearchTestsRunner {
     static func main() {
         testTiersRankInOrder()
         testCaseAccentsAndWidthDoNotHaveToBeTyped()
+        testAnotherScriptIsFoundByItsLatinReading()
         testNoMatchAndEmptyQueryReturnNothing()
         testTieIsBrokenAlphabetically()
         testTheListStopsAtTheLimit()
@@ -82,6 +83,25 @@ struct LauncherSearchTestsRunner {
                    "a typed query finds the accented name")
         checkEqual(LauncherSearch.ranked(apps, query: "ＳＡＦＡＲＩ").map(\.name), ["Safari"],
                    "a full-width query finds the Latin name")
+    }
+
+    /// A name written in Chinese, Japanese or Korean is typed with Latin letters, so it has to be
+    /// matched in the letters it is typed with — and a name that is already Latin still wins.
+    static func testAnotherScriptIsFoundByItsLatinReading() {
+        let apps = [launcherApp("微信"), launcherApp("Safari"), launcherApp("カレンダー")]
+        checkEqual(LauncherSearch.ranked(apps, query: "wei").map(\.name), ["微信"],
+                   "the reading's opening finds it")
+        checkEqual(LauncherSearch.ranked(apps, query: "weixin").map(\.name), ["微信"],
+                   "the reading run together finds it too")
+        checkEqual(LauncherSearch.ranked(apps, query: "微信").map(\.name), ["微信"],
+                   "and so does the name itself")
+        checkEqual(LauncherSearch.ranked(apps, query: "karen").map(\.name), ["カレンダー"],
+                   "kana reads as its own letters, not as Mandarin")
+
+        // The reading is a fallback, never a better match than the name itself.
+        let both = [launcherApp("微信"), launcherApp("Weixin")]
+        checkEqual(LauncherSearch.ranked(both, query: "weixin").map(\.name),
+                   ["Weixin", "微信"], "a Latin name outranks the reading of another script")
     }
 
     static func testNoMatchAndEmptyQueryReturnNothing() {

@@ -11,6 +11,17 @@ struct LauncherApp: Identifiable, Hashable {
     /// What Finder calls the bundle, so a renamed copy is found under the name the user sees.
     let name: String
     let bundleID: String?
+    /// The name read as the letters it is typed with, folded; nil when it is written in Latin
+    /// already. Read once, here: the list folds every name on every keystroke, and an ICU
+    /// transform is not a fold.
+    let latinName: String?
+
+    init(url: URL, name: String, bundleID: String?) {
+        self.url = url
+        self.name = name
+        self.bundleID = bundleID
+        latinName = LauncherRomanization.latin(name)
+    }
 
     var id: String { url.path }
 
