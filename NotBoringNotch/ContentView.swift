@@ -13,6 +13,14 @@ import KeyboardShortcuts
 import SwiftUI
 import SwiftUIIntrospect
 
+/// The two facts the notch's surface animation reacts to. They travel together so that a tab
+/// asking for a different size and the notch opening or closing cannot install two competing
+/// animations on the same frame.
+private struct NotchSurface: Equatable {
+    let isOpen: Bool
+    let size: CGSize
+}
+
 @MainActor
 struct ContentView: View {
     @EnvironmentObject var vm: NotchViewModel
@@ -150,13 +158,19 @@ struct ContentView: View {
                     )
                 
                 mainLayout
-                    .frame(height: vm.notchState == .open ? vm.notchSize.height : nil)
+                    .frame(
+                        width: vm.notchState == .open ? vm.notchSize.width : nil,
+                        height: vm.notchState == .open ? vm.notchSize.height : nil
+                    )
                     .conditionalModifier(true) { view in
                         let openAnimation = Animation.spring(response: 0.42, dampingFraction: 0.8, blendDuration: 0)
                         let closeAnimation = Animation.spring(response: 0.45, dampingFraction: 1.0, blendDuration: 0)
                         
                         return view
-                            .animation(vm.notchState == .open ? openAnimation : closeAnimation, value: vm.notchState)
+                            .animation(
+                                vm.notchState == .open ? openAnimation : closeAnimation,
+                                value: NotchSurface(isOpen: vm.notchState == .open, size: vm.notchSize)
+                            )
                             .animation(.smooth, value: gestureProgress)
                     }
                     .contentShape(Rectangle())
@@ -256,7 +270,7 @@ struct ContentView: View {
             anchor: .top
         )
         .animation(.smooth, value: gestureProgress)
-        .background(dragDetector)
+        .background(alignment: .top) { dragDetector }
         .preferredColorScheme(.dark)
         .environmentObject(vm)
         .onChange(of: vm.anyDropZoneTargeting) { _, isTargeted in
@@ -410,6 +424,8 @@ struct ContentView: View {
                                 NotchHomeView(albumArtNamespace: albumArtNamespace)
                             case .shelf:
                                 ShelfView()
+                            case .launcher:
+                                LauncherView()
                             case .performance:
                                 PerformanceView()
                             }
@@ -556,7 +572,10 @@ struct ContentView: View {
     var dragDetector: some View {
         if Defaults[.notchShelf] && vm.notchState == .closed {
             Color.clear
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // The window is sized for the tallest tab. The drop target stays the height of
+                // the standard surface so a taller window does not swallow clicks and drags
+                // well below the notch.
+                .frame(maxWidth: .infinity, maxHeight: openNotchSize.height + shadowPadding)
                 .contentShape(Rectangle())
         .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText, .data], isTargeted: $vm.dragDetectorTargeting) { providers in
             vm.dropEvent = true

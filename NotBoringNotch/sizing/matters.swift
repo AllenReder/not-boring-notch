@@ -14,8 +14,33 @@ let batterySneakSize: CGSize = .init(width: 160, height: 1)
 
 let shadowPadding: CGFloat = 20
 let openNotchSize: CGSize = .init(width: 640, height: 190)
-let windowSize: CGSize = .init(width: openNotchSize.width, height: openNotchSize.height + shadowPadding)
+/// The launcher's surface. It is a placeholder height, chosen to be obviously taller than the
+/// standard surface so the height transition can be seen and tuned before the launcher itself
+/// exists.
+let launcherNotchSize: CGSize = .init(width: openNotchSize.width, height: 440)
+/// The tallest surface any tab asks for, read from the tabs themselves so a new tab cannot be
+/// forgotten here. The window is sized to it, so a tab growing taller never clips.
+let maxOpenNotchSize: CGSize = NotchViews.allCases
+    .map(\.expandedSize)
+    .reduce(.zero) { largest, size in
+        CGSize(width: max(largest.width, size.width), height: max(largest.height, size.height))
+    }
+let windowSize: CGSize = .init(
+    width: maxOpenNotchSize.width, height: maxOpenNotchSize.height + shadowPadding)
 let cornerRadiusInsets: (opened: (top: CGFloat, bottom: CGFloat), closed: (top: CGFloat, bottom: CGFloat)) = (opened: (top: 19, bottom: 24), closed: (top: 6, bottom: 14))
+
+extension NotchViews {
+    /// The surface the notch grows to while this tab is open. Every tab shares the width for
+    /// now; the launcher is the first that asks for a different height.
+    var expandedSize: CGSize {
+        switch self {
+        case .home, .shelf, .performance:
+            return openNotchSize
+        case .launcher:
+            return launcherNotchSize
+        }
+    }
+}
 
 enum MusicPlayerImageSizes {
     static let cornerRadiusInset: (opened: CGFloat, closed: CGFloat) = (opened: 13.0, closed: 4.0)

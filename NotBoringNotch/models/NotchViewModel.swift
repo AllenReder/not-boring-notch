@@ -34,8 +34,13 @@ class NotchViewModel: NSObject, ObservableObject {
 
     @Published var screenUUID: String?
 
-    @Published var notchSize: CGSize = getClosedNotchSize()
     @Published var closedNotchSize: CGSize = getClosedNotchSize()
+
+    /// The surface the notch is drawing: the closed notch, or the size the open tab asks for.
+    /// Derived, so the open state and the tab can never disagree about it.
+    var notchSize: CGSize {
+        notchState == .open ? coordinator.currentView.expandedSize : closedNotchSize
+    }
     
     let webcamManager = WebcamManager.shared
     @Published var isCameraExpanded: Bool = false
@@ -56,8 +61,7 @@ class NotchViewModel: NSObject, ObservableObject {
         super.init()
         
         self.screenUUID = screenUUID
-        notchSize = getClosedNotchSize(screenUUID: screenUUID)
-        closedNotchSize = notchSize
+        closedNotchSize = getClosedNotchSize(screenUUID: screenUUID)
 
         Publishers.CombineLatest3($dropZoneTargeting, $dragDetectorTargeting, $generalDropTargeting)
             .map { shelf, drag, general in
@@ -190,7 +194,6 @@ class NotchViewModel: NSObject, ObservableObject {
     }
 
     func open() {
-        self.notchSize = openNotchSize
         self.notchState = .open
         
         // Force music information update when notch is opened
@@ -202,8 +205,7 @@ class NotchViewModel: NSObject, ObservableObject {
         if SharingStateManager.shared.preventNotchClose {
             return
         }
-        self.notchSize = getClosedNotchSize(screenUUID: self.screenUUID)
-        self.closedNotchSize = self.notchSize
+        self.closedNotchSize = getClosedNotchSize(screenUUID: self.screenUUID)
         self.notchState = .closed
         self.isBatteryPopoverActive = false
         self.coordinator.sneakPeek.show = false

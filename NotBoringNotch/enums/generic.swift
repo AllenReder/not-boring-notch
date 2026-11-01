@@ -24,9 +24,10 @@ public enum NotchState {
     case open
 }
 
-public enum NotchViews: Hashable {
+public enum NotchViews: Hashable, CaseIterable {
     case home
     case shelf
+    case launcher
     case performance
 }
 

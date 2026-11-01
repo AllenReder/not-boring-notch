@@ -12,17 +12,12 @@ struct NotchHeader: View {
     @EnvironmentObject var vm: NotchViewModel
     @ObservedObject var batteryModel = BatteryStatusViewModel.shared
     @ObservedObject var coordinator = NotchViewCoordinator.shared
-    @StateObject var tvm = ShelfStateViewModel.shared
-    @Default(.notchShelf) private var notchShelf
-    @Default(.performanceTabEnabled) private var performanceTabEnabled
     var body: some View {
         HStack(spacing: 0) {
             HStack {
-                if showsTabBar {
-                    TabSelectionView()
-                } else if vm.notchState == .open {
-                    EmptyView()
-                }
+                // The launcher tab is always present, so the tab bar always has something to
+                // show.
+                TabSelectionView()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .opacity(vm.notchState == .closed ? 0 : 1)
@@ -102,13 +97,6 @@ struct NotchHeader: View {
         }
         .foregroundColor(.gray)
         .environmentObject(vm)
-    }
-
-    /// The shelf tab keeps its original visibility rules. Enabling the
-    /// performance tab must show the tab bar even when the shelf is off or empty.
-    private var showsTabBar: Bool {
-        let shelfTabVisible = notchShelf && (!tvm.isEmpty || coordinator.alwaysShowTabs)
-        return shelfTabVisible || performanceTabEnabled
     }
 
     func isHUDType(_ type: SneakContentType) -> Bool {

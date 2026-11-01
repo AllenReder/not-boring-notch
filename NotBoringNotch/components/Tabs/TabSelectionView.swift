@@ -12,7 +12,6 @@ struct TabModel: Identifiable {
     let id: NotchViews
     let label: String
     let icon: String
-    let view: NotchViews
 }
 
 struct TabSelectionView: View {
@@ -24,20 +23,23 @@ struct TabSelectionView: View {
 
     private var visibleTabs: [TabModel] {
         var result = [
-            TabModel(id: .home, label: "Home", icon: "house.fill", view: .home)
+            TabModel(id: .home, label: "Home", icon: "house.fill")
         ]
 
         if notchShelf && (!tvm.isEmpty || coordinator.alwaysShowTabs) {
-            result.append(TabModel(id: .shelf, label: "Shelf", icon: "tray.fill", view: .shelf))
+            result.append(TabModel(id: .shelf, label: "Shelf", icon: "tray.fill"))
         }
+
+        result.append(
+            TabModel(id: .launcher, label: "Launch", icon: "magnifyingglass")
+        )
 
         if performanceTabEnabled {
             result.append(
                 TabModel(
                     id: .performance,
                     label: "Stats",
-                    icon: "speedometer",
-                    view: .performance
+                    icon: "speedometer"
                 )
             )
         }
@@ -51,16 +53,16 @@ struct TabSelectionView: View {
                 TabButton(
                     label: tab.label,
                     icon: tab.icon,
-                    selected: coordinator.currentView == tab.view
+                    selected: coordinator.currentView == tab.id
                 ) {
                     withAnimation(.smooth) {
-                        coordinator.currentView = tab.view
+                        coordinator.currentView = tab.id
                     }
                 }
                 .frame(height: 26)
-                .foregroundStyle(tab.view == coordinator.currentView ? .white : .gray)
+                .foregroundStyle(tab.id == coordinator.currentView ? .white : .gray)
                 .background {
-                    if tab.view == coordinator.currentView {
+                    if tab.id == coordinator.currentView {
                         Capsule()
                             .fill(Color(nsColor: .secondarySystemFill))
                             .matchedGeometryEffect(id: "capsule", in: animation)

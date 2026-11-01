@@ -523,7 +523,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
 
             vm.screenUUID = selectedScreen.displayUUID
-            vm.notchSize = getClosedNotchSize(screenUUID: selectedScreen.displayUUID)
+            vm.closedNotchSize = getClosedNotchSize(screenUUID: selectedScreen.displayUUID)
 
             if window == nil {
                 window = createNotBoringNotchWindow(for: selectedScreen, with: vm)
