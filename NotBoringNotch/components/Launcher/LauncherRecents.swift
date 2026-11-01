@@ -17,9 +17,9 @@ import Defaults
 final class LauncherRecents: ObservableObject {
     static let shared = LauncherRecents()
 
-    /// The most the launcher setting can ask for, and so the most that is kept: a lower setting
-    /// hides the older entries instead of throwing them away.
-    static let limit = 12
+    /// How many are kept, which is also the most the setting can show: showing fewer hides the
+    /// older entries instead of throwing them away, so raising the number brings them back.
+    static let kept = 12
 
     /// Finder is always running and never what the user set out to launch, and we never list
     /// ourselves: taking focus for the search field is not a visit.
@@ -52,7 +52,7 @@ final class LauncherRecents: ObservableObject {
             !Self.ignored.contains(bundleID)
         else { return }
 
-        let updated = Self.promoted(bundleIDs, with: bundleID, limit: Self.limit)
+        let updated = Self.promoted(bundleIDs, with: bundleID, limit: Self.kept)
         guard updated != bundleIDs else { return }
         bundleIDs = updated
         Defaults[.launcherRecents] = updated

@@ -366,9 +366,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Task { @MainActor [weak self] in
                 guard let self else { return }
 
-                self.closeNotchTask?.cancel()
-                self.closeNotchTask = nil
-
+                self.cancelPendingClose()
                 let viewModel = self.notchUnderPointer()
                 switch viewModel.notchState {
                 case .closed:
@@ -385,23 +383,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        // The launcher toggles: the key that summoned it takes it away again, because a summon key
-        // that does nothing when pressed twice reads as a broken key. A notch open on another tab
-        // is switched rather than closed — the user asked for the launcher, not for a dismissal.
-        KeyboardShortcuts.onKeyDown(for: .openLauncher) { [weak self] in
+        KeyboardShortcuts.onKeyDown(for: .toggleLauncher) { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                // A close already pending from the toggle would take the launcher away mid-search.
-                self.closeNotchTask?.cancel()
-                self.closeNotchTask = nil
-
-                let viewModel = self.notchUnderPointer()
-                if viewModel.notchState == .open, self.coordinator.currentView == .launcher {
-                    viewModel.close()
-                } else {
-                    self.coordinator.currentView = .launcher
-                    viewModel.open()
-                }
+                self.cancelPendingClose()
+                self.notchUnderPointer().toggleLauncher()
             }
         }
 
@@ -435,6 +421,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         previousScreens = NSScreen.screens
+    }
+
+    /// A close the notch toggle scheduled for itself must not take the launcher away mid-search.
+    @MainActor
+    private func cancelPendingClose() {
+        closeNotchTask?.cancel()
+        closeNotchTask = nil
     }
 
     /// The notch a shortcut acts on: the one on the display the pointer is over, when every display

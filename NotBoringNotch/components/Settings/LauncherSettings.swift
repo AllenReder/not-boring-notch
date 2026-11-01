@@ -14,11 +14,15 @@ struct LauncherSettings: View {
     var body: some View {
         Form {
             Section {
-                KeyboardShortcuts.Recorder("Open the launcher:", name: .openLauncher)
+                KeyboardShortcuts.Recorder("Toggle the launcher:", name: .toggleLauncher)
             } header: {
                 Text("Launcher")
             } footer: {
-                footer("Opens the notch on the launcher, with the search field ready to type in.")
+                footer(
+                    """
+                    Opens the notch on the launcher, ready to type in, and closes it again when \
+                    pressed a second time.
+                    """)
             }
 
             Section {
@@ -30,7 +34,7 @@ struct LauncherSettings: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                Stepper(value: $recentsLimit, in: 0...LauncherRecents.limit) {
+                Stepper(value: $recentsLimit, in: 0...LauncherRecents.kept) {
                     HStack {
                         Text("Recent apps")
                         Spacer()

@@ -210,6 +210,18 @@ class NotchViewModel: NSObject, ObservableObject {
         MusicManager.shared.forceUpdate()
     }
 
+    /// The launcher's key: it opens the tab, and takes it away again if the tab is already there.
+    /// A notch open on another tab switches instead of closing, because the user asked for the
+    /// launcher rather than for a dismissal.
+    func toggleLauncher() {
+        if notchState == .open, coordinator.currentView == .launcher {
+            close()
+            return
+        }
+        coordinator.currentView = .launcher
+        open()
+    }
+
     func close() {
         // Do not close while a share picker or sharing service is active
         if SharingStateManager.shared.preventNotchClose {
