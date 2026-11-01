@@ -35,9 +35,14 @@ struct LauncherView: View {
     private var metrics: LauncherMetrics { LauncherMetrics(rowHeight: rowHeight) }
 
     var body: some View {
+        content(
+            LauncherList(apps: model.apps, recents: recentApps, query: query, metrics: metrics))
+    }
+
+    private func content(_ list: LauncherList) -> some View {
         VStack(spacing: metrics.spacing) {
-            searchField
-            list
+            searchField(list)
+            rows(list)
         }
         .padding(.horizontal, 6)
         .onAppear { model.refresh() }
@@ -51,7 +56,7 @@ struct LauncherView: View {
         }
         // The surface follows what is on it: a search with two matches has no reason to be the
         // height of a list it is not showing. The window was sized for the maximum already.
-        .onChange(of: neededHeight, initial: true) { _, height in
+        .onChange(of: list.neededHeight, initial: true) { _, height in
             coordinator.contentHeight = height
         }
         .onExitCommand { vm.close() }
@@ -75,7 +80,7 @@ struct LauncherView: View {
 
     // MARK: - Field
 
-    private var searchField: some View {
+    private func searchField(_ list: LauncherList) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 13, weight: .semibold))
@@ -85,9 +90,9 @@ struct LauncherView: View {
                 .font(.system(size: 15))
                 .foregroundStyle(.white)
                 .focused($isSearching)
-                .onSubmit { open(selected(in: rows)) }
-                .onKeyPress(.upArrow) { move(by: -1) }
-                .onKeyPress(.downArrow) { move(by: 1) }
+                .onSubmit { open(list.selected(selection)?.app) }
+                .onKeyPress(.upArrow) { move(by: -1, in: list) }
+                .onKeyPress(.downArrow) { move(by: 1, in: list) }
         }
         .padding(.horizontal, 10)
         .frame(height: metrics.field)
@@ -98,72 +103,39 @@ struct LauncherView: View {
 
     // MARK: - Rows
 
-    /// What the field is asking for, with the whitespace a paste can carry dropped.
-    private var typed: String {
-        query.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    /// The apps the user switched to most recently, resolved to rows. Only while the field is
-    /// empty: once something is typed, the list answers the query and shows nothing else.
+    /// The apps the user switched to most recently, resolved to what the list can draw and cut to
+    /// the setting. Resolved before the cut: an app that has since been uninstalled should not eat
+    /// one of the rows the setting asked for.
     private var recentApps: [LauncherApp] {
-        guard typed.isEmpty else { return [] }
-        return recents.bundleIDs.prefix(recentsLimit).compactMap(model.app(withBundleID:))
+        Array(recents.bundleIDs.compactMap(model.app(withBundleID:)).prefix(recentsLimit))
     }
 
-    /// What the field is asking for: its matches, or — while it is empty — every app the recents
-    /// above it have not already shown.
-    private var matches: [LauncherApp] {
-        guard !typed.isEmpty else {
-            let shown = Set(recentApps.map(\.identity))
-            return model.apps.filter { !shown.contains($0.identity) }
-        }
-        return LauncherSearch.ranked(model.apps, query: typed)
-    }
-
-    /// Everything the list draws, in order, so the selection is one index over both sections.
-    private var rows: [LauncherApp] { recentApps + matches }
-
-    /// What this tab's content has to be to show those rows and nothing that sits empty. The
-    /// notch adds its own header and padding around it. An empty list is one row tall, because the
-    /// line it draws instead of rows is drawn at that height.
-    private var neededHeight: CGFloat {
-        let rows = self.rows
-        let list =
-            rows.isEmpty
-            ? metrics.row
-            : CGFloat(rows.count) * metrics.row
-                + (recentApps.isEmpty ? 0 : metrics.header + metrics.separator)
-        return metrics.field + 2 * metrics.spacing + list
-    }
-
-    /// Clamped on read: the list can change under a selection the user already set.
-    private func selectedIndex(in rows: [LauncherApp]) -> Int? {
-        rows.isEmpty ? nil : min(max(selection, 0), rows.count - 1)
-    }
-
-    private func selected(in rows: [LauncherApp]) -> LauncherApp? {
-        selectedIndex(in: rows).map { rows[$0] }
-    }
-
-    private var list: some View {
-        let rows = self.rows
-        let selectedID = selected(in: rows)?.id
+    private func rows(_ list: LauncherList) -> some View {
+        let selectedID = list.selected(selection)?.id
         return ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     Color.clear.frame(height: 0).id(Self.topAnchor)
-                    if !recentApps.isEmpty {
+                    if !list.recentRows.isEmpty {
                         header("Recent")
-                        ForEach(recentApps) { appRow($0, selected: $0.id == selectedID) }
-                        if !matches.isEmpty { separator }
+                        ForEach(list.recentRows) { appRow($0, selected: $0.id == selectedID) }
+                        if !list.otherRows.isEmpty { separator }
                     }
-                    ForEach(matches) { appRow($0, selected: $0.id == selectedID) }
-                    if rows.isEmpty {
-                        Text(typed.isEmpty ? "No apps found" : "No app matches “\(typed)”")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.gray)
-                            .frame(height: metrics.row, alignment: .bottomLeading)
-                            .padding(.horizontal, 8)
+                    ForEach(list.otherRows) { appRow($0, selected: $0.id == selectedID) }
+                    if list.isEmpty {
+                        // Two literals rather than one ternary: `Text` only localizes what it can
+                        // see as a literal, and a String built in code is drawn verbatim.
+                        Group {
+                            if list.typed.isEmpty {
+                                Text("No apps found")
+                            } else {
+                                Text("No app matches “\(list.typed)”")
+                            }
+                        }
+                        .font(.system(size: 12))
+                        .foregroundStyle(.gray)
+                        .frame(height: metrics.row, alignment: .bottomLeading)
+                        .padding(.horizontal, 8)
                     }
                 }
                 .padding(.bottom, metrics.spacing)
@@ -178,7 +150,9 @@ struct LauncherView: View {
         }
     }
 
-    private func header(_ title: String) -> some View {
+    /// Takes a key rather than a String so the title is localized; `Text(String)` is drawn
+    /// verbatim.
+    private func header(_ title: LocalizedStringKey) -> some View {
         Text(title)
             .font(.system(size: 10, weight: .semibold))
             .foregroundStyle(.gray)
@@ -195,12 +169,12 @@ struct LauncherView: View {
             .padding(.horizontal, 8)
     }
 
-    private func appRow(_ app: LauncherApp, selected: Bool) -> some View {
+    private func appRow(_ row: LauncherList.Row, selected: Bool) -> some View {
         HStack(spacing: 9) {
-            Image(nsImage: model.icon(for: app))
+            Image(nsImage: model.icon(for: row.app))
                 .resizable()
                 .frame(width: metrics.icon, height: metrics.icon)
-            Text(app.name)
+            Text(row.app.name)
                 .font(.system(size: metrics.name, weight: .medium))
                 .foregroundStyle(selected ? .white : .white.opacity(0.85))
                 .lineLimit(1)
@@ -213,23 +187,22 @@ struct LauncherView: View {
                 .fill(selected ? .white.opacity(0.16) : .clear)
         )
         .contentShape(Rectangle())
-        .onTapGesture { open(app) }
+        .onTapGesture { open(row.app) }
         // The pointer is the same cursor as the arrow keys: whatever is under it is what Return
         // opens. Leaving does not move the selection back, so the pointer can leave to type.
         .onHover { inside in
-            guard inside, let index = rows.firstIndex(where: { $0.id == app.id }) else { return }
-            selection = index
+            guard inside else { return }
+            selection = row.index
         }
     }
 
     // MARK: - Actions
 
-    private func move(by delta: Int) -> KeyPress.Result {
-        let rows = self.rows
-        guard let current = selectedIndex(in: rows) else { return .handled }
-        let next = min(max(current + delta, 0), rows.count - 1)
+    private func move(by delta: Int, in list: LauncherList) -> KeyPress.Result {
+        guard let current = list.selected(selection) else { return .handled }
+        let next = min(max(current.index + delta, 0), list.rows.count - 1)
         selection = next
-        scrollTarget = rows[next].id
+        scrollTarget = list.rows[next].id
         return .handled
     }
 
@@ -241,34 +214,6 @@ struct LauncherView: View {
             at: app.url, configuration: NSWorkspace.OpenConfiguration())
         vm.close()
     }
-}
-
-// MARK: - Metrics
-
-/// What each piece of the launcher occupies. Everything is drawn at these heights rather than
-/// letting its text decide, so the height this tab asks the notch for is the height its layout
-/// takes — a list the notch clips is a selection the user cannot see.
-///
-/// The row is the one the user sets, and the icon, the name and the row's corner are fractions of
-/// it: a taller row is a bigger icon and a bigger name, not the same row with more padding. What
-/// sits around the rows does not scale with them, because the field and the headers are the notch's
-/// furniture and the list is what the setting is about.
-struct LauncherMetrics {
-    /// The row height the fractions below were read against: at 30, an icon is 22 and a name is 13.
-    private static let reference: CGFloat = 30
-
-    let rowHeight: CGFloat
-
-    var row: CGFloat { rowHeight }
-    var icon: CGFloat { (rowHeight * 22 / Self.reference).rounded() }
-    var name: CGFloat { (rowHeight * 13 / Self.reference).rounded() }
-    var corner: CGFloat { (rowHeight * 6 / Self.reference).rounded() }
-
-    let field: CGFloat = 32
-    let header: CGFloat = 26
-    let separator: CGFloat = 13
-    /// Between the field and the list, and below the last row.
-    let spacing: CGFloat = 8
 }
 
 // MARK: - Model

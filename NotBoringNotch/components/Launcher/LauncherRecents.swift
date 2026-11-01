@@ -40,11 +40,8 @@ final class LauncherRecents: ObservableObject {
         }
     }
 
-    /// Newest first, each app once. Pure, so the order is checkable without a running system.
-    static func promoted(_ bundleIDs: [String], with bundleID: String, limit: Int) -> [String] {
-        Array(([bundleID] + bundleIDs.filter { $0 != bundleID }).prefix(limit))
-    }
-
+    /// Newest first, each app once. The order itself lives in `LauncherRecentsOrder`, where it is
+    /// checkable without a running system.
     private func record(_ app: NSRunningApplication) {
         guard app.activationPolicy == .regular,
             let bundleID = app.bundleIdentifier,
@@ -52,7 +49,8 @@ final class LauncherRecents: ObservableObject {
             !Self.ignored.contains(bundleID)
         else { return }
 
-        let updated = Self.promoted(bundleIDs, with: bundleID, limit: Self.kept)
+        let updated = LauncherRecentsOrder.promoting(
+            bundleIDs, with: bundleID, limit: Self.kept)
         guard updated != bundleIDs else { return }
         bundleIDs = updated
         Defaults[.launcherRecents] = updated

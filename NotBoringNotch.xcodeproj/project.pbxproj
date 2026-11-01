@@ -135,6 +135,7 @@
 		A11CE2000000000000000006 /* LauncherRecents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11CE2000000000000000005 /* LauncherRecents.swift */; };
 		A11CE2000000000000000008 /* LauncherRomanization.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11CE2000000000000000007 /* LauncherRomanization.swift */; };
 		A11CE200000000000000000A /* LauncherSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11CE2000000000000000009 /* LauncherSettings.swift */; };
+		A11CE3000000000000000002 /* LauncherList.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11CE3000000000000000001 /* LauncherList.swift */; };
 		A11CE00000000000000000A4 /* SystemMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11CE00000000000000000A3 /* SystemMetrics.swift */; };
 		A11CE00000000000000000A6 /* SystemMetricsMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11CE00000000000000000A5 /* SystemMetricsMonitor.swift */; };
 		9A987A102C73CA8D005CA465 /* Collections in Frameworks */ = {isa = PBXBuildFile; productRef = 9A987A0F2C73CA8D005CA465 /* Collections */; };
@@ -329,6 +330,7 @@
 		A11CE2000000000000000005 /* LauncherRecents.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LauncherRecents.swift; sourceTree = "<group>"; };
 		A11CE2000000000000000007 /* LauncherRomanization.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LauncherRomanization.swift; sourceTree = "<group>"; };
 		A11CE2000000000000000009 /* LauncherSettings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LauncherSettings.swift; sourceTree = "<group>"; };
+		A11CE3000000000000000001 /* LauncherList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LauncherList.swift; sourceTree = "<group>"; };
 		A11CE00000000000000000A3 /* SystemMetrics.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SystemMetrics.swift; sourceTree = "<group>"; };
 		A11CE00000000000000000A5 /* SystemMetricsMonitor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SystemMetricsMonitor.swift; sourceTree = "<group>"; };
 		9AB0C6BB2C73C9CB00F7CD30 /* NotchHomeView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NotchHomeView.swift; sourceTree = "<group>"; };
@@ -572,6 +574,7 @@
 				A11CE2000000000000000003 /* LauncherSearch.swift */,
 				A11CE2000000000000000005 /* LauncherRecents.swift */,
 				A11CE2000000000000000007 /* LauncherRomanization.swift */,
+				A11CE3000000000000000001 /* LauncherList.swift */,
 			);
 			path = Launcher;
 			sourceTree = "<group>";
@@ -1133,6 +1136,7 @@
 				A11CE2000000000000000004 /* LauncherSearch.swift in Sources */,
 				A11CE2000000000000000006 /* LauncherRecents.swift in Sources */,
 				A11CE2000000000000000008 /* LauncherRomanization.swift in Sources */,
+				A11CE3000000000000000002 /* LauncherList.swift in Sources */,
 				A11CE200000000000000000A /* LauncherSettings.swift in Sources */,
 				A11CE00000000000000000A4 /* SystemMetrics.swift in Sources */,
 				A11CE00000000000000000A6 /* SystemMetricsMonitor.swift in Sources */,
