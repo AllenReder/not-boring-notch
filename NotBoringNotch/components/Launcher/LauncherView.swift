@@ -79,9 +79,11 @@ struct LauncherView: View {
 
     // MARK: - Rows
 
-    /// The apps the user switched to most recently, resolved to rows.
+    /// The apps the user switched to most recently, resolved to rows. Only while the field is
+    /// empty: once something is typed, the list answers the query and shows nothing else.
     private var recentApps: [LauncherApp] {
-        recents.bundleIDs.compactMap(model.app(withBundleID:))
+        guard query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return [] }
+        return recents.bundleIDs.compactMap(model.app(withBundleID:))
     }
 
     /// What the field is asking for: its matches, or — while it is empty — every app the recents
@@ -113,6 +115,7 @@ struct LauncherView: View {
                     if !recentApps.isEmpty {
                         header("Recent")
                         ForEach(recentApps) { appRow($0, selected: $0.id == selectedID) }
+                        if !matches.isEmpty { separator }
                     }
                     ForEach(matches) { appRow($0, selected: $0.id == selectedID) }
                     if rows.isEmpty {
@@ -139,6 +142,16 @@ struct LauncherView: View {
             .padding(.horizontal, 8)
             .padding(.top, 6)
             .padding(.bottom, 2)
+    }
+
+    /// Between the recents and everything else, so the list reads as two groups rather than one
+    /// list that happens to start with the same apps every time.
+    private var separator: some View {
+        Rectangle()
+            .fill(.white.opacity(0.08))
+            .frame(height: 1)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
     }
 
     private func appRow(_ app: LauncherApp, selected: Bool) -> some View {
