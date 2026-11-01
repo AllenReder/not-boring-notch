@@ -16,8 +16,9 @@ let shadowPadding: CGFloat = 20
 /// The room the open notch leaves below whatever its tab draws.
 let openNotchBottomPadding: CGFloat = 12
 let openNotchSize: CGSize = .init(width: 640, height: 190)
-/// The launcher's surface: a search field and a screenful of rows, which the standard surface has
-/// no room for.
+/// The most the launcher ever asks for: a search field and a screenful of rows, which the standard
+/// surface has no room for. It reports the height it actually needs as the list changes; this is
+/// the ceiling the window is sized for.
 let launcherNotchSize: CGSize = .init(width: openNotchSize.width, height: 440)
 /// The tallest surface any tab asks for, read from the tabs themselves so a new tab cannot be
 /// forgotten here. The window is sized to it, so a tab growing taller never clips.

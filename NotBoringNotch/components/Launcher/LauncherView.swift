@@ -19,12 +19,15 @@ struct LauncherView: View {
 
     @State private var query = ""
     @State private var selection = 0
-    /// The row the keyboard moved to. Only the keyboard asks the list to follow it.
+    /// The row the last command asked the list to bring into view, cleared once it has.
     @State private var scrollTarget: String?
     @State private var window: NSWindow?
     /// Set when Return opened an app: that app takes focus, so nothing here gives it back.
     @State private var isLaunching = false
     @FocusState private var isSearching: Bool
+
+    /// The top of the list, so a new query starts above the Recent header rather than below it.
+    private static let topAnchor = "launcher.top"
 
     var body: some View {
         VStack(spacing: Metrics.spacing) {
@@ -36,8 +39,11 @@ struct LauncherView: View {
         .onDisappear {
             if !isLaunching { NSApp.deactivate() }
         }
-        .onChange(of: query) { _, _ in resetSelection() }
-        .onChange(of: model.apps) { _, _ in resetSelection() }
+        // A new query is a new list: it starts at the top, on its first row.
+        .onChange(of: query) { _, _ in
+            selection = 0
+            scrollTarget = Self.topAnchor
+        }
         // The surface follows what is on it: a search with two matches has no reason to be the
         // height of a list it is not showing. The window was sized for the maximum already.
         .onChange(of: neededHeight, initial: true) { _, height in
@@ -87,17 +93,21 @@ struct LauncherView: View {
 
     // MARK: - Rows
 
+    /// What the field is asking for, with the whitespace a paste can carry dropped.
+    private var typed: String {
+        query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     /// The apps the user switched to most recently, resolved to rows. Only while the field is
     /// empty: once something is typed, the list answers the query and shows nothing else.
     private var recentApps: [LauncherApp] {
-        guard query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return [] }
+        guard typed.isEmpty else { return [] }
         return recents.bundleIDs.compactMap(model.app(withBundleID:))
     }
 
     /// What the field is asking for: its matches, or — while it is empty — every app the recents
     /// above it have not already shown.
     private var matches: [LauncherApp] {
-        let typed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !typed.isEmpty else {
             let shown = Set(recentApps.map(\.identity))
             return model.apps.filter { !shown.contains($0.identity) }
@@ -109,21 +119,25 @@ struct LauncherView: View {
     private var rows: [LauncherApp] { recentApps + matches }
 
     /// What this tab's content has to be to show those rows and nothing that sits empty. The
-    /// notch adds its own header and padding around it.
+    /// notch adds its own header and padding around it. An empty list is one row tall, because the
+    /// line it draws instead of rows is drawn at that height.
     private var neededHeight: CGFloat {
         let rows = self.rows
         let list =
             rows.isEmpty
-            ? Metrics.emptyList
+            ? Metrics.row
             : CGFloat(rows.count) * Metrics.row
                 + (recentApps.isEmpty ? 0 : Metrics.header + Metrics.separator)
         return Metrics.field + 2 * Metrics.spacing + list
     }
 
-    /// Clamped on read: the query and the scan can both shrink the list under a selection the
-    /// user already set.
+    /// Clamped on read: the list can change under a selection the user already set.
+    private func selectedIndex(in rows: [LauncherApp]) -> Int? {
+        rows.isEmpty ? nil : min(max(selection, 0), rows.count - 1)
+    }
+
     private func selected(in rows: [LauncherApp]) -> LauncherApp? {
-        rows.isEmpty ? nil : rows[min(max(selection, 0), rows.count - 1)]
+        selectedIndex(in: rows).map { rows[$0] }
     }
 
     private var list: some View {
@@ -132,6 +146,7 @@ struct LauncherView: View {
         return ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
+                    Color.clear.frame(height: 0).id(Self.topAnchor)
                     if !recentApps.isEmpty {
                         header("Recent")
                         ForEach(recentApps) { appRow($0, selected: $0.id == selectedID) }
@@ -139,24 +154,21 @@ struct LauncherView: View {
                     }
                     ForEach(matches) { appRow($0, selected: $0.id == selectedID) }
                     if rows.isEmpty {
-                        Text(query.isEmpty ? "No apps found" : "No app matches “\(query)”")
+                        Text(typed.isEmpty ? "No apps found" : "No app matches “\(typed)”")
                             .font(.system(size: 12))
                             .foregroundStyle(.gray)
-                            .frame(height: Metrics.emptyList, alignment: .bottomLeading)
+                            .frame(height: Metrics.row, alignment: .bottomLeading)
                             .padding(.horizontal, 8)
                     }
                 }
                 .padding(.bottom, Metrics.spacing)
             }
-            // A new query is a new list, and it starts at the top. The pointer never scrolls:
-            // moving the row out from under itself would move the selection with it.
-            .onChange(of: query) { _, _ in
-                guard let first = rows.first?.id else { return }
-                withAnimation(.smooth) { proxy.scrollTo(first, anchor: .top) }
-            }
-            .onChange(of: scrollTarget) { _, id in
-                guard let id else { return }
-                withAnimation(.smooth) { proxy.scrollTo(id, anchor: .center) }
+            // Only a command moves the list. The pointer never scrolls it: dragging the row out
+            // from under the pointer would drag the selection along with it.
+            .onChange(of: scrollTarget) { _, target in
+                guard let target else { return }
+                withAnimation(.smooth) { proxy.scrollTo(target, anchor: .center) }
+                scrollTarget = nil
             }
         }
     }
@@ -169,8 +181,7 @@ struct LauncherView: View {
             .padding(.horizontal, 8)
     }
 
-    /// Between the recents and everything else, so the list reads as two groups rather than one
-    /// list that happens to start with the same apps every time.
+    /// A hairline in the middle of the space the list reserves for it.
     private var separator: some View {
         Rectangle()
             .fill(.white.opacity(0.08))
@@ -210,19 +221,14 @@ struct LauncherView: View {
 
     private func move(by delta: Int) -> KeyPress.Result {
         let rows = self.rows
-        guard !rows.isEmpty else { return .handled }
-        let current = min(max(selection, 0), rows.count - 1)
+        guard let current = selectedIndex(in: rows) else { return .handled }
         let next = min(max(current + delta, 0), rows.count - 1)
         selection = next
         scrollTarget = rows[next].id
         return .handled
     }
 
-    /// A different list starts at the top.
-    private func resetSelection() {
-        selection = 0
-    }
-
+    /// Launches, and leaves focus to the app that opens: this surface is done.
     private func open(_ app: LauncherApp?) {
         guard let app else { return }
         isLaunching = true
@@ -242,8 +248,6 @@ private enum Metrics {
     static let row: CGFloat = 30
     static let header: CGFloat = 26
     static let separator: CGFloat = 13
-    /// The line a search with no matches draws instead of rows.
-    static let emptyList: CGFloat = 30
     /// Between the field and the list, and below the last row.
     static let spacing: CGFloat = 8
 }

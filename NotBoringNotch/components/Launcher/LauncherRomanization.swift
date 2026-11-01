@@ -21,12 +21,13 @@ enum LauncherRomanization {
         let reading: String?
         switch script {
         case .han:
-            reading = transform(name, .mandarinToLatin)
+            reading = name.applyingTransform(.mandarinToLatin, reverse: false)
         case .japanese:
             // Only the kana: ICU would read the kanji as Mandarin, which is a different word.
-            reading = transform(dropping(name, in: Script.hanRanges), .toLatin)
+            reading = dropping(name, in: Script.hanRanges)
+                .applyingTransform(.toLatin, reverse: false)
         case .hangul, .other:
-            reading = transform(name, .toLatin)
+            reading = name.applyingTransform(.toLatin, reverse: false)
         }
         guard let reading else { return nil }
 
@@ -63,10 +64,6 @@ enum LauncherRomanization {
             }
         }
         return found
-    }
-
-    private static func transform(_ value: String, _ transform: StringTransform) -> String? {
-        value.applyingTransform(transform, reverse: false)
     }
 
     private static func dropping(_ value: String, in ranges: [ClosedRange<UInt32>]) -> String {
