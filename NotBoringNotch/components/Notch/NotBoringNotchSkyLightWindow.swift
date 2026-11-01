@@ -109,9 +109,9 @@ class NotBoringNotchSkyLightWindow: NSPanel {
     
     private var observers: Set<AnyCancellable> = []
     
-    /// A borderless panel refuses key by default, which leaves the launcher's search field unable
-    /// to become first responder. Key is only meaningful once the app is active, so answering yes
-    /// here changes nothing until something asks for it.
-    override var canBecomeKey: Bool { true }
+    /// Only the launcher asks for the keyboard: it is the one surface with a field to type in.
+    /// Answering yes for every state would let a click on the notch take the keyboard from the app
+    /// the user is working in.
+    override var canBecomeKey: Bool { NotchViewCoordinator.shared.currentView == .launcher }
     override var canBecomeMain: Bool { false }
 }

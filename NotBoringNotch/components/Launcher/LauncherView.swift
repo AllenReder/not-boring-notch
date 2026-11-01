@@ -69,6 +69,14 @@ struct LauncherView: View {
             else { return }
             vm.close()
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) {
+            _ in
+            // The app losing activation is the same fact as the window losing key, and it arrives
+            // even when the window never became key. Only the pointer tells it apart from the
+            // launcher switching tabs, which deactivates the app with the pointer still there.
+            guard !vm.isMouseHovering() else { return }
+            vm.close()
+        }
         .background(WindowReader { readerWindow in
             window = readerWindow
             // A key window in an inactive app receives nothing, so typing needs both.
