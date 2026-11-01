@@ -11,7 +11,8 @@ import Foundation
 /// higher it scores. Ties fall back to the Finder's order, so a list of equal matches still reads
 /// as a list instead of as a lottery.
 enum LauncherSearch {
-    /// Long enough to find what is being looked for, short enough to stay one screen of scrolling.
+    /// Long enough to find what is being looked for, short enough that scrolling to the end of
+    /// the matches is one gesture. The list is as tall as the notch allows, not as tall as this.
     static let limit = 60
 
     /// The best matches, strongest first. An empty query matches nothing — what an empty field

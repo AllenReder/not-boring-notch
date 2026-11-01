@@ -14,15 +14,12 @@ struct NotchHeader: View {
     @ObservedObject var coordinator = NotchViewCoordinator.shared
     var body: some View {
         HStack(spacing: 0) {
-            HStack {
-                // The launcher tab is always present, so the tab bar always has something to
-                // show.
-                TabSelectionView()
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .opacity(vm.notchState == .closed ? 0 : 1)
-            .blur(radius: vm.notchState == .closed ? 20 : 0)
-            .zIndex(2)
+            // The launcher tab is always present, so the tab bar always has something to show.
+            TabSelectionView()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .opacity(vm.notchState == .closed ? 0 : 1)
+                .blur(radius: vm.notchState == .closed ? 20 : 0)
+                .zIndex(2)
 
             if vm.notchState == .open {
                 Rectangle()

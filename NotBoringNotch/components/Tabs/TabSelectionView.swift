@@ -26,7 +26,7 @@ struct TabSelectionView: View {
             TabModel(id: .home, label: "Home", icon: "house.fill")
         ]
 
-        if notchShelf && (!tvm.isEmpty || coordinator.alwaysShowTabs) {
+        if notchShelf && (!tvm.isEmpty || coordinator.showsEmptyShelfTab) {
             result.append(TabModel(id: .shelf, label: "Shelf", icon: "tray.fill"))
         }
 

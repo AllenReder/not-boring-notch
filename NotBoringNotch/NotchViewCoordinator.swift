@@ -73,9 +73,11 @@ class NotchViewCoordinator: ObservableObject {
     @AppStorage("musicLiveActivityEnabled") var musicLiveActivityEnabled: Bool = true
     @AppStorage("currentMicStatus") var currentMicStatus: Bool = true
 
-    @AppStorage("alwaysShowTabs") var alwaysShowTabs: Bool = true {
+    /// Whether the Shelf tab stays in the bar when it has nothing in it. The launcher tab is
+    /// always there, so this is the only thing the bar's contents still depend on.
+    @AppStorage("alwaysShowTabs") var showsEmptyShelfTab: Bool = true {
         didSet {
-            if !alwaysShowTabs {
+            if !showsEmptyShelfTab {
                 openLastTabByDefault = false
                 if ShelfStateViewModel.shared.isEmpty || !Defaults[.openShelfByDefault] {
                     currentView = .home
@@ -87,7 +89,7 @@ class NotchViewCoordinator: ObservableObject {
     @AppStorage("openLastTabByDefault") var openLastTabByDefault: Bool = false {
         didSet {
             if openLastTabByDefault {
-                alwaysShowTabs = true
+                showsEmptyShelfTab = true
             }
         }
     }
