@@ -363,47 +363,39 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         KeyboardShortcuts.onKeyDown(for: .toggleNotchOpen) { [weak self] in
-            Task { [weak self] in
-                guard let self = self else { return }
-
-                let mouseLocation = NSEvent.mouseLocation
-
-                var viewModel = self.vm
-
-                if Defaults[.showOnAllDisplays] {
-                    for screen in NSScreen.screens {
-                        if screen.frame.contains(mouseLocation) {
-                            if let uuid = screen.displayUUID, let screenViewModel = self.viewModels[uuid] {
-                                viewModel = screenViewModel
-                                break
-                            }
-                        }
-                    }
-                }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
 
                 self.closeNotchTask?.cancel()
                 self.closeNotchTask = nil
 
+                let viewModel = self.notchUnderPointer()
                 switch viewModel.notchState {
                 case .closed:
-                    await MainActor.run {
-                        viewModel.open()
-                    }
-
-                    let task = Task { [weak viewModel] in
+                    viewModel.open()
+                    self.closeNotchTask = Task { [weak viewModel] in
                         do {
                             try await Task.sleep(for: .seconds(3))
-                            await MainActor.run {
-                                viewModel?.close()
-                            }
-                        } catch { }
+                            viewModel?.close()
+                        } catch {}
                     }
-                    self.closeNotchTask = task
                 case .open:
-                    await MainActor.run {
-                        viewModel.close()
-                    }
+                    viewModel.close()
                 }
+            }
+        }
+
+        // The launcher opens rather than toggles: the field takes the keyboard, so the way out of
+        // a keyboard surface is Escape or clicking away, not the key that summoned it.
+        KeyboardShortcuts.onKeyDown(for: .openLauncher) { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                // A close already pending from the toggle would take the launcher away mid-search.
+                self.closeNotchTask?.cancel()
+                self.closeNotchTask = nil
+
+                self.coordinator.currentView = .launcher
+                self.notchUnderPointer().open()
             }
         }
 
@@ -437,6 +429,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         previousScreens = NSScreen.screens
+    }
+
+    /// The notch a shortcut acts on: the one on the display the pointer is over, when every display
+    /// has one of its own.
+    @MainActor
+    private func notchUnderPointer() -> NotchViewModel {
+        guard Defaults[.showOnAllDisplays] else { return vm }
+
+        let mouseLocation = NSEvent.mouseLocation
+        for screen in NSScreen.screens where screen.frame.contains(mouseLocation) {
+            if let uuid = screen.displayUUID, let screenViewModel = viewModels[uuid] {
+                return screenViewModel
+            }
+        }
+        return vm
     }
 
     func playWelcomeSound() {

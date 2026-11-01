@@ -4,6 +4,7 @@
 //
 
 import AppKit
+import Defaults
 import SwiftUI
 
 /// The launcher tab: search the installed apps, open one with Return.
@@ -16,6 +17,8 @@ struct LauncherView: View {
     @ObservedObject private var coordinator = NotchViewCoordinator.shared
     @ObservedObject private var recents = LauncherRecents.shared
     @StateObject private var model = LauncherModel()
+    @Default(.launcherRowHeight) private var rowHeight: CGFloat
+    @Default(.launcherRecentsLimit) private var recentsLimit: Int
 
     @State private var query = ""
     @State private var selection = 0
@@ -29,8 +32,10 @@ struct LauncherView: View {
     /// The top of the list, so a new query starts above the Recent header rather than below it.
     private static let topAnchor = "launcher.top"
 
+    private var metrics: LauncherMetrics { LauncherMetrics(rowHeight: rowHeight) }
+
     var body: some View {
-        VStack(spacing: Metrics.spacing) {
+        VStack(spacing: metrics.spacing) {
             searchField
             list
         }
@@ -85,7 +90,7 @@ struct LauncherView: View {
                 .onKeyPress(.downArrow) { move(by: 1) }
         }
         .padding(.horizontal, 10)
-        .frame(height: Metrics.field)
+        .frame(height: metrics.field)
         .background(
             RoundedRectangle(cornerRadius: 9, style: .continuous).fill(.white.opacity(0.08))
         )
@@ -102,7 +107,7 @@ struct LauncherView: View {
     /// empty: once something is typed, the list answers the query and shows nothing else.
     private var recentApps: [LauncherApp] {
         guard typed.isEmpty else { return [] }
-        return recents.bundleIDs.compactMap(model.app(withBundleID:))
+        return recents.bundleIDs.prefix(recentsLimit).compactMap(model.app(withBundleID:))
     }
 
     /// What the field is asking for: its matches, or — while it is empty — every app the recents
@@ -125,10 +130,10 @@ struct LauncherView: View {
         let rows = self.rows
         let list =
             rows.isEmpty
-            ? Metrics.row
-            : CGFloat(rows.count) * Metrics.row
-                + (recentApps.isEmpty ? 0 : Metrics.header + Metrics.separator)
-        return Metrics.field + 2 * Metrics.spacing + list
+            ? metrics.row
+            : CGFloat(rows.count) * metrics.row
+                + (recentApps.isEmpty ? 0 : metrics.header + metrics.separator)
+        return metrics.field + 2 * metrics.spacing + list
     }
 
     /// Clamped on read: the list can change under a selection the user already set.
@@ -157,11 +162,11 @@ struct LauncherView: View {
                         Text(typed.isEmpty ? "No apps found" : "No app matches “\(typed)”")
                             .font(.system(size: 12))
                             .foregroundStyle(.gray)
-                            .frame(height: Metrics.row, alignment: .bottomLeading)
+                            .frame(height: metrics.row, alignment: .bottomLeading)
                             .padding(.horizontal, 8)
                     }
                 }
-                .padding(.bottom, Metrics.spacing)
+                .padding(.bottom, metrics.spacing)
             }
             // Only a command moves the list. The pointer never scrolls it: dragging the row out
             // from under the pointer would drag the selection along with it.
@@ -177,7 +182,7 @@ struct LauncherView: View {
         Text(title)
             .font(.system(size: 10, weight: .semibold))
             .foregroundStyle(.gray)
-            .frame(height: Metrics.header, alignment: .bottomLeading)
+            .frame(height: metrics.header, alignment: .bottomLeading)
             .padding(.horizontal, 8)
     }
 
@@ -186,7 +191,7 @@ struct LauncherView: View {
         Rectangle()
             .fill(.white.opacity(0.08))
             .frame(height: 1)
-            .frame(height: Metrics.separator)
+            .frame(height: metrics.separator)
             .padding(.horizontal, 8)
     }
 
@@ -194,17 +199,17 @@ struct LauncherView: View {
         HStack(spacing: 9) {
             Image(nsImage: model.icon(for: app))
                 .resizable()
-                .frame(width: 22, height: 22)
+                .frame(width: metrics.icon, height: metrics.icon)
             Text(app.name)
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: metrics.name, weight: .medium))
                 .foregroundStyle(selected ? .white : .white.opacity(0.85))
                 .lineLimit(1)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 8)
-        .frame(height: Metrics.row)
+        .frame(height: metrics.row)
         .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
+            RoundedRectangle(cornerRadius: metrics.corner, style: .continuous)
                 .fill(selected ? .white.opacity(0.16) : .clear)
         )
         .contentShape(Rectangle())
@@ -240,16 +245,30 @@ struct LauncherView: View {
 
 // MARK: - Metrics
 
-/// What each piece of the launcher occupies. The field, the rows and the headers are drawn at
-/// these heights rather than letting their text decide, so the height this tab asks the notch for
-/// is the height its layout takes — a list the notch clips is a selection the user cannot see.
-private enum Metrics {
-    static let field: CGFloat = 32
-    static let row: CGFloat = 30
-    static let header: CGFloat = 26
-    static let separator: CGFloat = 13
+/// What each piece of the launcher occupies. Everything is drawn at these heights rather than
+/// letting its text decide, so the height this tab asks the notch for is the height its layout
+/// takes — a list the notch clips is a selection the user cannot see.
+///
+/// The row is the one the user sets, and the icon, the name and the row's corner are fractions of
+/// it: a taller row is a bigger icon and a bigger name, not the same row with more padding. What
+/// sits around the rows does not scale with them, because the field and the headers are the notch's
+/// furniture and the list is what the setting is about.
+struct LauncherMetrics {
+    /// What a row is at the default height, and so what the fractions below are read against.
+    private static let reference: CGFloat = 30
+
+    let rowHeight: CGFloat
+
+    var row: CGFloat { rowHeight }
+    var icon: CGFloat { (rowHeight * 22 / Self.reference).rounded() }
+    var name: CGFloat { (rowHeight * 13 / Self.reference).rounded() }
+    var corner: CGFloat { (rowHeight * 6 / Self.reference).rounded() }
+
+    let field: CGFloat = 32
+    let header: CGFloat = 26
+    let separator: CGFloat = 13
     /// Between the field and the list, and below the last row.
-    static let spacing: CGFloat = 8
+    let spacing: CGFloat = 8
 }
 
 // MARK: - Model

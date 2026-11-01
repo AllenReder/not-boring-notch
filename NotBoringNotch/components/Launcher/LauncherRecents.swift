@@ -17,8 +17,9 @@ import Defaults
 final class LauncherRecents: ObservableObject {
     static let shared = LauncherRecents()
 
-    /// One screenful of the notch, so the list never pushes the apps below it out of reach.
-    static let limit = 8
+    /// The most the launcher setting can ask for, and so the most that is kept: a lower setting
+    /// hides the older entries instead of throwing them away.
+    static let limit = 12
 
     /// Finder is always running and never what the user set out to launch, and we never list
     /// ourselves: taking focus for the search field is not a visit.
