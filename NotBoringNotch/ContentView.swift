@@ -53,6 +53,14 @@ struct ContentView: View {
     private let extendedHoverPadding: CGFloat = 30
     private let zeroHeightHoverPadding: CGFloat = 10
 
+    /// The launcher scrolls a list of its own, so the two-finger swipe up belongs to that list
+    /// while it is on screen.
+    ///
+    /// Read by the gesture's handler rather than by the modifier that installs it: a modifier that
+    /// comes and goes with the tab gives the surface a new identity on every switch, and a surface
+    /// with a new identity does not animate its size — it only fades.
+    private var swipeUpBelongsToTheList: Bool { coordinator.currentView == .launcher }
+
     private var topCornerRadius: CGFloat {
        ((vm.notchState == .open) && Defaults[.cornerRadiusScaling])
                 ? cornerRadiusInsets.opened.top
@@ -670,6 +678,7 @@ struct ContentView: View {
     }
 
     private func handleUpGesture(translation: CGFloat, phase: NSEvent.Phase) {
+        guard !swipeUpBelongsToTheList else { return }
         guard vm.notchState == .open && !vm.isHoveringCalendar else { return }
 
         withAnimation(animationSpring) {
