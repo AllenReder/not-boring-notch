@@ -144,7 +144,7 @@ extension Defaults.Keys {
     /// Bundle identifiers of the apps the user switched to most recently, newest first.
     static let launcherRecents = Key<[String]>("launcherRecents", default: [])
     /// The height of one row in the launcher, which the icon and the name inside it scale with.
-    static let launcherRowHeight = Key<CGFloat>("launcherRowHeight", default: 30)
+    static let launcherRowHeight = Key<CGFloat>("launcherRowHeight", default: 36)
     /// How many of the recent apps the launcher shows.
     static let launcherRecentsLimit = Key<Int>("launcherRecentsLimit", default: 5)
 

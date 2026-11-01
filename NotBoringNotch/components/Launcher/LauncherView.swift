@@ -254,7 +254,7 @@ struct LauncherView: View {
 /// sits around the rows does not scale with them, because the field and the headers are the notch's
 /// furniture and the list is what the setting is about.
 struct LauncherMetrics {
-    /// What a row is at the default height, and so what the fractions below are read against.
+    /// The row height the fractions below were read against: at 30, an icon is 22 and a name is 13.
     private static let reference: CGFloat = 30
 
     let rowHeight: CGFloat
