@@ -26,7 +26,7 @@
 
 Say hello to **Not Boring Notch**, the coolest way to make your MacBook’s notch the star of the show! 
 
-Forget about static black cutouts: with Not Boring Notch, your notch transforms into a dynamic control center with native **macOS 26 Liquid Glass optical refraction**, vibrant visualizers, lyrics, calendar integration, a handy file shelf with AirDrop support, sleek system HUD replacements, and upcoming intelligent workflow companions.
+Forget about static black cutouts: with Not Boring Notch, your notch transforms into a dynamic control center with native **macOS 26 Liquid Glass optical refraction**, an app launcher, live system stats, vibrant visualizers, lyrics, calendar integration, a handy file shelf with AirDrop support, sleek system HUD replacements, and upcoming intelligent workflow companions.
 
 <p align="center">
   <img src="assets/demo.gif" alt="Demo GIF" width="85%" />
@@ -37,12 +37,38 @@ Forget about static black cutouts: with Not Boring Notch, your notch transforms 
 ## ✨ Features
 
 - 💎 **Liquid Glass Surface**: Native CoreAnimation GPU ray-bending refraction, sub-pixel chromatic dispersion, and crystal-clear transparency with zero blur.
+- 🚀 **App Launcher**: Summon an app search with `⌥Space`, type a few letters, press Return to open. Five-way name matching, readings of non-Latin names, system recents, and a settings pane of its own.
+- 📊 **Stats Tab**: Optional live cards for CPU, GPU, memory, temperature, network, and disk, each with a sparkline of recent history. Sampled only while the tab is visible, inside the App Sandbox.
 - 🔔 **Custom Reminder Channel**: Let command-line scripts, automated hooks, and AI agents raise glanceable, dynamic notifications in the notch over a local HTTP port (`127.0.0.1:45999`). Supports auto-adaptive wings, smooth marquee scrolling, in-place status updates without spam, and interactive action buttons. See [docs/reminder-channel.md](docs/reminder-channel.md).
 - 🎵 **Media Powerhouse**: Deep integration with Apple Music, Spotify, and YouTube Music. Features real-time lyrics, high-frame-rate spectrogram visualizers, and album art ambient color tinting.
 - 📆 **Calendar & Reminders**: Full monthly calendar view, upcoming events, and checkable system Reminders built directly into the notch.
 - 📚 **File Shelf**: Drop files into the notch to stage them, quick-look previews, and drag them out anywhere or share via AirDrop.
 - 🎚️ **System HUDs**: Sleek Dynamic Island replacements for volume, brightness, backlight, and battery charging animations.
 - 🪞 **Notch Mirror & Face**: Built-in camera mirror for quick appearance checks and playful animated notch expressions.
+
+---
+
+### 🚀 The Launcher
+
+Press `⌥Space` and the notch opens on the launcher with the field already focused. Press it again, or press `Esc`, and the notch lets go of it.
+
+- **Type what you remember.** Names are scored five ways — exact, prefix, a word inside, a stretch inside, and finally the letters in order — so `gimp` finds GIMP and the first letters of a long name still find it.
+- **Non-Latin names answer to how they read.** 微信 responds to `wei` as a prefix and to `weixin` as letters in order; a reading always ranks below an app actually spelled that way.
+- **Recents are the system's recents.** An app opened from the Dock counts as recently used, the list survives restarts, and it steps aside the moment you type.
+- **Return opens the highlighted row.** Tune it in **Settings → Launcher**: row height (24–44 pt, icon and name grow with it), how many recents the list opens with, and the shortcut that summons it.
+
+<!-- TODO(image): launcher with a query typed, showing recents above the results -->
+
+### 📊 The Stats Tab
+
+The Stats tab is off by default. Enable it in **Settings → Performance**, and the tab bar starts offering it next to Home, Shelf, and Launch.
+
+- **Six live cards.** CPU, GPU, memory, temperature, network, and disk, each with the current reading, a detail line, and a sparkline of recent history.
+- **Sampled only while you are looking.** Readings refresh every 1, 2, or 5 seconds, and only while the tab is visible.
+- **Order them your way.** Move cards up or down in Settings; the first three fill the top row and the last three the bottom.
+- **No helper, no privileges.** Every metric is sampled in process inside the App Sandbox. Fan speed, power draw, and per-process rankings are not included.
+
+<!-- TODO(image): stats tab showing the six cards -->
 
 ---
 
