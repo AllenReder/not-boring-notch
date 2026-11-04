@@ -10,12 +10,11 @@ sequence run from a clean `main`.
 git switch main
 git pull
 ./scripts/run-tests.sh
-./scripts/check-branding.sh
 ./scripts/check-version.sh
 ./scripts/check-sources.sh
 ```
 
-CI (`cicd.yml`) runs all four plus a Release build on every push and pull request.
+CI (`cicd.yml`) runs all three plus a Release build on every push and pull request.
 
 ## 2. Pick the version and bump it
 

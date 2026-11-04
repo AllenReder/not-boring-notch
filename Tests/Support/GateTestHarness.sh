@@ -4,7 +4,7 @@
 # Sourced by the shell runners in this directory — which is why it is not named *Tests.sh, since
 # scripts/run-tests.sh discovers Tests/*Tests.sh and would otherwise try to run this file on its
 # own. (Naming the sourcing files here was the mistake this line made: it listed two of them for a
-# while after there were four, which is what a list in a comment does.)
+# while after there were more than two, which is what a list in a comment does.)
 #
 # The sourcing file must set:
 #
