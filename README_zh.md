@@ -28,9 +28,7 @@
 
 告别沉闷静态的黑色小方块：在 Not Boring Notch 的加持下，刘海化身为你专属的灵动控制中心——拥有原生 **macOS 26 流体玻璃（Liquid Glass）光学折射**渲染、应用启动器、实时系统监控、动感频谱可视化、实时歌词、日历深度集成、支持 AirDrop 的文件暂存置物架、灵动岛风格系统 HUD，以及全新的自定义提醒通道。
 
-<p align="center">
-  <img src="assets/demo.gif" alt="演示动图" width="85%" />
-</p>
+https://github.com/user-attachments/assets/df591b2b-1527-474d-a16f-4bf9b10d9573
 
 ---
 
