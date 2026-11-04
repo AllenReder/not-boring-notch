@@ -12,4 +12,4 @@ Report security bugs in third-party dependencies to the person or team maintaini
 
 ## Scope
 
-Not Boring Notch is a hard fork of [`TheBoredTeam/boring.notch`](https://github.com/TheBoredTeam/boring.notch), maintained independently (see [ADR 0004](docs/adr/0004-hard-fork-from-upstream.md)). Security reports about this fork belong here, not upstream.
+Not Boring Notch is a hard fork of [`TheBoredTeam/boring.notch`](https://github.com/TheBoredTeam/boring.notch), maintained independently. Security reports about this fork belong here, not upstream.

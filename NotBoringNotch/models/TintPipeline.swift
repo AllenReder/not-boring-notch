@@ -3,7 +3,6 @@
 //  NotBoringNotch
 //
 //  Ordering and identity policy for the artwork → Tint Source pipeline.
-//  See docs/adr/0003-tint-source-and-colorless-fallback.md.
 //
 
 import Foundation
@@ -36,7 +35,7 @@ struct TintPipeline {
     /// Ordering for the decoded image itself: claimed when the notch learns of a piece of
     /// artwork, before its decode is dispatched, and validated when the decode returns. It is
     /// deliberately not `generation` — a Colorless declaration must not supersede a decode that
-    /// is still in flight (docs/adr/0003, addendum).
+    /// is still in flight.
     private(set) var artworkOrder: Int = 0
 
     /// The track the notch has most recently been told about. Only a change of track supersedes
@@ -70,7 +69,7 @@ struct TintPipeline {
     /// Records the track the notch is on now. Moving to a different track supersedes every decode
     /// still in flight: they belong to a track the notch has left, and applying one would show the
     /// previous track's cover and publish its tint over the current track — including over a
-    /// track that settled Colorless (docs/adr/0003, addendum).
+    /// track that settled Colorless.
     mutating func noteCurrentTrack(_ track: TrackIdentity) {
         guard currentTrack != track else { return }
         currentTrack = track

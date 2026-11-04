@@ -148,7 +148,7 @@ struct TintLegibilityTestsRunner {
                    "0.7 / 0.4144 = 1.6893, blue clips at 1.0")
     }
 
-    /// The decision this file exists for (docs/adr/0005): the same color is left alone by the
+    /// The decision this file exists for: the same color is left alone by the
     /// floor and normalised by the pin.
     static func testPinNormalisesWhereTheFloorDoesNot() {
         let white = RGBColor(red: 1, green: 1, blue: 1, alpha: 1)

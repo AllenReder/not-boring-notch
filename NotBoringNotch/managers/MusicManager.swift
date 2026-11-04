@@ -36,7 +36,7 @@ class MusicManager: ObservableObject {
     @Published var album: String = "Self Love"
     @Published var isPlayerIdle: Bool = true
     @Published var animations: NotchAnimations = .init()
-    /// The Tint Source. `nil` means the current track is Colorless (docs/adr/0003).
+    /// The Tint Source. `nil` means the current track is Colorless.
     @Published var avgColor: NSColor? = nil
     @Published var bundleIdentifier: String? = nil
     @Published var songDuration: TimeInterval = 0
@@ -57,7 +57,7 @@ class MusicManager: ObservableObject {
 
     private var artworkData: Data? = nil
 
-    /// Ordering and identity policy for the Tint Source (docs/adr/0003).
+    /// Ordering and identity policy for the Tint Source.
     /// Only mutated from the main queue.
     private var tintPipeline = TintPipeline()
 
@@ -65,7 +65,7 @@ class MusicManager: ObservableObject {
     private var tintSettleTask: Task<Void, Never>?
 
     /// How long the notch waits for a track's artwork before showing the Artwork
-    /// Fallback and declaring the track Colorless (docs/adr/0003).
+    /// Fallback and declaring the track Colorless.
     static let tintSettleWindow: Duration = .seconds(1)
 
     // Store last values at the time artwork was changed
@@ -223,7 +223,7 @@ class MusicManager: ObservableObject {
             let track = TrackIdentity(title: state.title, artist: state.artist)
 
             // A decode still in flight for a different track belongs to a track the notch has
-            // left, so moving on supersedes it (docs/adr/0003, addendum).
+            // left, so moving on supersedes it.
             tintPipeline.noteCurrentTrack(track)
 
             if artworkChanged, let artwork = state.artwork {
@@ -548,8 +548,7 @@ class MusicManager: ObservableObject {
 
     private func updateArtwork(_ artworkData: Data, for track: TrackIdentity) {
         // Claim the order before the decode starts: a decode that returns after a newer
-        // artwork was requested must not touch the image, the fallback flag, or the tint
-        // (docs/adr/0003, addendum).
+        // artwork was requested must not touch the image, the fallback flag, or the tint.
         let order = tintPipeline.artworkRequested()
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -588,7 +587,7 @@ class MusicManager: ObservableObject {
     }
 
     /// Applies artwork to the notch. Only `trackArtwork` may become a Tint Source: the
-    /// Artwork Fallback is a display substitute and never a color (docs/adr/0003).
+    /// Artwork Fallback is a display substitute and never a color.
     func updateAlbumArt(newAlbumArt: NSImage, provenance: ArtworkProvenance, track: TrackIdentity) {
         withAnimation(.smooth) {
             self.albumArt = newAlbumArt

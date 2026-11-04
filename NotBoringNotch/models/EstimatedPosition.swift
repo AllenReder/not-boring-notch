@@ -3,7 +3,7 @@
 //  NotBoringNotch
 //
 //  The notch's own estimate of where playback is, and what the progress slider displays.
-//  Pure arithmetic, no AppKit — see CONTEXT.md (Estimated Position, Seek Settle Window).
+//  Pure arithmetic, no AppKit.
 //
 
 import Foundation
@@ -21,7 +21,7 @@ struct EstimatedPosition: Equatable {
     var isPlaying: Bool
 
     /// How long after a seek the notch keeps displaying the seek target while it waits for the
-    /// player to report the new position (CONTEXT.md, Seek Settle Window).
+    /// player to report the new position.
     static let seekSettleWindow: TimeInterval = 1
 
     /// The Estimated Position at `date`: the player's report plus the time elapsed since it at

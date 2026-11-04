@@ -3,7 +3,7 @@
 //  NotBoringNotch
 //
 //  The HTTP surface an external process delivers a Reminder through: loopback only, token in
-//  hand, JSON in the body. See docs/adr/0007-the-reminder-channel-is-a-tokened-loopback-http-port.md.
+//  hand, JSON in the body.
 //
 
 import Foundation

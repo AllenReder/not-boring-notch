@@ -3,7 +3,7 @@
 //  NotBoringNotch
 //
 //  The two adjustments the notch applies to a color before it draws it: the Legibility
-//  Floor and the Brightness Pin. Pure arithmetic, no AppKit — see docs/adr/0005.
+//  Floor and the Brightness Pin. Pure arithmetic, no AppKit.
 //
 
 import Foundation

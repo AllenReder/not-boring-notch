@@ -138,13 +138,13 @@ extension NSImage {
 
 extension Color {
     /// The Legibility Floor: raise a color to `factor` Perceived Brightness when it is
-    /// below it, and leave one that already reaches it alone (docs/adr/0005).
+    /// below it, and leave one that already reaches it alone.
     func withMinimumBrightness(_ factor: CGFloat) -> Color {
         adjusted { $0.withMinimumBrightness(Double(factor)) }
     }
 
     /// The Brightness Pin: move a decorative derivative to `target` Perceived Brightness,
-    /// lighter or darker as required (docs/adr/0005).
+    /// lighter or darker as required.
     func withBrightness(_ target: CGFloat) -> Color {
         adjusted { $0.withBrightness(Double(target)) }
     }

@@ -3,7 +3,7 @@
 //  NotBoringNotch
 //
 //  The notch's end of the Reminder Channel: what is on screen, what is waiting, and the
-//  listener an external process delivers to. See docs/adr/0007.
+//  listener an external process delivers to.
 //
 
 import AppKit

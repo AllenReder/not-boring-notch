@@ -1,9 +1,8 @@
 # Releasing
 
 This project is distributed as a GitHub Release carrying a DMG that the maintainer builds
-locally. There is no CI signing or notarization pipeline — see
-[ADR 0004](docs/adr/0004-hard-fork-from-upstream.md) — so a release is a short manual sequence
-run from a clean `main`.
+locally. There is no CI signing or notarization pipeline, so a release is a short manual
+sequence run from a clean `main`.
 
 ## 1. Make sure `main` is healthy
 

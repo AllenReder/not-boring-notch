@@ -3,8 +3,8 @@
 # check-branding.sh — fails when the old brand is still in the tree.
 #
 # This project used to be `boring.notch`. It is now Not Boring Notch, and the rename has to
-# stay done: upstream is still brought in by hand (ADR 0004), so an old-name reference can
-# arrive in a cherry-picked commit at any time, quietly.
+# stay done: upstream is still brought in by hand, so an old-name reference can arrive in a
+# cherry-picked commit at any time, quietly.
 #
 # The token is searched case-insensitively for the six letters "boring", but the correct
 # brand contains that token three different ways:

@@ -3,9 +3,8 @@
 The Reminder Channel lets another app, a script, or an agent hook raise a reminder in the
 notch. It is a loopback HTTP port: `curl` is the whole client.
 
-The design and the reasons behind the security rules are in
-[ADR-0007](adr/0007-the-reminder-channel-is-a-tokened-loopback-http-port.md). This file is the
-practical guide.
+The design and the reasons behind the security rules are in the doc comments of
+`ReminderChannelServer.swift` and `ReminderChannel.swift`. This file is the practical guide.
 
 ## Turning it on
 
