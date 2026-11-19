@@ -212,36 +212,36 @@ extension XPCHelperClient {
     /// not read as "all of them exited".
     nonisolated func agentProcessStartTimes(_ pids: [Int32]) async -> [Int32: Date]? {
         guard !pids.isEmpty else { return [:] }
-        // A helper that was just restarted fails the first call; asking again reaches the new one.
-        for _ in 0..<2 {
-            do {
-                let service = await MainActor.run { ensureRemoteService() }
-                let times: [NSNumber: NSNumber] = try await service.withContinuation { service, continuation in
-                    service.agentProcessStartTimes(pids.map { NSNumber(value: $0) }) { times in
-                        continuation.resume(returning: times)
+        return await answer(within: Self.periodicCallLimit) { [self] in
+            // A helper that was just restarted fails the first call; asking again reaches the new one.
+            for _ in 0..<2 {
+                do {
+                    let service = await MainActor.run { ensureRemoteService() }
+                    let times: [NSNumber: NSNumber] = try await service.withContinuation { service, continuation in
+                        service.agentProcessStartTimes(pids.map { NSNumber(value: $0) }) { times in
+                            continuation.resume(returning: times)
+                        }
                     }
+                    return Dictionary(uniqueKeysWithValues: times.map {
+                        (Int32(truncating: $0.key), Date(timeIntervalSince1970: $0.value.doubleValue))
+                    })
+                } catch {
+                    continue
                 }
-                return Dictionary(uniqueKeysWithValues: times.map {
-                    (Int32(truncating: $0.key), Date(timeIntervalSince1970: $0.value.doubleValue))
-                })
-            } catch {
-                continue
             }
+            return nil
         }
-        return nil
     }
 
     /// Each thread's title, for the threads T3 Code could name. Empty when nothing could be asked.
     nonisolated func t3ThreadTitles(_ threadIDs: [String]) async -> [String: String] {
         guard !threadIDs.isEmpty else { return [:] }
-        do {
+        return await answer(within: Self.periodicCallLimit) { [self] in
             let service = await MainActor.run { ensureRemoteService() }
-            return try await service.withContinuation { service, continuation in
+            return try? await service.withContinuation { service, continuation in
                 service.t3ThreadTitles(threadIDs) { titles in continuation.resume(returning: titles) }
             }
-        } catch {
-            return [:]
-        }
+        } ?? [:]
     }
 
     /// nil when the helper could not be reached.
@@ -268,15 +268,57 @@ extension XPCHelperClient {
     private nonisolated func decodedReply<T: Decodable>(
         _ call: @escaping (NotBoringNotchXPCHelperProtocol, @escaping (Data) -> Void) -> Void
     ) async -> T? {
-        do {
+        let data: Data? = await answer(within: Self.settingsCallLimit) { [self] in
             let service = await MainActor.run { ensureRemoteService() }
-            let data: Data = try await service.withContinuation { service, continuation in
+            return try? await service.withContinuation { service, continuation in
                 call(service) { continuation.resume(returning: $0) }
             }
-            return try JSONDecoder().decode(T.self, from: data)
-        } catch {
+        }
+        return data.flatMap { try? JSONDecoder().decode(T.self, from: $0) }
+    }
+
+    /// The sweep and the title lookup run every few seconds; the helper bounds each of its own
+    /// commands well inside this.
+    private static let periodicCallLimit: TimeInterval = 15
+    /// Trusting Codex's hooks gives `codex app-server` up to 20 seconds.
+    private static let settingsCallLimit: TimeInterval = 60
+
+    /// What `call` answers, or nil once `seconds` have passed. The helper answers one call at a
+    /// time, so a call that never returns would otherwise hold up every caller after it, forever;
+    /// the connection is dropped so that the next call starts a fresh one. An answer that comes
+    /// later goes nowhere.
+    private nonisolated func answer<T>(within seconds: TimeInterval,
+                                       _ call: @escaping () async -> T?) async -> T? {
+        let answer: T?? = await withCheckedContinuation { continuation in
+            let first = FirstAnswer(continuation)
+            Task { first.give(await call()) }
+            Task {
+                try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                first.give(nil)
+            }
+        }
+        guard let answer else {
+            await MainActor.run { connection?.invalidate() }
             return nil
         }
+        return answer
+    }
+}
+
+/// Resumes a continuation with whichever value comes first, and ignores the rest.
+private final class FirstAnswer<T>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<T??, Never>?
+
+    init(_ continuation: CheckedContinuation<T??, Never>) { self.continuation = continuation }
+
+    /// `.some(value)` for the call's answer, nil for the clock running out.
+    func give(_ value: T??) {
+        let waiting = lock.withLock { () -> CheckedContinuation<T??, Never>? in
+            defer { continuation = nil }
+            return continuation
+        }
+        waiting?.resume(returning: value)
     }
 }
 

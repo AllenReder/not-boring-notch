@@ -69,7 +69,9 @@ enum CodexTrust {
         let fallback = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
         let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         // Markers guard against startup files that print to stdout.
-        guard let output = run(shell, ["-lc", "printf '__PATH__%s__END__' \"$PATH\""], timeout: 5),
+        guard let data = ChildProcess.output(URL(fileURLWithPath: shell),
+                                             ["-lc", "printf '__PATH__%s__END__' \"$PATH\""], timeout: 5),
+              case let output = String(decoding: data, as: UTF8.self),
               let start = output.range(of: "__PATH__"),
               let end = output.range(of: "__END__", range: start.upperBound ..< output.endIndex)
         else { return fallback }
@@ -95,21 +97,6 @@ enum CodexTrust {
         return try trustOurHooks(
             hooksFile: AgentHookSpec.of(.codex).hooksFile(home: installer.home), script: installer.scriptURL,
             home: installer.home, executable: codex, environment: environment)
-    }
-
-    private static func run(_ path: String, _ arguments: [String], timeout: TimeInterval) -> String? {
-        let process = Process()
-        let output = Pipe()
-        process.executableURL = URL(fileURLWithPath: path)
-        process.arguments = arguments
-        process.standardOutput = output
-        process.standardError = FileHandle.nullDevice
-        process.standardInput = FileHandle.nullDevice
-        guard (try? process.run()) != nil else { return nil }
-        DispatchQueue.global().asyncAfter(deadline: .now() + timeout) { if process.isRunning { process.terminate() } }
-        let data = output.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        return String(decoding: data, as: UTF8.self)
     }
 
     // MARK: - JSON-RPC

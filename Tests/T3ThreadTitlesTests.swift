@@ -5,7 +5,7 @@
 //  Standalone runner, discovered by scripts/run-tests.sh, which compiles it against the
 //  sources declared below.
 //
-// SOURCES: NotBoringNotchXPCHelper/AgentHooks/T3ThreadTitles.swift
+// SOURCES: NotBoringNotchXPCHelper/AgentHooks/T3ThreadTitles.swift NotBoringNotchXPCHelper/AgentHooks/ChildProcess.swift
 //
 //  The CLI here is a stand-in script that answers as `t3 thread show --json` does, so the test
 //  runs the real process plumbing without T3 Code.

@@ -23,7 +23,8 @@ enum T3ThreadTitles {
         var titles: [String: String] = [:]
         let lock = NSLock()
         DispatchQueue.concurrentPerform(iterations: ids.count) { index in
-            guard let output = run(cli, ["thread", "show", "--json", "--messages", "0", ids[index]]),
+            guard let output = ChildProcess.output(cli, ["thread", "show", "--json", "--messages", "0", ids[index]],
+                                                    timeout: timeout),
                   let title = title(fromShowJSON: output) else { return }
             lock.withLock { titles[ids[index]] = title }
         }
@@ -45,35 +46,5 @@ enum T3ThreadTitles {
         guard let first = id.unicodeScalars.first, CharacterSet.alphanumerics.contains(first) else { return false }
         return id.count <= 128
             && id.unicodeScalars.allSatisfy { CharacterSet.alphanumerics.contains($0) || $0 == "-" || $0 == "_" }
-    }
-
-    /// The command's output, or nil when it failed or took too long.
-    private static func run(_ executable: URL, _ arguments: [String]) -> Data? {
-        let process = Process()
-        process.executableURL = executable
-        process.arguments = arguments
-        let output = Pipe()
-        process.standardOutput = output
-        process.standardError = FileHandle.nullDevice
-        process.standardInput = FileHandle.nullDevice
-        let done = DispatchSemaphore(value: 0)
-        process.terminationHandler = { _ in done.signal() }
-        do { try process.run() } catch { return nil }
-        // Read while it runs, so a large reply cannot fill the pipe and stall it.
-        var data = Data()
-        let read = DispatchGroup()
-        read.enter()
-        DispatchQueue.global().async {
-            data = output.fileHandleForReading.readDataToEndOfFile()
-            read.leave()
-        }
-        if done.wait(timeout: .now() + timeout) == .timedOut {
-            process.terminate()
-            _ = read.wait(timeout: .now() + 1)
-            return nil
-        }
-        // The pipe ends when the process does; anything that kept it open gets a second.
-        guard read.wait(timeout: .now() + 1) == .success else { return nil }
-        return process.terminationStatus == 0 ? data : nil
     }
 }

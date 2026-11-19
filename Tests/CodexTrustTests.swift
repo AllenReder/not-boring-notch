@@ -4,7 +4,7 @@
 //
 //  Standalone runner, discovered by scripts/run-tests.sh.
 //
-// SOURCES: NotBoringNotchXPCHelper/AgentHooks/CodexTrust.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookEntries.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookInstaller.swift NotBoringNotchXPCHelper/AgentHooks/ConfigFile.swift NotBoringNotchXPCHelper/AgentHooks/JSONSurgeon.swift NotBoringNotchXPCHelper/AgentHooks/CodexHooksConfig.swift NotBoringNotchXPCHelper/AgentHooks/AgentHooksModels.swift NotBoringNotchXPCHelper/AgentHooks/PiExtension.swift
+// SOURCES: NotBoringNotchXPCHelper/AgentHooks/CodexTrust.swift NotBoringNotchXPCHelper/AgentHooks/ChildProcess.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookEntries.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookInstaller.swift NotBoringNotchXPCHelper/AgentHooks/ConfigFile.swift NotBoringNotchXPCHelper/AgentHooks/JSONSurgeon.swift NotBoringNotchXPCHelper/AgentHooks/CodexHooksConfig.swift NotBoringNotchXPCHelper/AgentHooks/AgentHooksModels.swift NotBoringNotchXPCHelper/AgentHooks/PiExtension.swift
 //
 //  Never runs the real `codex`. The exchange with `codex app-server` is checked against a fake
 //  executable that answers like it, and the choice of which hooks to trust is a pure function
@@ -80,6 +80,17 @@ enum CodexTrustTests {
     static func main() throws {
         try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: sandboxRoot) }
+
+        // A profile that backgrounds a process holding stdout cannot hold the helper up.
+        let shell = sandboxRoot.appendingPathComponent("lingering-shell")
+        try "#!/bin/sh\nsleep 12 &\nprintf '__PATH__/opt/x__END__'\n".write(to: shell, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: shell.path)
+        setenv("SHELL", shell.path, 1)
+        let asked = Date()
+        let path = CodexTrust.loginShellPath()
+        let took = Date().timeIntervalSince(asked)
+        checkTrust(took < 3, "the login shell's PATH is given up on, not waited for, took \(took)s")
+        checkTrust(path.hasPrefix("/opt/homebrew/bin"), "and the fallback stands in, got \(path)")
 
         // Which hooks are chosen.
         let list = try JSONSerialization.jsonObject(with: Data(listResult().utf8)) as! [String: Any]
