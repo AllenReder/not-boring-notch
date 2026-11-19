@@ -91,6 +91,7 @@ struct TintLegibilityTestsRunner {
     }
 
     /// "Never darkens" is the whole point of a floor, so it holds for every color it lifts.
+    /// A color below the floor lands exactly on it, and keeps its hue.
     static func testFloorNeverDarkens() {
         let colors = [
             RGBColor(red: 0, green: 0, blue: 0, alpha: 1),
@@ -110,8 +111,28 @@ struct TintLegibilityTestsRunner {
                     checkCondition(channel.isFinite && (0...1).contains(channel),
                                    "channel out of range in \(lifted)")
                 }
+                guard color.perceivedBrightness < factor else { continue }
+                checkCondition(abs(lifted.perceivedBrightness - factor) < 1e-9,
+                               "\(color) lifted to \(lifted.perceivedBrightness), not \(factor)")
+                if let before = hue(of: color), let after = hue(of: lifted) {
+                    checkCondition(abs(before - after) < 1e-6,
+                                   "\(color) changed hue from \(before) to \(after) at \(factor)")
+                }
             }
         }
+    }
+
+    /// The HSV hue in degrees, or nil for a gray, which has none.
+    static func hue(of color: RGBColor) -> Double? {
+        let r = color.red, g = color.green, b = color.blue
+        let high = max(r, g, b), delta = high - min(r, g, b)
+        guard delta > 1e-12 else { return nil }
+        let sector: Double
+        if high == r { sector = ((g - b) / delta).truncatingRemainder(dividingBy: 6) }
+        else if high == g { sector = (b - r) / delta + 2 }
+        else { sector = (r - g) / delta + 4 }
+        let degrees = sector * 60
+        return degrees < 0 ? degrees + 360 : degrees
     }
 
     /// An out-of-bounds factor returns the color untouched, as the old helper did.
@@ -123,8 +144,8 @@ struct TintLegibilityTestsRunner {
         checkColor(color.withMinimumBrightness(0), color, "a zero floor asks for nothing")
     }
 
-    /// A color with no brightness at all would divide by zero. It has no hue to carry, so it
-    /// becomes the neutral gray at the factor instead of NaN channels.
+    /// Black has no hue to carry. Mixing it toward white gives t = factor, so it becomes the
+    /// neutral gray at the factor, with its alpha kept.
     static func testFloorLiftsBlackToNeutralGray() {
         let black = RGBColor(red: 0, green: 0, blue: 0, alpha: 0.5)
         let lifted = black.withMinimumBrightness(0.6)

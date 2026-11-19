@@ -54,8 +54,9 @@ struct RGBColor: Equatable {
 
     /// Every channel multiplied by `target / perceivedBrightness`, clipped at 1.0. Only the
     /// Brightness Pin uses it, because it must also darken; when brightening, the clip can
-    /// leave a saturated color below `target` and shift its hue. A color with no brightness at all has no hue to carry, so it becomes the neutral
-    /// gray at `target` — the division would otherwise produce NaN channels.
+    /// leave a saturated color below `target` and shift its hue. A color with no brightness
+    /// at all has no hue to carry, so it becomes the neutral gray at `target` — the division
+    /// would otherwise produce NaN channels.
     private func scaled(toBrightness target: Double) -> RGBColor {
         guard perceivedBrightness > 0 else {
             return RGBColor(red: target, green: target, blue: target, alpha: alpha)
