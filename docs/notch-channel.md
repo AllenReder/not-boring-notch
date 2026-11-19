@@ -209,9 +209,9 @@ are left out.
 
 - **Closed notch.** The agents are a resident, like the music. The left wing shows the mark of
   each kind of agent at work, stacked, slowly dimming and brightening while any of them works.
-  The right wing shows how many sessions are working, in white. When one is waiting for you, the
+  The right wing shows how many sessions are working, in grey. When one is waiting for you, the
   marks hold still with an amber dot, and the right wing reads `! 1 | 2`: one waiting, in amber,
-  then a light rule, then two working, in white. Agents waiting
+  then a light rule, then two working, in grey. Agents waiting
   for you always go ahead of the music; agents that are only working go ahead of it too, unless
   the music has been put first for good (the `musicAheadOfAgents` default). When the music holds
   the wings, the agents shrink to the right one: the spinner with the count inside it.

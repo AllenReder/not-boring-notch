@@ -189,7 +189,7 @@ struct AgentCompactView: View {
         .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)
     }
 
-    /// Amber for those waiting on the user, white for those at work, a light rule between.
+    /// Amber for those waiting on the user, grey for those at work, a light rule between.
     private var count: some View {
         HStack(spacing: Self.countSpacing) {
             if let waiting = summary.waitingLabel {
@@ -201,7 +201,7 @@ struct AgentCompactView: View {
                     .frame(width: 1, height: 11)
             }
             if let working = summary.workingLabel {
-                Text(verbatim: working).foregroundStyle(.white)
+                Text(verbatim: working).foregroundStyle(Color.gray)
             }
         }
         .font(.subheadline)
