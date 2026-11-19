@@ -405,6 +405,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // open Settings before its first notification can land.
         NotchChannel.shared.start()
 
+        AgentHooksController.shared.repairInstalledAgents()
+
         if coordinator.firstLaunch {
             DispatchQueue.main.async {
                 self.showOnboardingWindow()

@@ -499,6 +499,23 @@ func testRefusesToWriteOverAFileThatMovedAndUndoesABadWrite() throws {
                  "the original bytes and mode are back after a failed check")
 }
 
+func testLaunchRepairsOnlyWhatIsAlreadyInstalled() {
+    let home = InstallHome()
+    defer { home.cleanUp() }
+    checkInstall(home.installer.report(bundledScript: script).needingRepair.isEmpty, "a fresh machine has nothing to repair")
+
+    _ = home.install([.claudeCode])
+    checkInstall(home.installer.report(bundledScript: script).needingRepair.isEmpty, "an up-to-date install has nothing to repair")
+
+    let newer = script.replacingOccurrences(of: "notch-agent-hook-version: \(AgentHookScript.version)",
+                                            with: "notch-agent-hook-version: \(AgentHookScript.version + 1)")
+    let stale = home.installer.report(bundledScript: newer)
+    checkInstall(stale.needingRepair == [.claudeCode], "after an app update only the installed agent needs repair, got \(stale.needingRepair)")
+    _ = home.install(stale.needingRepair, script: newer)
+    checkInstall(home.installer.report(bundledScript: newer).needingRepair.isEmpty, "and the repair settles it")
+    checkInstall(!FileManager.default.fileExists(atPath: home.path(".codex").path), "Codex, never installed, was never touched")
+}
+
 func testVersionMarkerParsing() {
     checkInstall(AgentHookInstaller.version(of: script) == AgentHookScript.version, "the bundled script's version is read")
     checkInstall(AgentHookInstaller.version(of: "#!/bin/sh\n# notch-agent-hook-version: 12\n") == 12, "a two-digit version")
@@ -516,6 +533,7 @@ enum AgentHookInstallerTests {
         testInstallCreatesMissingFiles()
         testInstallingOneAgentLeavesTheOtherAlone()
         testReinstallChangesNothing()
+        testLaunchRepairsOnlyWhatIsAlreadyInstalled()
         do { try testStatusFollowsWhatHappensToOurEntries() } catch { print("❌ \(error)"); exit(1) }
         testEntriesLookLikeTheDesign()
         testRefusesFilesItCannotEditSafely()

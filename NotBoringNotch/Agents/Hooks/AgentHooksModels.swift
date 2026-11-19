@@ -43,6 +43,13 @@ struct AgentHooksReport: Codable, Equatable, Sendable {
     func status(of agent: AgentHookTarget) -> AgentHookStatus? {
         statuses.first { $0.agent == agent }
     }
+
+    /// What a launch repairs: agents that have entries of ours which are not as this version
+    /// writes them. An agent that is not installed is left alone, since installing is the
+    /// user's to ask for.
+    var needingRepair: [AgentHookTarget] {
+        statuses.filter { $0.state == .modified || $0.state == .outdated }.map(\.agent)
+    }
 }
 
 struct CodexTrustReport: Codable, Equatable, Sendable {
