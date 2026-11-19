@@ -62,7 +62,10 @@ struct IntegrationsSettings: View {
             HStack {
                 Text("Port")
                 Spacer()
-                TextField("Port", value: $port, format: .number)
+                // A port is an identifier, not a quantity: no thousands separator. The row already
+                // says "Port", so the field's own label stays hidden.
+                TextField("Port", value: $port, format: .number.grouping(.never))
+                    .labelsHidden()
                     .frame(width: 90)
                     .multilineTextAlignment(.trailing)
                     .onChange(of: port) { _, newValue in
@@ -192,7 +195,8 @@ struct IntegrationsSettings: View {
         case .off:
             EmptyView()
         case let .listening(port):
-            Label("Listening on 127.0.0.1:\(port)", systemImage: "checkmark.circle")
+            // Interpolated as text: as a number it would be formatted for the locale, "45,999".
+            Label("Listening on 127.0.0.1:\(String(port))", systemImage: "checkmark.circle")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         case let .failed(reason):

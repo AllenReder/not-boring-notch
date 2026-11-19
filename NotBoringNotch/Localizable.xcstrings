@@ -10800,60 +10800,60 @@
         }
       }
     },
-    "Listening on 127.0.0.1:%u" : {
+    "Listening on 127.0.0.1:%@" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在监听 127.0.0.1:%u"
+            "value" : "正在监听 127.0.0.1:%@"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Lauscht auf 127.0.0.1:%u"
+            "value" : "Lauscht auf 127.0.0.1:%@"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "À l'écoute sur 127.0.0.1:%u"
+            "value" : "À l'écoute sur 127.0.0.1:%@"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Escuchando en 127.0.0.1:%u"
+            "value" : "Escuchando en 127.0.0.1:%@"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "In ascolto su 127.0.0.1:%u"
+            "value" : "In ascolto su 127.0.0.1:%@"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "127.0.0.1:%u에서 수신 중"
+            "value" : "127.0.0.1:%@에서 수신 중"
           }
         },
         "cs" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Naslouchá na 127.0.0.1:%u"
+            "value" : "Naslouchá na 127.0.0.1:%@"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Nasłuchuje na 127.0.0.1:%u"
+            "value" : "Nasłuchuje na 127.0.0.1:%@"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "127.0.0.1:%u üzerinde dinleniyor"
+            "value" : "127.0.0.1:%@ üzerinde dinleniyor"
           }
         }
       }
