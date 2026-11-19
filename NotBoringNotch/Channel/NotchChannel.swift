@@ -353,9 +353,11 @@ final class NotchChannel: ObservableObject {
 
     /// Checks the sessions against their processes once, and settles the ones that have gone.
     func sweepAgents(now: Date = Date()) async {
-        let alive = await agentLiveness?(agents.pids) ?? nil
+        // Hooks keep arriving while the helper answers, so the answer covers only what was asked.
+        let asked = agents.pids
+        let alive = await agentLiveness?(asked) ?? nil
         let effects = withAnimation(.smooth(duration: 0.35)) {
-            agents.sweep(alive: alive, now: now)
+            agents.sweep(asked: asked, alive: alive, now: now)
         }
         carryOut(effects, now: now)
         askThreadTitles(now: now)

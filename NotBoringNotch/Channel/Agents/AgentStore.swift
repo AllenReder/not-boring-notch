@@ -61,15 +61,18 @@ struct AgentStore: Equatable {
 
     /// Takes away sessions whose process has gone, and settles working ones that have gone quiet.
     ///
-    /// `alive` maps the pid of every process that still exists to when it started; a pid that is
-    /// absent has exited, and one that started at a different time has been reused. Nil means
-    /// liveness cannot be known right now, in which case only the quiet-for-too-long rule applies.
+    /// `alive` answers for the pids in `asked`: it maps each process that still exists to when it
+    /// started; an asked pid that is absent has exited, and one that started at a different time
+    /// has been reused. A session whose pid was not asked about (it arrived, or changed process,
+    /// while the answer was on its way) is not judged by it. Nil means liveness cannot be known
+    /// right now, in which case only the quiet-for-too-long rule applies.
     @discardableResult
-    mutating func sweep(alive: [Int32: Date]?, now: Date) -> [AgentEffect] {
+    mutating func sweep(asked: [Int32], alive: [Int32: Date]?, now: Date) -> [AgentEffect] {
         var effects: [AgentEffect] = []
+        let asked = Set(asked)
 
         for (key, var session) in sessions {
-            let isAlive = Self.confirmAlive(&session, in: alive)
+            let isAlive = Self.confirmAlive(&session, asked: asked, in: alive)
             if isAlive == false {
                 sessions[key] = nil
                 effects.append(.calmed(key))
@@ -94,8 +97,9 @@ struct AgentStore: Equatable {
 
     /// Whether the session's process is there: true, false, or nil when it cannot be told. Learns
     /// the process's start time the first time it is seen.
-    private static func confirmAlive(_ session: inout AgentSession, in alive: [Int32: Date]?) -> Bool? {
-        guard let alive, var process = session.process else { return nil }
+    private static func confirmAlive(_ session: inout AgentSession, asked: Set<Int32>,
+                                     in alive: [Int32: Date]?) -> Bool? {
+        guard let alive, var process = session.process, asked.contains(process.pid) else { return nil }
         guard let startedAt = alive[process.pid] else { return false }
 
         if let known = process.startedAt {

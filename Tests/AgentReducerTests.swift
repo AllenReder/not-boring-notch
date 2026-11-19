@@ -141,6 +141,7 @@ struct AgentReducerTestsRunner {
         testTurnDurationIsMeasured()
         testTheSummaryCountsWhatIsActive()
         testSweepRemovesWhatHasExited()
+        testASweepJudgesOnlyThePidsItAskedAbout()
         testSweepSettlesAWorkingSessionThatWentQuiet()
         print("✅ AgentReducerTests: all passed")
     }
@@ -722,28 +723,44 @@ struct AgentReducerTestsRunner {
 
         let started100 = Date(timeIntervalSince1970: 500)
         let started200 = Date(timeIntervalSince1970: 600)
-        var effects = rig.store.sweep(alive: [100: started100, 200: started200], now: rig.now)
+        var effects = rig.store.sweep(asked: rig.store.pids, alive: [100: started100, 200: started200], now: rig.now)
         checkAgents(agentsDescribe(effects), [], "everything is there")
         checkAgents(rig.store.sessions.count, 3)
 
-        effects = rig.store.sweep(alive: [100: started100, 200: started200], now: rig.now)
+        effects = rig.store.sweep(asked: rig.store.pids, alive: [100: started100, 200: started200], now: rig.now)
         checkAgents(rig.store.sessions.count, 3, "and still there on the next look")
 
-        effects = rig.store.sweep(alive: [100: started100], now: rig.now)
+        effects = rig.store.sweep(asked: rig.store.pids, alive: [100: started100], now: rig.now)
         checkAgents(agentsDescribe(effects), ["calmed"], "the process of b exited")
         checkAgents(rig.phase("b"), "gone")
         checkAgents(rig.phase("c"), "working", "a session with no pid is not judged by its process")
 
         // The pid was reused by an unrelated process that started later.
-        effects = rig.store.sweep(alive: [100: Date(timeIntervalSince1970: 9_999)], now: rig.now)
+        effects = rig.store.sweep(asked: rig.store.pids, alive: [100: Date(timeIntervalSince1970: 9_999)], now: rig.now)
         checkAgents(agentsDescribe(effects), ["calmed"], "a reused pid is not the agent")
         checkAgents(rig.phase("a"), "gone", "even when it was waiting")
 
         var unknown = agentsRig(.claudeCode, headers: ["X-Agent-Pid": "100"])
         unknown.send("UserPromptSubmit")
-        checkAgents(agentsDescribe(unknown.store.sweep(alive: nil, now: unknown.now)), [],
+        checkAgents(agentsDescribe(unknown.store.sweep(asked: unknown.store.pids, alive: nil, now: unknown.now)), [],
                     "when liveness cannot be told, nothing is removed")
         checkAgents(unknown.phase(), "working")
+    }
+
+    static func testASweepJudgesOnlyThePidsItAskedAbout() {
+        var rig = agentsRig(.claudeCode, headers: ["X-Agent-Pid": "100"])
+        rig.send("UserPromptSubmit", session: "a")
+        let asked = rig.store.pids
+
+        // While the helper answers, a new session asks for approval.
+        rig.headers = ["X-Agent-Pid": "200"]
+        rig.send("UserPromptSubmit", session: "b")
+        rig.send("PermissionRequest", session: "b", ["tool_name": "Bash"])
+
+        let effects = rig.store.sweep(asked: asked, alive: [100: Date(timeIntervalSince1970: 500)], now: rig.now)
+        checkAgents(agentsDescribe(effects), [], "the answer says nothing about a pid nobody asked about")
+        checkAgents(rig.phase("b"), "waiting:approval:Bash", "so the new session and its banner stay")
+        checkAgents(rig.phase("a"), "working")
     }
 
     static func testSweepSettlesAWorkingSessionThatWentQuiet() {
@@ -751,31 +768,31 @@ struct AgentReducerTestsRunner {
 
         var rig = agentsRig()
         rig.send("UserPromptSubmit")
-        checkAgents(agentsDescribe(rig.store.sweep(alive: [:], now: rig.now.addingTimeInterval(quarterHour - 5))), [],
+        checkAgents(agentsDescribe(rig.store.sweep(asked: rig.store.pids, alive: [:], now: rig.now.addingTimeInterval(quarterHour - 5))), [],
                     "not yet")
         checkAgents(rig.phase(), "working")
-        checkAgents(agentsDescribe(rig.store.sweep(alive: [:], now: rig.now.addingTimeInterval(quarterHour + 1))), ["calmed"],
+        checkAgents(agentsDescribe(rig.store.sweep(asked: rig.store.pids, alive: [:], now: rig.now.addingTimeInterval(quarterHour + 1))), ["calmed"],
                     "quiet for a quarter of an hour with no process to be found: it stopped, silently")
         checkAgents(rig.phase(), "idle", "idle, and with no turn finished to announce")
 
         var waiting = agentsRig()
         waiting.send("UserPromptSubmit")
         waiting.send("PermissionRequest", ["tool_name": "Bash"])
-        checkAgents(agentsDescribe(waiting.store.sweep(alive: [:], now: waiting.now.addingTimeInterval(3 * quarterHour))), [],
+        checkAgents(agentsDescribe(waiting.store.sweep(asked: waiting.store.pids, alive: [:], now: waiting.now.addingTimeInterval(3 * quarterHour))), [],
                     "a session waiting for the user waits as long as it takes")
         checkAgents(waiting.phase(), "waiting:approval:Bash")
 
         var alive = agentsRig(.claudeCode, headers: ["X-Agent-Pid": "100"])
         alive.send("UserPromptSubmit")
         let started = Date(timeIntervalSince1970: 500)
-        _ = alive.store.sweep(alive: [100: started], now: alive.now)
-        checkAgents(agentsDescribe(alive.store.sweep(alive: [100: started], now: alive.now.addingTimeInterval(2 * quarterHour))), [],
+        _ = alive.store.sweep(asked: alive.store.pids, alive: [100: started], now: alive.now)
+        checkAgents(agentsDescribe(alive.store.sweep(asked: alive.store.pids, alive: [100: started], now: alive.now.addingTimeInterval(2 * quarterHour))), [],
                     "a long command in a process that is still there is not a stall")
         checkAgents(alive.phase(), "working")
 
         var unknown = agentsRig(.claudeCode, headers: ["X-Agent-Pid": "100"])
         unknown.send("UserPromptSubmit")
-        checkAgents(agentsDescribe(unknown.store.sweep(alive: nil, now: unknown.now.addingTimeInterval(quarterHour + 1))), ["calmed"],
+        checkAgents(agentsDescribe(unknown.store.sweep(asked: unknown.store.pids, alive: nil, now: unknown.now.addingTimeInterval(quarterHour + 1))), ["calmed"],
                     "with liveness unknown, quiet alone settles it")
     }
 }
