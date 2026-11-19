@@ -106,7 +106,7 @@ struct AgentNotificationsTestsRunner {
         checkAgentNotes(wait.id, "agent-wait:claude-code:s1")
         checkAgentNotes(wait.level, .timeSensitive, "the user is needed")
         checkAgentNotes(wait.banner, .untilSeen, "and the banner stays until seen")
-        checkAgentNotes(wait.sound, .standard)
+        checkAgentNotes(wait.sound, .none, "and makes no sound: agents are silent")
         checkAgentNotes(wait.body, "Bash", "which tool wants consent")
         checkAgentNotes(result[2], .withdraw(id: "agent-wait:claude-code:s1"),
                         "approved in the terminal: the same notification is taken back")

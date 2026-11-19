@@ -96,7 +96,7 @@ enum AgentNotifications {
                 body: body,
                 duration: ChannelNotification.defaultDuration,
                 banner: .untilSeen,
-                sound: .standard,
+                sound: .none,
                 open: session.jumpTarget,
                 actions: [],
                 deliveredAt: now))
