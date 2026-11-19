@@ -317,7 +317,8 @@ func testEntriesLookLikeTheDesign() {
 
     let claude = jsonObject(home.read(home.settings)!)["hooks"] as! [String: [[String: Any]]]
     checkInstall(Set(claude.keys) == ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure",
-                                      "PermissionRequest", "Notification", "Stop", "StopFailure", "SessionEnd"], "Claude's events")
+                                      "PermissionRequest", "Notification", "SubagentStart", "SubagentStop", "Stop", "StopFailure",
+                                      "SessionEnd"], "Claude's events")
     for (event, list) in claude {
         let entry = list[0]
         let hook = (entry["hooks"] as! [[String: Any]])[0]
@@ -333,7 +334,7 @@ func testEntriesLookLikeTheDesign() {
 
     let codex = jsonObject(home.read(home.hooks)!)["hooks"] as! [String: [[String: Any]]]
     checkInstall(Set(codex.keys) == ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PermissionRequest",
-                                     "Stop", "SessionEnd", "Interrupt"], "Codex's events")
+                                     "SubagentStart", "SubagentStop", "Stop", "SessionEnd", "Interrupt"], "Codex's events")
     for (event, list) in codex {
         let hook = (list[0]["hooks"] as! [[String: Any]])[0]
         checkInstall(hook["command"] as? String == "\(scriptPath) codex", "\(event): command is the path and the agent name")

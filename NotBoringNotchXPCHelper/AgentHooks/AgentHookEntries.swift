@@ -27,7 +27,8 @@ struct AgentHookSpec {
         case .claudeCode:
             let events = [
                 "SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure",
-                "PermissionRequest", "Notification", "Stop", "StopFailure", "SessionEnd",
+                "PermissionRequest", "Notification", "SubagentStart", "SubagentStop", "Stop", "StopFailure",
+                "SessionEnd",
             ]
             return AgentHookSpec(
                 target: target, events: events,
@@ -38,7 +39,7 @@ struct AgentHookSpec {
                 target: target,
                 events: [
                     "SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PermissionRequest",
-                    "Stop", "SessionEnd", "Interrupt",
+                    "SubagentStart", "SubagentStop", "Stop", "SessionEnd", "Interrupt",
                 ],
                 matcherEvents: [])
         }
@@ -107,7 +108,11 @@ struct AgentHookEntries {
     static func runs(_ command: String, _ script: URL) -> Bool {
         let program = program(of: command)
         guard program.hasPrefix("/") || program.hasPrefix("~") else { return false }
-        return !paths(program).isDisjoint(with: paths(script.path))
+        return sameFile(program, script.path)
+    }
+
+    static func sameFile(_ first: String, _ second: String) -> Bool {
+        !paths(first).isDisjoint(with: paths(second))
     }
 
     /// Both the standardized and the symlink-resolved spelling of a path, because `/tmp/x` and

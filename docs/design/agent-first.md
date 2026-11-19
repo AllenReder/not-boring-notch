@@ -152,7 +152,7 @@ struct AgentStore {                       // 和 BannerQueue / NotificationInbox
 
 | | Claude Code | Codex |
 |---|---|---|
-| 注册的 hook | SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, Notification, Stop, StopFailure, SessionEnd | SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, PermissionRequest, Stop, SessionEnd, Interrupt |
+| 注册的 hook | SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, Notification, SubagentStart, SubagentStop, Stop, StopFailure, SessionEnd | SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, PermissionRequest, SubagentStart, SubagentStop, Stop, SessionEnd, Interrupt |
 | 问用户的工具 | AskUserQuestion, ExitPlanMode | request_user_input |
 | Notification | 只认 permission_prompt / elicitation_dialog / idle_prompt；agent_completed、agent_needs_input 是别的会话的，忽略 | 无 |
 | 摘要 | Stop.last_assistant_message 第一行 | 同 |
