@@ -55,6 +55,10 @@ private struct AgentHookRow: View {
                 }
                 Spacer(minLength: 20)
                 if isBusy { ProgressView().controlSize(.small) }
+                if state == .turnedOff {
+                    Button("Turn On") { Task { await controller.install(agent) } }
+                        .disabled(isBusy)
+                }
                 if state == .modified || state == .outdated {
                     Button("Repair") { Task { await controller.install(agent) } }
                         .disabled(isBusy)
@@ -116,6 +120,7 @@ private struct AgentHookRow: View {
         case .installed: "Installed"
         case .modified: "Modified"
         case .outdated: "Outdated"
+        case .turnedOff: "Turned off"
         }
     }
 }

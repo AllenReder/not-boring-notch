@@ -44,6 +44,18 @@ enum CodexHooksConfigTests {
                 checkToml(CodexHooksConfig.enablingHooks(in: actual) == actual, "\(name): enabling twice changes nothing")
             }
         }
+        let off: [(name: String, input: String, expected: Bool?)] = [
+            ("never mentioned", "model = \"x\"\n", false),
+            ("on", "[features]\nhooks = true\n", false),
+            ("off", "[features]\nhooks = false # no\n", true),
+            ("off, dotted", "features.hooks = false\n", true),
+            ("off, by the legacy name", "[features]\ncodex_hooks = false\n", true),
+            ("a layout it will not guess at", "features = 5\n", nil),
+        ]
+        for (name, input, expected) in off {
+            let actual = CodexHooksConfig.hooksTurnedOff(in: input)
+            checkToml(actual == expected, "turned off, \(name): expected \(String(describing: expected)), got \(String(describing: actual))")
+        }
         print("✅ CodexHooksConfigTests passed")
     }
 }

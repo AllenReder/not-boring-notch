@@ -73,10 +73,16 @@ struct AgentHookInstaller {
         case .missing: problems.append("The hook script is missing.")
         case .changed: problems.append("The hook script was changed.")
         }
+        var turnedOff = false
         if target == .codex, !(try codexHooksEnabled()) {
-            problems.append("Hooks are turned off in ~/.codex/config.toml.")
+            turnedOff = CodexHooksConfig.hooksTurnedOff(in: try codexConfig().read() ?? "") == true
+            problems.append(turnedOff ? "Hooks are turned off in ~/.codex/config.toml."
+                                      : "Hooks are not turned on in ~/.codex/config.toml.")
         }
 
+        if turnedOff {
+            return AgentHookStatus(agent: target, state: .turnedOff, problem: problems.joined(separator: " "))
+        }
         if !problems.isEmpty {
             return AgentHookStatus(agent: target, state: .modified, problem: problems.joined(separator: " "))
         }

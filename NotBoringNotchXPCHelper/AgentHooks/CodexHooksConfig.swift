@@ -10,6 +10,13 @@ enum CodexHooksConfig {
         try? Scanner(contents).enablingHooks()
     }
 
+    /// Whether the file turns Codex hooks off in so many words: `hooks = false`, or the legacy
+    /// `codex_hooks = false`. A file that never mentions them has not turned them off. Nil for a
+    /// layout this editor does not take on.
+    static func hooksTurnedOff(in contents: String) -> Bool? {
+        try? Scanner(contents).turnedOff()
+    }
+
     private enum Invalid: Error { case layout }
 
     private struct Flag {
@@ -33,7 +40,21 @@ enum CodexHooksConfig {
             source = Array(contents.unicodeScalars)
         }
 
-        func enablingHooks() throws -> String {
+        /// Where the flag is, and where it would go.
+        private struct Layout {
+            var current: Flag?
+            var legacy: Flag?
+            var featuresHeader: Int?
+            var firstTable: Int?
+        }
+
+        func turnedOff() throws -> Bool {
+            let layout = try scan()
+            guard let flag = layout.current ?? layout.legacy else { return false }
+            return String(String.UnicodeScalarView(source[flag.value])) == "false"
+        }
+
+        private func scan() throws -> Layout {
             let statements = try statements()
             var scope: [String] = []
             var current: Flag?
@@ -88,6 +109,13 @@ enum CodexHooksConfig {
             // explicit [features] header too is a duplicate key Codex refuses
             // to load. Don't report such a file as enabled.
             guard featuresHeader == nil || !rootDottedFeatures else { throw Invalid.layout }
+            return Layout(current: current, legacy: legacy, featuresHeader: featuresHeader, firstTable: firstTable)
+        }
+
+        func enablingHooks() throws -> String {
+            let layout = try scan()
+            let (current, legacy) = (layout.current, layout.legacy)
+            let (featuresHeader, firstTable) = (layout.featuresHeader, layout.firstTable)
 
             var edits: [Edit] = []
             if let current {

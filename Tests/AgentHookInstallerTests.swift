@@ -299,9 +299,17 @@ func testStatusFollowsWhatHappensToOurEntries() throws {
     _ = home.install([.codex], script: newer)
     checkInstall(home.mode(home.installer.scriptURL) == 0o755, "repair makes it executable again")
 
-    // Codex hooks turned off in config.toml.
+    // Codex hooks turned off in config.toml: the user's choice.
     home.write("[features]\nhooks = false\n", to: home.toml)
-    checkInstall(home.status(.codex, script: newer) == .modified, "Codex hooks off is modified")
+    checkInstall(home.status(.codex, script: newer) == .turnedOff, "Codex hooks turned off are the user's choice")
+    checkInstall(!home.installer.report(bundledScript: newer).needingRepair.contains(.codex), "which a launch leaves alone")
+    _ = home.install([.codex], script: newer)
+    checkInstall(home.status(.codex, script: newer) == .installed, "and the user can turn them on")
+
+    // Never turned on, rather than turned off, is a broken install.
+    home.write("model = \"x\"\n", to: home.toml)
+    checkInstall(home.status(.codex, script: newer) == .modified, "Codex hooks not turned on is modified")
+    checkInstall(home.installer.report(bundledScript: newer).needingRepair.contains(.codex), "which a launch repairs")
     _ = home.install([.codex], script: newer)
     checkInstall(home.status(.codex, script: newer) == .installed, "repair turns them on")
 }

@@ -28,6 +28,9 @@ enum AgentHookState: String, Codable, Sendable {
     case modified
     /// Entries of ours are there and intact, but written by an older version.
     case outdated
+    /// Entries of ours are there, but the agent's own switch for hooks is off (Codex's
+    /// `features.hooks = false`). The user's choice: a launch leaves it, and only the user turns it on.
+    case turnedOff
 }
 
 struct AgentHookStatus: Codable, Equatable, Sendable {
@@ -46,8 +49,8 @@ struct AgentHooksReport: Codable, Equatable, Sendable {
     }
 
     /// What a launch repairs: agents that have entries of ours which are not as this version
-    /// writes them. An agent that is not installed is left alone, since installing is the
-    /// user's to ask for.
+    /// writes them. An agent that is not installed, or whose hooks the user turned off, is left
+    /// alone, since installing is the user's to ask for.
     var needingRepair: [AgentHookTarget] {
         statuses.filter { $0.state == .modified || $0.state == .outdated }.map(\.agent)
     }
