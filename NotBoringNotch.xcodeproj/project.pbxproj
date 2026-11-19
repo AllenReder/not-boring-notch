@@ -344,6 +344,7 @@
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		5EE3B0F02FB20000000000F0 /* Channel */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Channel; sourceTree = "<group>"; };
+		5EE3B0F02FB20000000000F1 /* Agents */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Agents; sourceTree = "<group>"; };
 		112FB72F2CCF12CC0015238C /* private */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = private; sourceTree = "<group>"; };
 		11F748502EC9AABA00F841DB /* NotBoringNotchXPCHelper */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (11F7485C2EC9AABA00F841DB /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = NotBoringNotchXPCHelper; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -628,6 +629,7 @@
 				14CEF41B2C5CAED400855D72 /* Preview Content */,
 				112FB72F2CCF12CC0015238C /* private */,
 				5EE3B0F02FB20000000000F0 /* Channel */,
+				5EE3B0F02FB20000000000F1 /* Agents */,
 				11CC44A12CEE614100C7244B /* NotchViewCoordinator.swift */,
 			);
 			path = NotBoringNotch;
@@ -857,6 +859,7 @@
 			fileSystemSynchronizedGroups = (
 				112FB72F2CCF12CC0015238C /* private */,
 				5EE3B0F02FB20000000000F0 /* Channel */,
+				5EE3B0F02FB20000000000F1 /* Agents */,
 			);
 			name = NotBoringNotch;
 			packageProductDependencies = (

@@ -203,6 +203,68 @@ final class XPCHelperClient: NSObject {
     }
 }
 
+// MARK: - Agent hooks
+
+extension XPCHelperClient {
+    /// Start time of each process among `pids` that is still running. A pid that is not running,
+    /// or that the helper could not be asked about, is left out.
+    nonisolated func agentProcessStartTimes(_ pids: [Int32]) async -> [Int32: Date] {
+        guard !pids.isEmpty else { return [:] }
+        // A helper that was just restarted fails the first call; asking again reaches the new one.
+        for _ in 0..<2 {
+            do {
+                let service = await MainActor.run { ensureRemoteService() }
+                let times: [NSNumber: NSNumber] = try await service.withContinuation { service, continuation in
+                    service.agentProcessStartTimes(pids.map { NSNumber(value: $0) }) { times in
+                        continuation.resume(returning: times)
+                    }
+                }
+                return Dictionary(uniqueKeysWithValues: times.map {
+                    (Int32(truncating: $0.key), Date(timeIntervalSince1970: $0.value.doubleValue))
+                })
+            } catch {
+                continue
+            }
+        }
+        return [:]
+    }
+
+    /// nil when the helper could not be reached.
+    nonisolated func agentHooksStatus(hookScript: String) async -> AgentHooksReport? {
+        await decodedReply { service, reply in service.agentHooksStatus(hookScript: hookScript, with: reply) }
+    }
+
+    nonisolated func installAgentHooks(_ agents: [AgentHookTarget], hookScript: String) async -> AgentHooksReport? {
+        await decodedReply { service, reply in
+            service.installAgentHooks(agents.map(\.rawValue), hookScript: hookScript, with: reply)
+        }
+    }
+
+    nonisolated func uninstallAgentHooks(_ agents: [AgentHookTarget], hookScript: String) async -> AgentHooksReport? {
+        await decodedReply { service, reply in
+            service.uninstallAgentHooks(agents.map(\.rawValue), hookScript: hookScript, with: reply)
+        }
+    }
+
+    nonisolated func trustCodexHooks() async -> CodexTrustReport? {
+        await decodedReply { service, reply in service.trustCodexHooks(with: reply) }
+    }
+
+    private nonisolated func decodedReply<T: Decodable>(
+        _ call: @escaping (NotBoringNotchXPCHelperProtocol, @escaping (Data) -> Void) -> Void
+    ) async -> T? {
+        do {
+            let service = await MainActor.run { ensureRemoteService() }
+            let data: Data = try await service.withContinuation { service, continuation in
+                call(service) { continuation.resume(returning: $0) }
+            }
+            return try JSONDecoder().decode(T.self, from: data)
+        } catch {
+            return nil
+        }
+    }
+}
+
 extension Notification.Name {
     static let accessibilityAuthorizationChanged = Notification.Name("accessibilityAuthorizationChanged")
 }
