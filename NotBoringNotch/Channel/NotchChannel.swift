@@ -373,6 +373,13 @@ final class NotchChannel: ObservableObject {
         scheduleSweep()
     }
 
+    func dismissAllActivities() {
+        withAnimation(.smooth(duration: 0.35)) {
+            activities.removeAll()
+        }
+        scheduleSweep()
+    }
+
     private func scheduleSweep() {
         sweepTask?.cancel()
         guard let deadline = activities.nextDeadline else {
