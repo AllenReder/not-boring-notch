@@ -202,14 +202,16 @@ are left out.
 | `X-Agent-Host-Bundle` | `$__CFBundleIdentifier`: the app the agent runs in. A click brings it forward. |
 | `X-Agent-Term-Program` | `$TERM_PROGRAM`. |
 | `X-Agent-Tmux-Pane` | `$TMUX_PANE`. |
-| `X-Agent-T3-Thread` | `$T3CODE_THREAD_ID`. A session inside a T3 Code thread is that thread: a new agent session in the same thread replaces the old one. |
+| `X-Agent-T3-Thread` | `$T3CODE_THREAD_ID`. A click on a session inside a T3 Code thread opens that thread. Two agents in one thread, such as a Claude session that runs `codex exec`, are still two sessions. |
 | `X-Agent-T3-Environment` | The T3 Code environment id, only with a thread. With it a click opens `t3code://threads/<environment>/<thread>`; without it, T3 Code is brought forward. |
 
 ### On the notch
 
-- **Closed notch.** The agents are a resident, like the music. The left wing shows the agent's
-  mark and a spinner, and the right wing how many sessions are working. When one is waiting for
-  you, the right wing turns amber and reads `! 1 · 2` — one waiting, two working. Agents waiting
+- **Closed notch.** The agents are a resident, like the music. The left wing shows the mark of
+  each kind of agent at work, stacked, slowly dimming and brightening while any of them works.
+  The right wing shows how many sessions are working, in white. When one is waiting for you, the
+  marks hold still with an amber dot, and the right wing reads `! 1 | 2`: one waiting, in amber,
+  then a light rule, then two working, in white. Agents waiting
   for you always go ahead of the music; agents that are only working go ahead of it too, unless
   the music has been put first for good (the `musicAheadOfAgents` default). When the music holds
   the wings, the agents shrink to the right one: the spinner with the count inside it.

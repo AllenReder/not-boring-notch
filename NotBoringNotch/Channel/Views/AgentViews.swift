@@ -4,9 +4,9 @@
 //
 //  The agents on the closed notch, in the two sizes the arbiter hands out:
 //
-//  - compact: both wings — the marks of the kinds at work, stacked, and a spinner on the left;
-//    how many are at work on the right, or `! waiting · working` in amber when somebody is
-//    waiting for the user.
+//  - compact: both wings — the marks of the kinds at work on the left, stacked, breathing while
+//    any of them works, still with an amber dot while somebody waits for the user; on the right,
+//    how many wait (`! 1`, amber) and how many work (white), a light rule between.
 //  - minimal: the right wing alone — the spinner with the count in it — beside the music.
 //
 //  The geometry follows the banner's: both wings the same width, so the content stays centred on
@@ -23,11 +23,11 @@ extension AgentSummary {
 
     var isWaiting: Bool { waiting > 0 }
 
-    /// "3", or "! 1 · 2" when somebody is waiting; without the second number when nobody is at work.
-    var countText: String {
-        guard isWaiting else { return String(working) }
-        return working == 0 ? "! \(waiting)" : "! \(waiting) · \(working)"
-    }
+    /// "! 1" when somebody is waiting for the user.
+    var waitingLabel: String? { isWaiting ? "! \(waiting)" : nil }
+
+    /// How many are at work. Left out when everybody who is not idle is waiting.
+    var workingLabel: String? { isWaiting && working == 0 ? nil : String(working) }
 }
 
 /// Amber, as the system uses for "this needs you".
@@ -79,19 +79,32 @@ struct AgentBadgedMark: View {
 
     var body: some View {
         AgentMark(kind: kind)
-            .overlay(alignment: .bottomTrailing) {
-                Circle()
-                    .fill(badge.color)
-                    .frame(width: 7, height: 7)
-                    .background(Circle().fill(.black).padding(-1.5))
-                    .offset(x: 2, y: 2)
-            }
+            .overlay(alignment: .bottomTrailing) { AgentBadgeDot(color: badge.color) }
     }
 }
 
-/// One mark per kind of agent at work, each overlapping the one before it.
+/// The dot on a mark's corner, ringed in black so it reads against the mark.
+struct AgentBadgeDot: View {
+    let color: Color
+
+    var body: some View {
+        Circle()
+            .fill(color)
+            .frame(width: 7, height: 7)
+            .background(Circle().fill(.black).padding(-1.5))
+            .offset(x: 2, y: 2)
+    }
+}
+
+/// One mark per kind of agent at work, each overlapping the one before it. The stack breathes
+/// while something works; while somebody waits it holds still, with an amber dot.
 struct AgentMarkStack: View {
     let kinds: [AgentKind]
+    let isBreathing: Bool
+    let isWaiting: Bool
+
+    /// Seconds for one breath, dim and back.
+    private static let breath: TimeInterval = 2.4
 
     static let markSize: CGFloat = 16
     private static let step: CGFloat = 14
@@ -101,6 +114,28 @@ struct AgentMarkStack: View {
     }
 
     var body: some View {
+        // The timeline stops asking for frames when the stack is not breathing.
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !breathes)) { context in
+            let depth = breathes ? Self.depth(at: context.date) : 0
+            marks
+                .opacity(1 - 0.55 * depth)
+                .scaleEffect(1 - 0.1 * depth)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if isWaiting { AgentBadgeDot(color: agentAttentionColor) }
+        }
+        .frame(width: Self.width(for: kinds.count), height: Self.markSize, alignment: .leading)
+    }
+
+    private var breathes: Bool { isBreathing && !isWaiting }
+
+    /// 0 at full breath, 1 at the dimmest, easing in and out.
+    private static func depth(at date: Date) -> Double {
+        let phase = date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: breath) / breath
+        return (1 - cos(phase * 2 * .pi)) / 2
+    }
+
+    private var marks: some View {
         ZStack(alignment: .leading) {
             ForEach(Array(kinds.enumerated()), id: \.element) { index, kind in
                 AgentMark(kind: kind)
@@ -120,11 +155,16 @@ struct AgentCompactView: View {
 
     private static let minimumWingWidth: CGFloat = 28
 
+    private static let countSpacing: CGFloat = 6
+
     static func wingWidth(for summary: AgentSummary) -> CGFloat {
-        // padding(8) + marks + spacing(6) + spinner(14) + padding(6)
-        let leftNeeded = 34 + AgentMarkStack.width(for: summary.kinds.count)
-        // text + padding(10) on the right, and a little air on the left of it
-        let rightNeeded = 16 + ScrollableBannerText.measureWidth(summary.countText, weight: .semibold)
+        // padding(8) + marks + padding(8)
+        let leftNeeded = 16 + AgentMarkStack.width(for: summary.kinds.count)
+        let labels = [summary.waitingLabel, summary.workingLabel].compactMap { $0 }
+        let text = labels.map { ScrollableBannerText.measureWidth($0, weight: .semibold) }.reduce(0, +)
+        let rule = labels.count == 2 ? 1 + 2 * countSpacing : 0
+        // the count + padding(10) on the right, and a little air on the left of it
+        let rightNeeded = 16 + text + rule
         return max(minimumWingWidth, leftNeeded, rightNeeded)
     }
 
@@ -132,32 +172,42 @@ struct AgentCompactView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            HStack(spacing: 6) {
-                AgentMarkStack(kinds: summary.kinds)
-                AgentSpinner(isSpinning: summary.working > 0,
-                             tint: summary.isWaiting ? agentAttentionColor : .white)
-                    .frame(width: 14, height: 14)
-            }
-            .padding(.leading, 8)
-            .padding(.trailing, 6)
-            .frame(width: wingWidth, alignment: .leading)
+            AgentMarkStack(kinds: summary.kinds, isBreathing: summary.working > 0, isWaiting: summary.isWaiting)
+                .padding(.leading, 8)
+                .frame(width: wingWidth, alignment: .leading)
 
             // The flat base of the physical camera housing.
             Rectangle()
                 .fill(.black)
                 .frame(width: vm.closedNotchGap)
 
-            Text(summary.countText)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .monospacedDigit()
-                .foregroundStyle(summary.isWaiting ? agentAttentionColor : Color.gray)
-                .lineLimit(1)
+            count
                 .padding(.trailing, 10)
                 .frame(width: wingWidth, alignment: .trailing)
         }
         .fixedSize(horizontal: true, vertical: false)
         .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)
+    }
+
+    /// Amber for those waiting on the user, white for those at work, a light rule between.
+    private var count: some View {
+        HStack(spacing: Self.countSpacing) {
+            if let waiting = summary.waitingLabel {
+                Text(verbatim: waiting).foregroundStyle(agentAttentionColor)
+            }
+            if summary.waitingLabel != nil, summary.workingLabel != nil {
+                Rectangle()
+                    .fill(.white.opacity(0.3))
+                    .frame(width: 1, height: 11)
+            }
+            if let working = summary.workingLabel {
+                Text(verbatim: working).foregroundStyle(.white)
+            }
+        }
+        .font(.subheadline)
+        .fontWeight(.semibold)
+        .monospacedDigit()
+        .lineLimit(1)
     }
 }
 
