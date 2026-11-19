@@ -12,12 +12,9 @@ final class BrightnessManager: ObservableObject {
 	@Published private(set) var animatedBrightness: Float = 0
 	@Published private(set) var lastChangeAt: Date = .distantPast
 
-	private let visibleDuration: TimeInterval = 1.2
 	private let client = XPCHelperClient.shared
 
 	private init() { refresh() }
-
-	var shouldShowOverlay: Bool { Date().timeIntervalSince(lastChangeAt) < visibleDuration }
 
 	func refresh() {
 		Task { @MainActor in
@@ -73,12 +70,9 @@ final class KeyboardBacklightManager: ObservableObject {
 	@Published private(set) var rawBrightness: Float = 0
 	@Published private(set) var lastChangeAt: Date = .distantPast
 
-	private let visibleDuration: TimeInterval = 1.2
 	private let client = XPCHelperClient.shared
 
 	private init() { refresh() }
-
-	var shouldShowOverlay: Bool { Date().timeIntervalSince(lastChangeAt) < visibleDuration }
 
 	func refresh() {
 		Task { @MainActor in
@@ -103,18 +97,6 @@ final class KeyboardBacklightManager: ObservableObject {
 				type: .backlight,
 				value: CGFloat(target)
 			)
-		}
-	}
-
-	func setAbsolute(value: Float) {
-		let clamped = max(0, min(1, value))
-		Task { @MainActor in
-			let ok = await client.setKeyboardBrightness(clamped)
-			if ok {
-				publish(brightness: clamped, touchDate: true)
-			} else {
-				refresh()
-			}
 		}
 	}
 

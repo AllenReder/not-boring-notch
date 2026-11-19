@@ -50,9 +50,6 @@ struct ContentView: View {
     // Shared interactive spring for movement/resizing to avoid conflicting animations
     private let animationSpring = Animation.interactiveSpring(response: 0.38, dampingFraction: 0.8, blendDuration: 0)
 
-    private let extendedHoverPadding: CGFloat = 30
-    private let zeroHeightHoverPadding: CGFloat = 10
-
     /// The launcher scrolls a list of its own, so the two-finger swipe up belongs to that list
     /// while it is on screen.
     ///
@@ -705,26 +702,6 @@ struct ContentView: View {
             }
         }
     }
-}
-
-struct FullScreenDropDelegate: DropDelegate {
-    @Binding var isTargeted: Bool
-    let onDrop: () -> Void
-
-    func dropEntered(info _: DropInfo) {
-        isTargeted = true
-    }
-
-    func dropExited(info _: DropInfo) {
-        isTargeted = false
-    }
-
-    func performDrop(info _: DropInfo) -> Bool {
-        isTargeted = false
-        onDrop()
-        return true
-    }
-
 }
 
 struct GeneralDropTargetDelegate: DropDelegate {

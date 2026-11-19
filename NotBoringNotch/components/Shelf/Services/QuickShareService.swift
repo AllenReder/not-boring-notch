@@ -24,7 +24,6 @@ class QuickShareService: ObservableObject {
     private var cachedServices: [String: NSSharingService] = [:]
     // Hold security-scoped URLs during sharing
     private var sharingAccessingURLs: [URL] = []
-    private var lifecycleDelegate: SharingLifecycleDelegate?
    
     init() {
         Task {
@@ -119,10 +118,8 @@ class QuickShareService: ObservableObject {
 
         // Setup lifecycle delegate to keep notch open during picker/service
         let delegate = SharingStateManager.shared.makeDelegate { [weak self] in
-            self?.lifecycleDelegate = nil
             self?.stopSharingAccessingURLs()
         }
-        lifecycleDelegate = delegate
 
         if let svc = cachedServices[provider.id], svc.canPerform(withItems: items) {
             // For direct service path, explicitly mark service interaction start
@@ -146,10 +143,7 @@ class QuickShareService: ObservableObject {
         }
         sharingAccessingURLs.removeAll()
     }
-// MARK: - SharingServiceDelegate
 
-private class SharingServiceDelegate: NSObject {}
-    
     func shareDroppedFiles(_ providers: [NSItemProvider], using shareProvider: QuickShareProvider, from view: NSView?) async {
         var itemsToShare: [Any] = []
         var foundText: String?

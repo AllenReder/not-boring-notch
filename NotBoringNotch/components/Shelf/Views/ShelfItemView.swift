@@ -17,7 +17,6 @@ struct ShelfItemView: View {
     @ObservedObject var selection = ShelfSelectionModel.shared
     @StateObject private var viewModel: ShelfItemViewModel
     @EnvironmentObject private var quickLookService: QuickLookService
-    @State private var showStack = false
     @State private var cachedPreviewImage: NSImage?
     @State private var debouncedDropTarget = false
 
@@ -180,7 +179,6 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
     func makeNSView(context: Context) -> DraggableClickView {
         let view = DraggableClickView()
         view.item = item
-        view.viewModel = viewModel
         view.dragPreviewImage = cachedPreviewImage ?? renderDragPreview()
         view.onRightClick = onRightClick
         view.onClick = onClick
@@ -189,7 +187,6 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
     
     func updateNSView(_ nsView: DraggableClickView, context: Context) {
         nsView.item = item
-        nsView.viewModel = viewModel
         // Only update preview if cached version is available
         if let cached = cachedPreviewImage {
             nsView.dragPreviewImage = cached
@@ -213,7 +210,6 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
     
     final class DraggableClickView: NSView, NSDraggingSource {
         var item: ShelfItem!
-        weak var viewModel: ShelfItemViewModel?
         var dragPreviewImage: NSImage?
         var onRightClick: ((NSEvent, NSView) -> Void)?
         var onClick: ((NSEvent, NSView) -> Void)?

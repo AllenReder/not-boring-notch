@@ -1008,7 +1008,6 @@ struct About: View {
 
 struct Shelf: View {
     
-    @Default(.shelfTapToOpen) var shelfTapToOpen: Bool
     @Default(.quickShareProvider) var quickShareProvider
     @Default(.expandedDragDetection) var expandedDragDetection: Bool
     @StateObject private var quickShareService = QuickShareService.shared
@@ -1293,8 +1292,6 @@ struct Appearance: View {
         )
     }
 
-    let icons: [String] = ["logo2"]
-    @State private var selectedIcon: String = "logo2"
     @State private var selectedListVisualizer: CustomVisualizer? = nil
     @State private var isPresented: Bool = false
     @State private var name: String = ""
@@ -1760,8 +1757,7 @@ struct Advanced: View {
                                 ForEach(PresetAccentColor.allCases) { preset in
                                     AccentCircleButton(
                                         isSelected: selectedPresetColor == preset,
-                                        color: preset.color,
-                                        isMulticolor: false
+                                        color: preset.color
                                     ) {
                                         selectedPresetColor = preset
                                         customAccentColor = preset.color
@@ -1959,7 +1955,6 @@ struct AccentCircleButton: View {
     let isSelected: Bool
     let color: Color
     var isSystemDefault: Bool = false
-    var isMulticolor: Bool = false
     let action: () -> Void
     
     var body: some View {
@@ -2015,27 +2010,6 @@ struct Shortcuts: View {
     }
 }
 
-func proFeatureBadge() -> some View {
-    Text("Upgrade to Pro")
-        .foregroundStyle(Color(red: 0.545, green: 0.196, blue: 0.98))
-        .font(.footnote.bold())
-        .padding(.vertical, 3)
-        .padding(.horizontal, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 4).stroke(
-                Color(red: 0.545, green: 0.196, blue: 0.98), lineWidth: 1))
-}
-
-func comingSoonTag() -> some View {
-    Text("Coming soon")
-        .foregroundStyle(.secondary)
-        .font(.footnote.bold())
-        .padding(.vertical, 3)
-        .padding(.horizontal, 6)
-        .background(Color(nsColor: .secondarySystemFill))
-        .clipShape(.capsule)
-}
-
 func customBadge(text: LocalizedStringKey) -> some View {
     Text(text)
         .foregroundStyle(.secondary)
@@ -2044,23 +2018,6 @@ func customBadge(text: LocalizedStringKey) -> some View {
         .padding(.horizontal, 6)
         .background(Color(nsColor: .secondarySystemFill))
         .clipShape(.capsule)
-}
-
-func warningBadge(_ text: String, _ description: String) -> some View {
-    Section {
-        HStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 22))
-                .foregroundStyle(.yellow)
-            VStack(alignment: .leading) {
-                Text(text)
-                    .font(.headline)
-                Text(description)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-        }
-    }
 }
 
 #Preview {

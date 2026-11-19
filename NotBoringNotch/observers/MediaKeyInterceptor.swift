@@ -34,10 +34,6 @@ final class MediaKeyInterceptor {
     
     // MARK: - Accessibility (via XPC)
     
-    func requestAccessibilityAuthorization() {
-        XPCHelperClient.shared.requestAccessibilityAuthorization()
-    }
-    
     func ensureAccessibilityAuthorization(promptIfNeeded: Bool = false) async -> Bool {
         await XPCHelperClient.shared.ensureAccessibilityAuthorization(promptIfNeeded: promptIfNeeded)
     }

@@ -45,7 +45,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let vm: NotchViewModel = .init()
     @ObservedObject var coordinator = NotchViewCoordinator.shared
     var quickShareService = QuickShareService.shared
-    var timer: Timer?
     var closeNotchTask: Task<Void, Never>?
     private var previousScreens: [NSScreen]?
     private var onboardingWindowController: NSWindowController?
@@ -449,17 +448,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         audioPlayer.play(fileName: "notch", fileExtension: "m4a")
     }
 
-    func deviceHasNotch() -> Bool {
-        if #available(macOS 12.0, *) {
-            for screen in NSScreen.screens {
-                if screen.safeAreaInsets.top > 0 {
-                    return true
-                }
-            }
-        }
-        return false
-    }
-
     @objc func screenConfigurationDidChange() {
         let currentScreens = NSScreen.screens
 
@@ -601,9 +589,5 @@ extension CGRect: @retroactive Hashable {
         hasher.combine(origin.y)
         hasher.combine(size.width)
         hasher.combine(size.height)
-    }
-
-    public static func == (lhs: CGRect, rhs: CGRect) -> Bool {
-        return lhs.origin == rhs.origin && lhs.size == rhs.size
     }
 }
