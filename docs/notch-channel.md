@@ -112,7 +112,7 @@ an id that contains `/`.
 | `icon` | object | the notch's bell | `{ "kind": …, "value": … }` — see below. |
 | `title` | string | **required** | The line the banner shows. Cannot be empty. |
 | `subtitle` | string | none | Shown beside the title, in grey. |
-| `body` | string | none | Inline Markdown. In the banner, if no subtitle is given, its first line is the preview. |
+| `body` | string | none | Inline Markdown. In the banner, its first line is the preview on the right wing when there is no subtitle, and otherwise a line under the notch, scrolling if it is long. |
 | `duration` | number | `4` | Seconds the banner stays, from `1` to `60`. Values outside that are moved to the nearer end. |
 | `sound` | string | `"none"` | `"none"` or `"default"` (the notch's own alert). |
 | `open` | object | none | What a click does: `{ "url": … }` or `{ "app": "<bundle id>" }`, exactly one. |

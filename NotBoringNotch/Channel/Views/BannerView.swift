@@ -107,6 +107,16 @@ struct BannerView: View {
             .first { !$0.isEmpty }
     }
 
+    /// The line under the notch, as a sneak peek has: the body's first line, when the subtitle
+    /// already holds the right wing. Without a subtitle the right wing previews the body itself.
+    static func peekText(for notification: ChannelNotification) -> String? {
+        guard let subtitle = notification.subtitle, !subtitle.isEmpty, let body = notification.body else { return nil }
+        return body.components(separatedBy: .newlines)
+            .lazy
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty }
+    }
+
     private static func showsPin(_ notification: ChannelNotification) -> Bool {
         notification.banner == .untilSeen
     }
@@ -134,24 +144,48 @@ struct BannerView: View {
     private var wingWidth: CGFloat { Self.wingWidth(for: notification) }
 
     var body: some View {
-        HStack(spacing: 0) {
-            leftWing
-                .frame(width: wingWidth, alignment: .leading)
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                leftWing
+                    .frame(width: wingWidth, alignment: .leading)
 
-            // The flat base of the physical camera housing.
-            Rectangle()
-                .fill(.black)
-                .frame(width: vm.closedNotchSize.width - 20)
+                // The flat base of the physical camera housing.
+                Rectangle()
+                    .fill(.black)
+                    .frame(width: vm.closedNotchSize.width - 20)
 
-            rightWing
-                .frame(width: wingWidth, alignment: .trailing)
+                rightWing
+                    .frame(width: wingWidth, alignment: .trailing)
+            }
+            .fixedSize(horizontal: true, vertical: false)
+            // The closed notch's own height, not the effective one: a time-sensitive banner is
+            // drawn even while fullscreen has collapsed the notch to nothing.
+            .frame(height: vm.closedNotchSize.height, alignment: .center)
+
+            if let peek = Self.peekText(for: notification) {
+                peekLine(peek)
+            }
         }
-        .fixedSize(horizontal: true, vertical: false)
-        // The closed notch's own height, not the effective one: a time-sensitive banner is drawn
-        // even while fullscreen has collapsed the notch to nothing.
-        .frame(height: vm.closedNotchSize.height, alignment: .center)
         .bannerClock(notification)
     }
+
+    /// Spans the banner, scrolling when the line is longer than that.
+    private func peekLine(_ text: String) -> some View {
+        let width = 2 * wingWidth + vm.closedNotchSize.width - 20 - 2 * Self.peekInset
+        return ScrollableBannerText(
+            text: text,
+            font: .subheadline,
+            fontWeight: .regular,
+            nsFont: .subheadline,
+            textColor: .gray,
+            frameWidth: width
+        )
+        .frame(width: width)
+        .padding(.horizontal, Self.peekInset)
+        .padding(.bottom, 10)
+    }
+
+    private static let peekInset: CGFloat = 12
 
     private var leftWing: some View {
         HStack(spacing: 6) {
