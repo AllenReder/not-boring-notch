@@ -237,9 +237,32 @@ class MusicManager: ObservableObject {
                 // The artwork bytes did not change, but they now belong to this track: the
                 // rest of an album shares one cover, so without recording the ownership
                 // here the track would look coverless and settle Colorless with its own
-                // cover on screen.
-                self.cancelTintSettleWindow()
-                self.tintPipeline.noteCoverApplied(for: track)
+                // cover on screen. Bytes that are not known to be a cover are handled by
+                // `heldArtworkArrived`.
+                let outcome = self.tintPipeline.heldArtworkArrived(
+                    for: track, bundleIdentifier: state.bundleIdentifier)
+                switch outcome {
+                case .noAction:
+                    self.cancelTintSettleWindow()
+                case .colorless(let generation):
+                    self.cancelTintSettleWindow()
+                    #if DEBUG
+                    NSLog("TintPipeline: undecodable artwork arrived again for \(track.title) → Colorless (gen=\(generation))")
+                    #endif
+                    self.showColorless(for: track, bundleIdentifier: state.bundleIdentifier)
+                case .redecode:
+                    // The decode of these bytes was dropped when the track changed, so decode
+                    // them again for the track the notch is on now.
+                    self.cancelTintSettleWindow()
+                    if let artwork = state.artwork {
+                        self.updateArtwork(artwork, for: track)
+                    }
+                case .armSettleWindow:
+                    // Bytes that failed for the previous track are no artwork at all for this
+                    // one. Its own may still arrive, so this must not cancel a window that is
+                    // already running for it.
+                    self.armArtworkFallback(for: track, bundleIdentifier: state.bundleIdentifier)
+                }
             }
             self.artworkData = state.artwork
 
@@ -554,20 +577,65 @@ class MusicManager: ObservableObject {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
 
-            if let artworkImage = NSImage(data: artworkData) {
-                DispatchQueue.main.async { [weak self] in
-                    guard let self else { return }
-                    guard self.tintPipeline.acceptsArtwork(order: order) else {
-                        #if DEBUG
-                        NSLog("TintPipeline: dropped stale artwork decode (order=\(order), current=\(self.tintPipeline.artworkOrder))")
-                        #endif
-                        return
-                    }
-                    self.usingAppIconForArtwork = false
-                    self.updateAlbumArt(newAlbumArt: artworkImage, provenance: .trackArtwork, track: track)
+            let artworkImage = Self.drawableArtwork(from: artworkData)
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                guard self.tintPipeline.acceptsArtwork(order: order) else {
+                    #if DEBUG
+                    NSLog("TintPipeline: dropped stale artwork decode (order=\(order), current=\(self.tintPipeline.artworkOrder))")
+                    #endif
+                    return
                 }
+                guard let artworkImage else {
+                    // Undecodable artwork is absent artwork. The Tint Settle Window was
+                    // cancelled when these bytes arrived, so settle Colorless now rather than
+                    // leave the previous track's cover and tint on screen.
+                    // The bundle is read now, not when the decode was requested: it may have
+                    // arrived in the meantime, and the fallback is that app's icon.
+                    let bundleIdentifier = self.bundleIdentifier ?? ""
+                    if let generation = self.tintPipeline.artworkDecodeFailed(
+                        order: order, for: track, bundleIdentifier: bundleIdentifier) {
+                        #if DEBUG
+                        NSLog("TintPipeline: artwork for \(track.title) did not decode → Colorless (gen=\(generation))")
+                        #endif
+                        self.showColorless(for: track, bundleIdentifier: bundleIdentifier)
+                    }
+                    return
+                }
+                self.usingAppIconForArtwork = false
+                self.updateAlbumArt(newAlbumArt: artworkImage, provenance: .trackArtwork, track: track)
             }
         }
+    }
+
+    /// Decodes artwork bytes into an image that actually draws, or `nil` when they are absent
+    /// artwork. Runs off the main thread.
+    ///
+    /// `NSImage(data:)` alone is not enough: bytes behind a valid header (a PNG signature or JPEG
+    /// SOI followed by garbage) give a non-nil, empty image with no representations, and a
+    /// truncated PNG gives an image whose `cgImage` exists but draws fully transparent. Both are
+    /// caught by drawing the image into a tiny bitmap and requiring a visible pixel. A truncated
+    /// JPEG that draws partially still counts as decoded.
+    private static func drawableArtwork(from data: Data) -> NSImage? {
+        guard let image = NSImage(data: data),
+              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil)
+        else { return nil }
+
+        let side = 16
+        var pixels = [UInt8](repeating: 0, count: side * side * 4)
+        let drew = pixels.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(
+                data: buffer.baseAddress, width: side, height: side, bitsPerComponent: 8,
+                bytesPerRow: side * 4, space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            else { return false }
+            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: side, height: side))
+            return true
+        }
+        guard drew else { return nil }
+
+        let hasVisiblePixel = stride(from: 3, to: pixels.count, by: 4).contains { pixels[$0] != 0 }
+        return hasVisiblePixel ? image : nil
     }
 
     private func updateIdleState(state: Bool) {
@@ -634,11 +702,17 @@ class MusicManager: ObservableObject {
 
     @MainActor
     private func settleTintWindow(for track: TrackIdentity, bundleIdentifier: String) {
-        guard let generation = tintPipeline.declareColorlessIfSettled(for: track) else { return }
+        guard let generation = tintPipeline.declareColorlessIfSettled(
+            for: track, bundleIdentifier: bundleIdentifier) else { return }
         #if DEBUG
         NSLog("TintPipeline: no artwork after the settle window for \(track.title) → Colorless (gen=\(generation))")
         #endif
+        showColorless(for: track, bundleIdentifier: bundleIdentifier)
+    }
 
+    /// Renders a track that has been declared Colorless: the Artwork Fallback, and no tint.
+    @MainActor
+    private func showColorless(for track: TrackIdentity, bundleIdentifier: String) {
         // The image advances on the same timeline as the tint. A playback app with no
         // resolvable icon falls back to the placeholder rather than leaving the previous
         // track's cover on screen.
