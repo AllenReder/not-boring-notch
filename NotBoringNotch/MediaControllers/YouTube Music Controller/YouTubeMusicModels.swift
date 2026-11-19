@@ -53,7 +53,6 @@ enum WebSocketMessageType: String, Sendable {
 
 struct WebSocketMessage {
     let type: WebSocketMessageType
-    let rawData: Data
     private let parsedJSON: [String: Any]?
 
     init?(from data: Data) {
@@ -64,7 +63,6 @@ struct WebSocketMessage {
         }
 
         self.type = messageType
-        self.rawData = data
         self.parsedJSON = json
     }
 
@@ -130,21 +128,6 @@ extension PlaybackResponse {
             songDuration: duration,
             imageSrc: imageSrc,
             repeatMode: repeatModeInt,
-            isShuffled: isShuffled,
-            volume: volume
-        )
-    }
-    
-    func with(elapsedSeconds: Double) -> PlaybackResponse {
-        PlaybackResponse(
-            isPaused: isPaused,
-            title: title,
-            artist: artist,
-            album: album,
-            elapsedSeconds: elapsedSeconds,
-            songDuration: songDuration,
-            imageSrc: imageSrc,
-            repeatMode: repeatMode,
             isShuffled: isShuffled,
             volume: volume
         )

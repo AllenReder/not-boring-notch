@@ -8,7 +8,6 @@ import SwiftUI
 
 struct EmptyStateView: View {
     var message: LocalizedStringKey
-    @State private var isVisible = true
     
     var body: some View {
         HStack {

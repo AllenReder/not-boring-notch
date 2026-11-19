@@ -20,7 +20,6 @@ struct SystemEventIndicatorModifier: View {
         }
     }
     @Binding var icon: String
-    let showSlider: Bool = false
     var sendEventBack: (CGFloat) -> Void
 
     /// One sentence per state. `Text("Mic \(flag)")` reads the flag as a plain
@@ -107,7 +106,6 @@ struct DraggableProgressBar: View {
     var onChange: ((CGFloat) -> Void)? = nil
     
     @State private var isDragging = false
-    @State private var dragOffset: CGFloat = 0
     
     var body: some View {
         VStack {

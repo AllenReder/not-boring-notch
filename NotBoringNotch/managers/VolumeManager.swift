@@ -17,8 +17,6 @@ final class VolumeManager: NSObject, ObservableObject {
     @Published private(set) var isMuted: Bool = false
     @Published private(set) var lastChangeAt: Date = .distantPast
 
-    let visibleDuration: TimeInterval = 1.2
-
     private var didInitialFetch = false
     private let step: Float32 = 1.0 / 16.0
     // Fallback software if hardware mute is not supported
@@ -30,8 +28,6 @@ final class VolumeManager: NSObject, ObservableObject {
         setupAudioListener()
         fetchCurrentVolume()
     }
-
-    var shouldShowOverlay: Bool { Date().timeIntervalSince(lastChangeAt) < visibleDuration }
 
     // MARK: - Public Control API
     @MainActor func increase(stepDivisor: Float = 1.0) {
@@ -71,19 +67,6 @@ final class VolumeManager: NSObject, ObservableObject {
         NotchViewCoordinator.shared.toggleSneakPeek(status: true, type: .volume, value: CGFloat(willBeMuted ? 0 : resultingVolume))
     }
     
-    func refresh() { fetchCurrentVolume() }
-
-    func adjustRelative(delta: Float32) {
-        if isMutedInternal() { toggleMuteInternal() }
-        guard let current = readVolumeInternal() else {
-            fetchCurrentVolume()
-            return
-        }
-        let target = max(0, min(1, current + delta))
-        writeVolumeInternal(target)  
-        publish(volume: target, muted: isMutedInternal(), touchDate: true)
-    }
-
     @MainActor func setAbsolute(_ value: Float32) {
         let clamped = max(0, min(1, value))
         let currentlyMuted = isMutedInternal()
@@ -369,10 +352,6 @@ final class VolumeManager: NSObject, ObservableObject {
             self.isMuted = muted
         }
     }
-}
-
-extension Array where Element == Float32 {
-    fileprivate var average: Float32? { isEmpty ? nil : reduce(0, +) / Float32(count) }
 }
 
 

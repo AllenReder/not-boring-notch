@@ -10,13 +10,6 @@ import Defaults
 
 public enum Style {
     case notch
-    case floating
-}
-
-public enum ContentType: Int, Codable, Hashable, Equatable {
-    case normal
-    case menu
-    case settings
 }
 
 public enum NotchState {
@@ -29,28 +22,6 @@ public enum NotchViews: Hashable, CaseIterable {
     case shelf
     case launcher
     case performance
-}
-
-enum SettingsEnum {
-    case general
-    case about
-    case charge
-    case download
-    case mediaPlayback
-    case hud
-    case shelf
-    case extensions
-}
-
-enum DownloadIndicatorStyle: String, Defaults.Serializable {
-    case progress = "Progress"
-    case percentage = "Percentage"
-}
-
-enum DownloadIconStyle: String, Defaults.Serializable {
-    case onlyAppIcon = "Only app icon"
-    case onlyIcon = "Only download icon"
-    case iconAndAppIcon = "Icon and app icon"
 }
 
 enum MirrorShapeEnum: String, Defaults.Serializable {

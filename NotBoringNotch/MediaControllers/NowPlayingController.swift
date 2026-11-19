@@ -55,9 +55,6 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
         await updatePlaybackInfo()
     }
 
-    private var lastMusicItem:
-        (title: String, artist: String, album: String, duration: TimeInterval, artworkData: Data?)?
-
     // MARK: - Media Remote Functions
     private let mediaRemoteBundle: CFBundle
     private let MRMediaRemoteSendCommandFunction: @convention(c) (Int, AnyObject?) -> Void
@@ -119,14 +116,6 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
     }
 
     // MARK: - Protocol Implementation
-    func play() async {
-        MRMediaRemoteSendCommandFunction(0, nil)
-    }
-
-    func pause() async {
-        MRMediaRemoteSendCommandFunction(1, nil)
-    }
-
     func togglePlay() async {
         MRMediaRemoteSendCommandFunction(2, nil)
     }
