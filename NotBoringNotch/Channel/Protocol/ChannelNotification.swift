@@ -287,10 +287,6 @@ enum ChannelPayloadError: Error, Equatable {
     case tooManyActions
     /// An `open` that is not exactly one of a usable URL and an app's bundle identifier.
     case invalidOpen
-    /// An activity's `timer` that is not exactly one of `since` and `until`.
-    case invalidTimer
-    /// A number outside what its field allows, named by its wire key: a negative `stale_after`.
-    case invalidNumber(String)
 
     /// The code a sender is told, stable across releases.
     var code: String {
@@ -305,8 +301,6 @@ enum ChannelPayloadError: Error, Equatable {
         case .invalidAction: return "invalid_action"
         case .tooManyActions: return "too_many_actions"
         case .invalidOpen: return "invalid_open"
-        case .invalidTimer: return "invalid_timer"
-        case .invalidNumber: return "invalid_number"
         }
     }
 }

@@ -96,7 +96,6 @@ table.checks td.r { text-align: right; white-space: nowrap; font-family: var(--m
     <section class="card">
       <div class="tabs" id="composerTabs">
         <button class="on" data-tab="v2" data-i18n="tab.v2"></button>
-        <button data-tab="act" data-i18n="tab.act"></button>
         <button data-tab="v1" data-i18n="tab.v1"></button>
         <button data-tab="raw" data-i18n="tab.raw"></button>
       </div>
@@ -144,45 +143,6 @@ table.checks td.r { text-align: right; white-space: nowrap; font-family: var(--m
           <span class="hint" data-i18n="sendShortcut"></span>
         </div>
         <details style="margin-top:12px" open><summary class="hint" data-i18n="payload"></summary><pre class="json" id="v2-preview"></pre></details>
-      </div>
-
-      <!-- activity -->
-      <div id="tab-act" class="hidden">
-        <p class="hint" style="margin:0 0 10px" data-i18n="act.intro"></p>
-        <div class="grid">
-          <label class="f"><span>id</span><input id="act-id" value="pg-activity"></label>
-          <label class="f"><span>source</span><input id="act-source" value="playground"></label>
-          <label class="f"><span>icon (sf_symbol)</span><input id="act-icon" list="iconPresets" value="sparkles"></label>
-          <label class="f"><span>relevance</span><input id="act-relevance" type="number" min="0" max="1" step="0.1" placeholder="0.5"></label>
-          <label class="f wide"><span>title</span><input id="act-title" data-default="d.act.title"></label>
-          <label class="f wide"><span>state</span><input id="act-state" data-default="d.act.state"></label>
-          <label class="f"><span>progress</span>
-            <div class="row"><input id="act-progressOn" type="checkbox" style="width:auto"><input id="act-progress" class="grow" type="range" min="0" max="1" step="0.05" value="0.4"><span class="hint" id="act-progressLabel"></span></div>
-          </label>
-          <label class="f"><span>timer</span>
-            <div class="row">
-              <select id="act-timer" class="grow"><option value="" data-i18n="opt.none"></option><option value="since" data-i18n="opt.timerSince"></option><option value="until" data-i18n="opt.timerUntil"></option></select>
-              <input id="act-timerMin" type="number" min="0" step="1" value="2" style="width:64px" title="minutes">
-            </div>
-          </label>
-          <label class="f"><span data-i18n="f.staleAfter"></span><input id="act-stale" type="number" min="1" step="1" placeholder="900"></label>
-          <label class="f"><span>open (app)</span><input id="act-open" list="openPresets" placeholder="com.apple.Terminal"></label>
-          <label class="f"><span data-i18n="f.alertTitle"></span><input id="act-alert" data-i18n-ph="ph.alert"></label>
-          <label class="f"><span>alert level</span><select id="act-alertLevel"><option>active</option><option>time-sensitive</option><option>passive</option></select></label>
-        </div>
-        <div class="row" style="margin-top:12px">
-          <button class="btn primary" onclick="sendActivity()" data-i18n="act.put"></button>
-          <span class="hint" data-i18n="act.mergeHint"></span>
-        </div>
-        <div class="grid" style="margin-top:12px">
-          <label class="f"><span>dismiss_after</span><input id="act-dismiss" type="number" min="0" step="1" placeholder="4"></label>
-          <label class="f"><span>inbox</span><select id="act-inbox"><option value="" data-i18n="opt.omit"></option><option>true</option><option>false</option></select></label>
-        </div>
-        <div class="row" style="margin-top:8px">
-          <button class="btn" onclick="endActivity()" data-i18n="act.end"></button>
-          <button class="btn danger" onclick="removeActivity($('act-id').value.trim())" data-i18n="act.remove"></button>
-        </div>
-        <details style="margin-top:12px" open><summary class="hint" data-i18n="payload"></summary><pre class="json" id="act-preview"></pre></details>
       </div>
 
       <!-- v1 -->
@@ -289,14 +249,6 @@ const STRINGS = {
     'd.v2.title': 'Build finished', 'd.v2.subtitle': '12s · main', 'd.v2.body': '12 files typechecked, `0` errors.',
     'd.v1.title': 'Legacy reminder', 'd.v1.subtitle': 'sent to POST /reminder', 'd.v1.body': 'v1 senders keep working unchanged.',
     'd.action.title': 'Copy SHA',
-    'tab.act': 'Activity',
-    'act.intro': 'Something in progress: it stays on the closed notch and changes in place. An update is a merge — only the fields filled in below are sent.',
-    'act.put': 'Start / update (PUT)', 'act.end': 'End (POST …/end)', 'act.remove': 'Remove (DELETE)',
-    'act.mergeHint': 'empty fields are left out, so they keep their value',
-    'opt.timerSince': 'since: N min ago', 'opt.timerUntil': 'until: N min from now',
-    'f.staleAfter': 'stale_after (s)', 'f.alertTitle': 'alert title', 'ph.alert': 'empty: a silent update',
-    'd.act.title': 'Refactor the Inbox', 'd.act.state': 'Editing 3 files',
-    'sent.remove': 'Remove', 'label.removeAll': 'remove all',
   },
   zh: {
     'disc.looking': '正在查找通道…',
@@ -326,14 +278,6 @@ const STRINGS = {
     'd.v2.title': '构建完成', 'd.v2.subtitle': '12 秒 · main', 'd.v2.body': '12 个文件类型检查通过，`0` 个错误。',
     'd.v1.title': '旧版提醒', 'd.v1.subtitle': '发往 POST /reminder', 'd.v1.body': 'v1 发送方无需任何改动即可继续使用。',
     'd.action.title': '复制 SHA',
-    'tab.act': 'Activity',
-    'act.intro': '正在进行的事：一直留在合上的刘海上，原地更新。更新是合并 —— 只发送下面填了的字段。',
-    'act.put': '开始 / 更新（PUT）', 'act.end': '结束（POST …/end）', 'act.remove': '移除（DELETE）',
-    'act.mergeHint': '空着的字段不发送，保持原值',
-    'opt.timerSince': 'since：N 分钟前开始', 'opt.timerUntil': 'until：N 分钟后结束',
-    'f.staleAfter': 'stale_after（秒）', 'f.alertTitle': 'alert 标题', 'ph.alert': '留空：静默更新',
-    'd.act.title': '重构 Inbox', 'd.act.state': '编辑 3 个文件',
-    'sent.remove': '移除', 'label.removeAll': '全部移除',
   },
 };
 
@@ -400,16 +344,13 @@ async function call(spec, label) {
     res = { ok: false, error: String(e) };
   }
   log(spec, res, label);
-  const kind = spec.path.startsWith('/v2/activities') ? 'activity' : 'notification';
-  const key = (id) => kind + '|' + id;
   if (res.ok && res.status === 202 && res.body && res.body.id) {
-    const title = (spec.body && typeof spec.body === 'object' && spec.body.title) || sent.get(key(res.body.id))?.title || '';
-    if (kind === 'activity' && res.body.status === 'ended') sent.delete(key(res.body.id));
-    else sent.set(key(res.body.id), { id: res.body.id, kind, title });
+    const title = (spec.body && typeof spec.body === 'object' && spec.body.title) || sent.get(res.body.id)?.title || '';
+    sent.set(res.body.id, { id: res.body.id, title });
     renderSent();
   }
-  if (res.ok && res.status === 200 && res.body && ['withdrawn', 'removed'].includes(res.body.status)) {
-    sent.delete(key(res.body.id));
+  if (res.ok && res.status === 200 && res.body && res.body.status === 'withdrawn') {
+    sent.delete(res.body.id);
     renderSent();
   }
   return res;
@@ -417,10 +358,6 @@ async function call(spec, label) {
 const post = (path, body, extra = {}) => call({ method: 'POST', path, body, ...extra }, extra.label);
 const notify = (body, label) => post('/v2/notifications', body, { label });
 const withdraw = (id, label) => call({ method: 'DELETE', path: '/v2/notifications/' + encodeURIComponent(id) }, label);
-const activityPath = (id) => '/v2/activities/' + encodeURIComponent(id);
-const putActivity = (id, body, label) => call({ method: 'PUT', path: activityPath(id), body }, label);
-const endActivityCall = (id, body = {}, label) => call({ method: 'POST', path: activityPath(id) + '/end', body }, label);
-const removeActivity = (id, label) => id && call({ method: 'DELETE', path: activityPath(id) }, label);
 
 function log(spec, res, label) {
   const el = document.createElement('div');
@@ -445,24 +382,20 @@ function renderSent() {
   const box = $('sent');
   if (!sent.size) { box.innerHTML = `<span class="hint">${esc(t('sent.empty'))}</span>`; return; }
   box.innerHTML = '';
-  [...sent.values()].reverse().forEach(({ id, kind, title }) => {
+  [...sent.values()].reverse().forEach(({ id, title }) => {
     const it = document.createElement('div');
     it.className = 'it';
-    const badge = kind === 'activity' ? '<span class="st s2">activity</span>' : '';
-    it.innerHTML = `${badge}<span class="t">${esc(title || t('sent.untitled'))}</span><code title="${esc(id)}">${esc(id)}</code>`;
+    it.innerHTML = `<span class="t">${esc(title || t('sent.untitled'))}</span><code title="${esc(id)}">${esc(id)}</code>`;
     const b = document.createElement('button');
     b.className = 'btn small danger';
-    b.textContent = t(kind === 'activity' ? 'sent.remove' : 'sent.withdraw');
-    b.onclick = () => (kind === 'activity' ? removeActivity(id) : withdraw(id));
+    b.textContent = t('sent.withdraw');
+    b.onclick = () => withdraw(id);
     it.appendChild(b);
     box.appendChild(it);
   });
 }
 async function withdrawAll() {
-  for (const { id, kind } of [...sent.values()]) {
-    if (kind === 'activity') await removeActivity(id, t('label.removeAll'));
-    else await withdraw(id, t('label.withdrawAll'));
-  }
+  for (const { id } of [...sent.values()]) await withdraw(id, t('label.withdrawAll'));
 }
 
 // ================================================================ composer: v2
@@ -537,13 +470,11 @@ function render() {
   if (p2.icon && p2.icon.kind === 'png_base64') p2.icon = { ...p2.icon, value: p2.icon.value.slice(0, 32) + '…' };
   $('v2-preview').textContent = JSON.stringify(p2, null, 2);
   $('v1-preview').textContent = JSON.stringify(buildV1(), null, 2);
-  $('act-preview').textContent = 'PUT ' + activityPath($('act-id').value.trim() || 'pg-activity') + '\n' + JSON.stringify(buildActivity(), null, 2);
-  $('act-progressLabel').textContent = $('act-progressOn').checked ? Math.round($('act-progress').value * 100) + '%' : '—';
   const png = $('v2-iconKind').value === 'png_base64';
   $('v2-iconValue').classList.toggle('hidden', png);
   $('v2-iconFile').classList.toggle('hidden', !png);
 }
-document.querySelectorAll('#tab-v2 input, #tab-v2 select, #tab-v2 textarea, #tab-v1 input, #tab-v1 select, #tab-v1 textarea, #tab-act input, #tab-act select')
+document.querySelectorAll('#tab-v2 input, #tab-v2 select, #tab-v2 textarea, #tab-v1 input, #tab-v1 select, #tab-v1 textarea')
   .forEach((el) => el.addEventListener('input', render));
 $('v2-iconFile').addEventListener('change', (e) => {
   const file = e.target.files[0];
@@ -562,39 +493,6 @@ async function sendV2(thrice) {
 }
 const sendV1 = () => post('/reminder', buildV1(), { label: 'v1' });
 
-// ================================================================ composer: activity
-function buildActivity() {
-  const p = {};
-  const v = (id) => $(id).value.trim();
-  if (v('act-source')) p.source = v('act-source');
-  if (v('act-icon')) p.icon = { kind: 'sf_symbol', value: v('act-icon') };
-  if (v('act-title')) p.title = v('act-title');
-  if (v('act-state')) p.state = v('act-state');
-  if ($('act-progressOn').checked) p.progress = Number($('act-progress').value);
-  const timer = $('act-timer').value;
-  if (timer) {
-    const now = Math.floor(Date.now() / 1000);
-    const minutes = Number(v('act-timerMin') || 0);
-    p.timer = timer === 'since' ? { since: now - minutes * 60 } : { until: now + minutes * 60 };
-  }
-  if (v('act-relevance')) p.relevance = Number(v('act-relevance'));
-  if (v('act-stale')) p.stale_after = Number(v('act-stale'));
-  if (v('act-open')) p.open = { app: v('act-open') };
-  if (v('act-alert')) p.alert = { title: v('act-alert'), level: $('act-alertLevel').value };
-  return p;
-}
-function buildActivityEnd() {
-  const p = {};
-  const v = (id) => $(id).value.trim();
-  if (v('act-state')) p.state = v('act-state');
-  if (v('act-dismiss')) p.dismiss_after = Number(v('act-dismiss'));
-  if (v('act-inbox')) p.inbox = v('act-inbox') === 'true';
-  if (v('act-alert')) p.alert = { title: v('act-alert'), level: $('act-alertLevel').value };
-  return p;
-}
-const sendActivity = () => putActivity($('act-id').value.trim() || 'pg-activity', buildActivity());
-const endActivity = () => endActivityCall($('act-id').value.trim() || 'pg-activity', buildActivityEnd());
-
 function sendRaw() {
   let headers = {};
   try { headers = $('raw-headers').value.trim() ? JSON.parse($('raw-headers').value) : {}; }
@@ -610,12 +508,12 @@ function sendRaw() {
 
 document.querySelectorAll('#composerTabs button').forEach((b) => b.onclick = () => {
   document.querySelectorAll('#composerTabs button').forEach((x) => x.classList.toggle('on', x === b));
-  ['v2', 'act', 'v1', 'raw'].forEach((tab) => $('tab-' + tab).classList.toggle('hidden', tab !== b.dataset.tab));
+  ['v2', 'v1', 'raw'].forEach((tab) => $('tab-' + tab).classList.toggle('hidden', tab !== b.dataset.tab));
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
     const tab = document.querySelector('#composerTabs button.on').dataset.tab;
-    ({ v2: () => sendV2(), act: sendActivity, v1: sendV1, raw: sendRaw })[tab]();
+    ({ v2: () => sendV2(), v1: sendV1, raw: sendRaw })[tab]();
   }
 });
 
@@ -706,63 +604,6 @@ function scenarios() {
         await notify({ title: L('Active (should wait)', 'active（应当等待）'), duration: 4 });
         await notify({ title: L('Time-sensitive (should show)', 'time-sensitive（应当显示）'), level: 'time-sensitive', duration: 5, icon: { kind: 'sf_symbol', value: 'exclamationmark.triangle.fill' } });
       } },
-    { name: L('Activity: agent session', 'Activity：agent 会话'),
-      what: L('An activity with a running timer: state changes silently, a time-sensitive alert asks for input, then it ends and leaves one Inbox row.', '带计时的 activity：状态静默变化，一条 time-sensitive 提醒请你输入，然后结束，Inbox 里留下一条记录。'),
-      run: async () => {
-        const id = uid('session');
-        const now = Math.floor(Date.now() / 1000);
-        await putActivity(id, { source: 'claude-code', icon: { kind: 'sf_symbol', value: 'sparkles' }, title: 'not-boring-notch', state: L('Thinking', '思考中'), timer: { since: now }, open: { app: 'com.apple.Terminal' } });
-        await sleep(3000);
-        await putActivity(id, { state: L('Editing 3 files', '编辑 3 个文件') });
-        await sleep(3000);
-        await putActivity(id, { state: L('Waiting for you', '等待你确认'), alert: { title: L('Needs your input', '需要你确认'), level: 'time-sensitive', sound: 'default' } });
-        await sleep(6000);
-        await putActivity(id, { state: L('Running tests', '运行测试') });
-        await sleep(3000);
-        await endActivityCall(id, { state: L('Done · 4 files changed', '完成 · 改动 4 个文件') });
-      } },
-    { name: L('Activity: progress', 'Activity：进度'),
-      what: L('A download from 0 to 100% in steps — the ring and percentage follow — then it ends.', '一个下载从 0 到 100% 逐步推进 —— 进度环和百分比跟着走 —— 然后结束。'),
-      run: async () => {
-        const id = uid('download');
-        await putActivity(id, { icon: { kind: 'sf_symbol', value: 'arrow.down.circle' }, title: L('Downloading Xcode', '下载 Xcode'), progress: 0 });
-        for (let i = 1; i <= 10; i++) { await sleep(800); await putActivity(id, { progress: i / 10 }); }
-        await endActivityCall(id, { state: L('Downloaded', '已下载'), dismiss_after: 3 });
-      } },
-    { name: L('Activity: countdown', 'Activity：倒计时'),
-      what: L('A 20-second countdown the notch keeps running by itself; ended when it reaches zero.', '一个 20 秒倒计时，由刘海自己走秒；到零时结束。'),
-      run: async () => {
-        const id = uid('timer');
-        await putActivity(id, { icon: { kind: 'sf_symbol', value: 'timer' }, title: L('Tea', '泡茶'), timer: { until: Math.floor(Date.now() / 1000) + 20 } });
-        await sleep(20000);
-        await endActivityCall(id, { state: L('Ready', '好了'), alert: { title: L('Tea is ready', '茶泡好了'), sound: 'default' } });
-      } },
-    { name: L('Activity: two at once, and the music', 'Activity：同时两个，再加音乐'),
-      what: L('Play some music first. Two activities: the more relevant takes both wings, the other shrinks to the right; the music moves to the open notch. Then relevance swaps them.', '先放一首歌。两个 activity：relevance 高的占两侧，另一个缩到右侧；音乐退到展开后的刘海里。然后交换 relevance。'),
-      run: async () => {
-        const a = uid('build'), b = uid('upload');
-        await putActivity(a, { icon: { kind: 'sf_symbol', value: 'hammer' }, title: L('Build', '构建'), progress: 0.3, relevance: 0.6 });
-        await putActivity(b, { icon: { kind: 'sf_symbol', value: 'icloud.and.arrow.up' }, title: L('Upload', '上传'), progress: 0.6, relevance: 0.4 });
-        await sleep(5000);
-        note(L('Swapping relevance…', '交换 relevance…'));
-        await putActivity(b, { relevance: 0.9 });
-        await sleep(5000);
-        await endActivityCall(b, { inbox: false, dismiss_after: 0 });
-        note(L('One left: with music playing, it holds compact and the spectrum takes the right wing.', '只剩一个：有音乐时，它占 compact，频谱占右侧。'));
-        await sleep(5000);
-        await endActivityCall(a, { inbox: false, dismiss_after: 0 });
-      } },
-    { name: L('Activity: goes stale', 'Activity：过期'),
-      what: L('stale_after 5s: after 5s without an update it dims and shows a clock; the next update brings it back.', 'stale_after 设为 5 秒：5 秒没有更新就变暗并显示时钟；下一次更新恢复正常。'),
-      run: async () => {
-        const id = uid('stale');
-        await putActivity(id, { icon: { kind: 'sf_symbol', value: 'antenna.radiowaves.left.and.right' }, title: L('Flaky sender', '不靠谱的发送方'), state: L('Syncing', '同步中'), stale_after: 5 });
-        note(L('Waiting 21s — the notch re-checks staleness every 15s…', '等待 21 秒 —— 刘海每 15 秒检查一次是否过期…'));
-        await sleep(21000);
-        await putActivity(id, { state: L('Back again', '恢复了') });
-        await sleep(4000);
-        await removeActivity(id);
-      } },
     { name: L('Sound', '声音'),
       what: L("The notch's own alert sound, played when the banner is drawn.", '刘海自带的提示音，在横幅画出来时播放。'),
       run: async () => notify({ title: L('With sound', '带声音'), sound: 'default', icon: { kind: 'sf_symbol', value: 'speaker.wave.2.fill' } }) },
@@ -808,12 +649,6 @@ function checks() {
     [L('GET on notifications', '对 notifications 用 GET'), 405, { method: 'GET' }, 'method_not_allowed'],
     [L('POST on one notification', '对单条通知用 POST'), 405, { path: '/v2/notifications/abc', body: { title: 't' } }, 'method_not_allowed'],
     [L('unknown path', '未知路径'), 404, { path: '/v2/nothing', body: { title: 't' } }, 'not_found'],
-    [L('activity started', 'activity 开始'), 202, { method: 'PUT', path: '/v2/activities/pg-check', body: { title: 'check', relevance: 0 } }, 'updated'],
-    [L('activity timer with since and until', 'activity 的 timer 同时有 since 和 until'), 400, { method: 'PUT', path: '/v2/activities/pg-check', body: { timer: { since: 1, until: 2 } } }, 'invalid_timer'],
-    [L('activity negative stale_after', 'activity 的 stale_after 为负'), 400, { method: 'PUT', path: '/v2/activities/pg-check', body: { stale_after: -1 } }, 'invalid_number'],
-    [L('POST on an activity', '对 activity 用 POST'), 405, { path: '/v2/activities/pg-check', body: {} }, 'method_not_allowed'],
-    [L('activity ended', 'activity 结束'), 202, { path: '/v2/activities/pg-check/end', body: { dismiss_after: 0, inbox: false } }, 'ended'],
-    [L('remove unknown activity', '移除不存在的 activity'), 200, { method: 'DELETE', path: '/v2/activities/never-started' }, 'removed'],
     [L('withdraw unknown id', '撤回不存在的 id'), 200, { method: 'DELETE', path: '/v2/notifications/never-sent' }, 'withdrawn'],
     [L('withdraw id with ":"', '撤回含 ":" 的 id'), 200, { method: 'DELETE', path: '/v2/notifications/' + encodeURIComponent('claude:42') }, 'withdrawn'],
   ];
@@ -832,7 +667,7 @@ async function runChecks() {
     const codeOK = !code || (body && (body.error === code || body.status === code || (code === 'v1' && body.status === 'queued')));
     const ok = got === want && codeOK;
     if (ok) pass++;
-    if (got === 202 && body.id && !full.path.startsWith('/v2/activities')) accepted.push(body.id);
+    if (got === 202 && body.id) accepted.push(body.id);
     const tr = document.createElement('tr');
     tr.innerHTML = `<td class="${ok ? 'pass' : 'fail'}">${ok ? '✓' : '✗'}</td><td>${esc(name)}<div class="hint">${esc(JSON.stringify(body))}</div></td><td class="r">${esc(t('chk.want'))} ${want}<br>${esc(t('chk.got'))} ${got}</td>`;
     table.appendChild(tr);

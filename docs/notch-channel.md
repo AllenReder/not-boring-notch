@@ -165,93 +165,6 @@ target when the notification has no `open` of its own.
 A terminal is brought forward, not a particular tab in it: reaching a tab would take scripting each
 terminal separately, which the sandbox does not allow.
 
-## Activities
-
-A notification says something happened. An **activity** says something is happening — an agent
-session, a build, a download, a countdown — and stays on the closed notch while it lasts, changing
-in place and silently each time its sender updates it. It is iOS's Live Activity.
-
-```bash
-# Start it, or update it: the same request either way.
-curl -X PUT http://127.0.0.1:45999/v2/activities/claude:4f1c \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d "{
-        \"source\": \"claude-code\",
-        \"icon\": { \"kind\": \"sf_symbol\", \"value\": \"sparkle\" },
-        \"title\": \"Refactor the Inbox\",
-        \"state\": \"Editing 3 files\",
-        \"timer\": { \"since\": $(date +%s) },
-        \"open\": { \"app\": \"com.mitchellh.ghostty\" }
-      }"
-
-# Later, only what changed. Everything left out keeps its value.
-curl -X PUT http://127.0.0.1:45999/v2/activities/claude:4f1c \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{ "state": "Waiting for you", "alert": { "title": "Needs your input" } }'
-
-# Done: show how it ended, then leave one notification in the Inbox.
-curl -X POST http://127.0.0.1:45999/v2/activities/claude:4f1c/end \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{ "state": "Finished · 12 files changed" }'
-```
-
-| Route | Answer | Does |
-| --- | --- | --- |
-| `PUT /v2/activities/{id}` | `202 {"status":"updated"}` | Starts the activity, or updates it. |
-| `POST /v2/activities/{id}/end` | `202 {"status":"ended"}` | Ends it. The body may be `{}`. |
-| `DELETE /v2/activities/{id}` | `200 {"status":"removed"}` | Removes it at once and withdraws its notification, leaving nothing. |
-
-**Updates merge.** A field you leave out keeps its value; `null` clears it. A hook that runs once
-per event can say only what changed, without remembering what it said before. And because starting
-and updating are one request, a sender never has to know whether the notch already has the
-activity — one lost to a restart comes back with the next update.
-
-### The activity payload
-
-| Field | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `title` | string | the `source`, else the id | What the notch calls it. |
-| `source` | string | none | As for notifications. |
-| `icon` | object | the notch's bell | As for notifications. |
-| `state` | string | none | What it is doing now: `"Editing 3 files"`, `"Waiting for input"`. |
-| `progress` | number | none | `0`–`1`. Out-of-range values are clamped. |
-| `timer` | object | none | `{ "since": <unix seconds> }` counts up, `{ "until": <unix seconds> }` counts down. The notch keeps it running; there is no need to update every second. |
-| `relevance` | number | `0.5` | `0`–`1`. Which activity gets the closed notch when there are several. |
-| `stale_after` | number | `900` | Seconds without an update before the activity is drawn as stale. |
-| `open` | object | none | What a click does, as for notifications. |
-| `alert` | object | none | `{ "title", "subtitle", "body", "level", "sound", "duration" }`. Announces this update as a notification — banner and Inbox — filed under `activity:{id}`, so each alert replaces the last. |
-
-`/end` takes the same fields — the activity's final state — and two of its own:
-
-| Field | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `dismiss_after` | number | `4` | Seconds it stays on the closed notch showing how it ended. `0` removes it at once. |
-| `inbox` | bool | `true` | Whether it leaves a notification in the Inbox. That notification arrives quietly (`passive`) — unless the end carries an `alert`, which is announced instead. |
-
-Ending an id the notch does not have — because it restarted while the activity ran — starts and
-ends it in one go if the request gives a `title`, and does nothing otherwise.
-
-### On the notch
-
-The closed notch shows two things at once. The first takes both wings — icon and title on the
-left; on the right its progress, its timer, or its state, in that order of preference — and the
-second shrinks to the right wing alone: an activity's icon ringed by its progress, or the music's
-spectrum.
-
-| Who goes first | |
-| --- | --- |
-| A HUD, a banner, an alert | For their few seconds, ahead of everything. |
-| Activities | By `relevance`, then by whichever was updated most recently. |
-| The music | After the activities, except for the seconds a new track is announced. Settings → Integrations → *Keep the music ahead of activities* puts it first for good. |
-
-Anything past the first two is in the open notch, at the top of the Inbox. Activities hide in
-fullscreen, as the music does.
-
-An activity not updated for `stale_after` seconds is drawn dimmed, with its state replaced by a
-clock: its sender may have died, and what it last said may no longer be true. Whatever its sender
-does, an activity is removed 8 hours after it started, and at most 8 are kept — a new one takes
-the place of one that has ended, or else of the one neglected longest.
-
 ## Responses
 
 | Status | Body | When |
@@ -268,9 +181,8 @@ the place of one that has ended, or else of the one neglected longest.
 | `415` | `{"error":"unsupported_media_type"}` | A `POST` whose `Content-Type` was not `application/json`. |
 
 The `400` error codes are `malformed`, `missing_title`, `unknown_icon_kind`, `invalid_icon_data`,
-`unknown_sound`, `unknown_level`, `invalid_open`, `invalid_action`, `too_many_actions`,
-`invalid_timer`, and `invalid_number`. The ones about a value name it:
-`{"error":"unknown_level","level":"critical"}`, `{"error":"invalid_number","field":"stale_after"}`.
+`unknown_sound`, `unknown_level`, `invalid_open`, `invalid_action`, and `too_many_actions`. The
+ones about a value name it: `{"error":"unknown_level","level":"critical"}`.
 
 A long `body` is **not** an error: the channel keeps it whole, and the Inbox shows two lines of it
 until the notification is clicked open. The 64 KiB cap bounds memory, not what you are allowed to

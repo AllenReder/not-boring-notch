@@ -2,7 +2,7 @@
 //  InboxView.swift
 //  NotBoringNotch
 //
-//  The Inbox tab: the activities in progress, then every notification the user has not cleared,
+//  The Inbox tab: every notification the user has not cleared,
 //  newest first. Clicking one does what its sender said a click should do; a notification with
 //  nowhere to go opens up to show its body.
 //
@@ -23,12 +23,7 @@ struct InboxView: View {
     /// the tab does not jump in height as the first few arrive.
     private static let minimumHeight: CGFloat = 110
 
-    private var isEmpty: Bool { channel.inbox.isEmpty && channel.activities.isEmpty }
-
-    /// In the order the closed notch ranks them, so the one on the notch is the one on top.
-    private var activities: [ChannelActivity] {
-        ClosedNotchArbiter.rank(channel.activities.standings).compactMap { channel.activities.activity(id: $0.id) }
-    }
+    private var isEmpty: Bool { channel.inbox.isEmpty }
 
     var body: some View {
         Group {
@@ -92,23 +87,6 @@ struct InboxView: View {
                 // Not lazy: the Inbox holds at most fifty, and the surface is sized from the
                 // stack's real height, which a lazy stack only estimates.
                 VStack(alignment: .leading, spacing: 4) {
-                    if !channel.activities.isEmpty {
-                        sectionHeader("In Progress")
-                            .frame(height: Self.headerHeight)
-                        ForEach(activities) { activity in
-                            ActivityRow(
-                                activity: activity,
-                                onClick: {
-                                    channel.open(activity)
-                                    if activity.clickTarget != nil { vm.close() }
-                                },
-                                onDismiss: { channel.dismissActivity(id: activity.id) }
-                            )
-                            .id("activity-row:" + activity.id)
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-                        }
-                    }
-
                     notificationsHeader
                     if channel.inbox.isEmpty {
                         Text("No notifications")
@@ -163,119 +141,6 @@ struct InboxView: View {
                 }
             }
         }
-    }
-}
-
-/// An activity in the Inbox: everything the closed notch had room for only one of.
-private struct ActivityRow: View {
-    let activity: ChannelActivity
-    let onClick: () -> Void
-    let onDismiss: () -> Void
-
-    @State private var isHovering = false
-
-    var body: some View {
-        TimelineView(.periodic(from: .now, by: 15)) { context in
-            let stale = activity.isStale(at: context.date)
-            HStack(alignment: .top, spacing: 10) {
-                ChannelIconView(icon: activity.icon)
-                    .padding(4)
-                    .frame(width: 28, height: 28)
-                    .opacity(stale ? 0.5 : 1)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    titleLine
-                    statusLine(stale: stale)
-                    if let progress = activity.progress, !activity.isEnded {
-                        ProgressView(value: progress)
-                            .progressViewStyle(.linear)
-                            .tint(.white)
-                            .controlSize(.small)
-                            .padding(.top, 2)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                dismissButton
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(.white.opacity(isHovering ? 0.09 : 0.06))
-        )
-        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .onTapGesture(perform: onClick)
-        .onHover { hovering in
-            withAnimation(.smooth(duration: 0.15)) { isHovering = hovering }
-        }
-    }
-
-    private var titleLine: some View {
-        HStack(spacing: 6) {
-            Text(activity.displayTitle)
-                .font(.system(size: 12.5, weight: .semibold))
-                .foregroundStyle(.white)
-                .lineLimit(1)
-            if activity.clickTarget != nil {
-                Image(systemName: "arrow.up.forward")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(.gray)
-                    .opacity(isHovering ? 1 : 0)
-            }
-            Spacer(minLength: 4)
-            if let timer = activity.timer, !activity.isEnded {
-                ActivityTimerText(timer: timer)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.gray)
-            } else {
-                Text(activity.startedAt, format: .relative(presentation: .named))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.gray)
-                    .lineLimit(1)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func statusLine(stale: Bool) -> some View {
-        HStack(spacing: 4) {
-            if activity.isEnded {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                Text(activity.state ?? String(localized: "Ended"))
-            } else {
-                if let state = activity.state {
-                    Text(state)
-                }
-                if stale {
-                    Text(activity.state == nil ? "No update for a while" : "· no update for a while")
-                        .foregroundStyle(.orange.opacity(0.8))
-                }
-                if let progress = activity.progress {
-                    Spacer(minLength: 4)
-                    Text(ActivityDetail.percent(progress))
-                        .monospacedDigit()
-                }
-            }
-        }
-        .font(.system(size: 11.5))
-        .foregroundStyle(.gray)
-        .lineLimit(1)
-    }
-
-    private var dismissButton: some View {
-        Button(action: onDismiss) {
-            Image(systemName: "xmark")
-                .font(.system(size: 9, weight: .bold))
-                .foregroundStyle(.gray)
-                .frame(width: 18, height: 18)
-                .background(Circle().fill(.white.opacity(0.08)))
-        }
-        .buttonStyle(.plain)
-        .opacity(isHovering ? 1 : 0)
-        .accessibilityLabel(Text("Dismiss"))
     }
 }
 

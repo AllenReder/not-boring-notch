@@ -246,8 +246,6 @@ extension Defaults.Keys {
     static let notchChannelPort = Key<Int>("reminderChannelPort", default: 45999)
     static let notchChannelToken = Key<String>("reminderChannelToken", default: "")
     static let notchChannelKeepsHistory = Key<Bool>("notchChannelKeepsHistory", default: true)
-    /// Puts the music ahead of the Notch Channel's activities on the closed notch, instead of behind.
-    static let musicAheadOfActivities = Key<Bool>("musicAheadOfActivities", default: false)
 
     // MARK: Shelf
     static let notchShelf = Key<Bool>("boringShelf", default: true)

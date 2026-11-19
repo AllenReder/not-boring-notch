@@ -18,17 +18,7 @@ import Network
 ///     POST   /reminder                  v1, kept for the senders written against it
 ///     POST   /v2/notifications          deliver
 ///     DELETE /v2/notifications/{id}     withdraw, from the banner and the Inbox alike
-///     PUT    /v2/activities/{id}        start or update an activity
-///     POST   /v2/activities/{id}/end    end it
-///     DELETE /v2/activities/{id}        remove it at once
 final class ChannelServer {
-    /// What a sender asked of an activity.
-    enum ActivityRequest: Equatable {
-        case update(id: String, ActivityUpdate)
-        case end(id: String, ActivityUpdate, ActivityEnding)
-        case remove(id: String)
-    }
-
     enum State {
         case ready(port: UInt16)
         /// A human-readable reason the channel is not listening, for the Settings pane.
@@ -43,9 +33,6 @@ final class ChannelServer {
 
     /// The id of every notification its sender withdrew. Called on the listener's own queue.
     var onWithdraw: ((String) -> Void)?
-
-    /// Every activity request that parsed and authenticated. Called on the listener's own queue.
-    var onActivity: ((ActivityRequest) -> Void)?
 
     // Everything below is touched only on `queue`. `start` and `stop` hop onto it, so the token a
     // request is checked against can never be read halfway through being replaced.
@@ -288,28 +275,6 @@ final class ChannelServer {
             onWithdraw?(id)
             return .respond(Self.response(status: 200, reason: "OK",
                                          json: ["status": "withdrawn", "id": id]))
-        case let .removeActivity(id):
-            // Idempotent for the same reason.
-            onActivity?(.remove(id: id))
-            return .respond(Self.response(status: 200, reason: "OK",
-                                         json: ["status": "removed", "id": id]))
-        case let .updateActivity(id), let .endActivity(id):
-            if let refusal = Self.refusingBody(of: request) { return refusal }
-            do {
-                if route == .updateActivity(id: id) {
-                    onActivity?(.update(id: id, try ActivityUpdate.decode(request.body)))
-                    return .respond(Self.response(status: 202, reason: "Accepted",
-                                                 json: ["status": "updated", "id": id]))
-                }
-                let (update, ending) = try ActivityUpdate.decodeEnd(request.body)
-                onActivity?(.end(id: id, update, ending))
-                return .respond(Self.response(status: 202, reason: "Accepted",
-                                             json: ["status": "ended", "id": id]))
-            } catch let error as ChannelPayloadError {
-                return .respond(Self.describe(error))
-            } catch {
-                return Self.failure(400, "Bad Request", "malformed")
-            }
         case .deliverV1, .deliver:
             if let refusal = Self.refusingBody(of: request) { return refusal }
 
@@ -348,14 +313,10 @@ final class ChannelServer {
         case deliverV1
         case deliver
         case withdraw(id: String)
-        case updateActivity(id: String)
-        case endActivity(id: String)
-        case removeActivity(id: String)
         /// A path the channel serves, with a method it does not take there.
         case wrongMethod
 
         static let notificationsPath = "/v2/notifications"
-        static let activitiesPath = "/v2/activities"
 
         /// Nil for a path the channel does not serve at all.
         init?(method: String, path rawPath: String) {
@@ -372,19 +333,6 @@ final class ChannelServer {
                     return nil
                 }
                 self = method == "DELETE" ? .withdraw(id: id) : .wrongMethod
-            } else if path.hasPrefix(Self.activitiesPath + "/") {
-                var rest = String(path.dropFirst(Self.activitiesPath.count + 1))
-                let ends = rest.hasSuffix("/end")
-                if ends { rest.removeLast("/end".count) }
-                guard let id = Self.id(rest) else { return nil }
-
-                if ends {
-                    self = method == "POST" ? .endActivity(id: id) : .wrongMethod
-                } else if method == "PUT" {
-                    self = .updateActivity(id: id)
-                } else {
-                    self = method == "DELETE" ? .removeActivity(id: id) : .wrongMethod
-                }
             } else {
                 return nil
             }
@@ -426,8 +374,6 @@ final class ChannelServer {
             json["sound"] = sound
         case let .unknownLevel(level):
             json["level"] = level
-        case let .invalidNumber(field):
-            json["field"] = field
         default:
             break
         }

@@ -3,7 +3,7 @@
 //  NotBoringNotch
 //
 //  Settings for the Notch Channel: the port and token a client needs, where they are published,
-//  a way to see a notification and an activity without writing a client, and what the Inbox and
+//  a way to see a notification without writing a client, and what the Inbox and
 //  the closed notch do with what arrives.
 //
 
@@ -27,7 +27,7 @@ struct IntegrationsSettings: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Notch Channel")
                             .font(.headline)
-                        Text("Let a script, a hook or an agent show notifications and live activities in the notch. The channel listens on 127.0.0.1, so nothing on your network can reach it, and it needs the token below.")
+                        Text("Let a script, a hook or an agent show notifications in the notch. The channel listens on 127.0.0.1, so nothing on your network can reach it, and it needs the token below.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -48,7 +48,6 @@ struct IntegrationsSettings: View {
                 connectionSection
                 tryItSection
                 inboxSection
-                activitiesSection
             }
         }
         .formStyle(.grouped)
@@ -132,12 +131,11 @@ struct IntegrationsSettings: View {
                 Button("Copy Example") { copy(example(token: channel.token)) }
                 Spacer()
                 Button("Send Test Notification") { channel.deliver(testNotification) }
-                Button("Start Test Activity") { runTestActivity() }
             }
         } header: {
             Text("Try it")
         } footer: {
-            Text("The full protocol, activities included, is in docs/notch-channel.md.")
+            Text("The full protocol is in docs/notch-channel.md.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -163,29 +161,6 @@ struct IntegrationsSettings: View {
             }
         } header: {
             Text("Inbox")
-        }
-    }
-
-    private var activitiesSection: some View {
-        Section {
-            Defaults.Toggle(key: .musicAheadOfActivities) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Keep the music ahead of activities")
-                    Text("The closed notch shows two things at once. By default an activity takes the larger place and the music shrinks to its spectrum; this keeps the album art instead.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            HStack {
-                Text("Activities in progress: \(channel.activities.activities.count)")
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button("Dismiss All") { channel.dismissAllActivities() }
-                    .disabled(channel.activities.isEmpty)
-            }
-        } header: {
-            Text("Activities")
         }
     }
 
@@ -243,31 +218,6 @@ struct IntegrationsSettings: View {
             actions: [],
             deliveredAt: Date()
         )
-    }
-
-    /// The pane's own activity: a short task that makes progress and ends, as a sender's would.
-    private func runTestActivity() {
-        let id = "settings-test-activity"
-        var start = ActivityUpdate()
-        start.source = .set("settings")
-        start.icon = .set(.symbol("sparkles"))
-        start.title = .set(String(localized: "Test activity"))
-        start.state = .set(String(localized: "Working"))
-        start.progress = .set(0)
-        channel.handle(.update(id: id, start))
-
-        Task { @MainActor in
-            for step in 1 ... 5 {
-                try? await Task.sleep(for: .seconds(1.5))
-                var progress = ActivityUpdate()
-                progress.progress = .set(Double(step) / 5)
-                channel.handle(.update(id: id, progress))
-            }
-            var done = ActivityUpdate()
-            done.state = .set(String(localized: "Done"))
-            done.progress = .clear
-            channel.handle(.end(id: id, done, ActivityEnding(dismissAfter: 4, leavesNotification: false)))
-        }
     }
 
     // MARK: - Helpers

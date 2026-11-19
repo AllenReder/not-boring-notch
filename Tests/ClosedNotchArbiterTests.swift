@@ -27,10 +27,6 @@ struct ClosedNotchArbiterTests {
         testTheMusicAndTheFaceAsBefore()
         testAnExpansionKeepsResidentsAway()
         testFullscreenHidesResidents()
-        testAnActivityGoesAheadOfTheMusic()
-        testANewTrackAndMusicFirstPutTheMusicAhead()
-        testActivitiesRankByRelevanceThenRecency()
-        testOnlyTwoResidentsAreOnTheClosedNotch()
         print("✅ ClosedNotchArbiterTests: all passed")
     }
 
@@ -49,7 +45,6 @@ struct ClosedNotchArbiterTests {
     static func name(_ r: NotchResident) -> String {
         switch r {
         case .music: return "music"
-        case .activity(let id): return id
         }
     }
 
@@ -62,10 +57,6 @@ struct ClosedNotchArbiterTests {
                             sound: .none, open: nil, actions: [], deliveredAt: Date())
     }
 
-    static func activity(_ id: String, relevance: Double = 0.5, updated: TimeInterval = 0) -> ActivityStanding {
-        ActivityStanding(id: id, relevance: relevance, updatedAt: Date(timeIntervalSince1970: updated))
-    }
-
     static var playing: ClosedNotchSituation {
         var s = ClosedNotchSituation()
         s.musicPresent = true
@@ -74,11 +65,10 @@ struct ClosedNotchArbiterTests {
         return s
     }
 
-    // MARK: - What the notch did before activities
+    // MARK: - What the notch does
 
     static func testInterruptionsWinInOrder() {
         var s = playing
-        s.activities = [activity("a")]
         s.banner = banner("b")
         checkArbiter(resolve(s), "banner:b", "a banner interrupts every resident")
         s.inlineHUD = true
@@ -106,7 +96,6 @@ struct ClosedNotchArbiterTests {
 
     static func testAnExpansionKeepsResidentsAway() {
         var s = playing
-        s.activities = [activity("a")]
         s.otherExpansion = true
         checkArbiter(resolve(s), "nothing", "a download's expansion owns the notch while it lasts")
 
@@ -118,55 +107,9 @@ struct ClosedNotchArbiterTests {
 
     static func testFullscreenHidesResidents() {
         var s = playing
-        s.activities = [activity("a")]
         s.hideOnClosed = true
         checkArbiter(resolve(s), "nothing", "residents hide in fullscreen")
         s.banner = banner("t")
         checkArbiter(resolve(s), "banner:t", "a banner that got through its own filter still shows")
-    }
-
-    // MARK: - Activities
-
-    static func testAnActivityGoesAheadOfTheMusic() {
-        var s = playing
-        s.activities = [activity("a")]
-        checkArbiter(resolve(s), "residents:a,music", "the activity takes compact, the music minimal")
-
-        var silent = ClosedNotchSituation()
-        silent.faceEnabled = true
-        silent.activities = [activity("a")]
-        checkArbiter(resolve(silent), "residents:a", "an activity instead of the face")
-    }
-
-    static func testANewTrackAndMusicFirstPutTheMusicAhead() {
-        var s = playing
-        s.activities = [activity("a")]
-        s.musicExpansion = true
-        checkArbiter(resolve(s), "residents:music,a", "a new track is announced in compact")
-
-        s.musicExpansion = false
-        s.musicAnnounced = true
-        checkArbiter(resolve(s), "residents:music,a", "and so is one announced in the standard style")
-
-        s.musicAnnounced = false
-        s.musicFirst = true
-        checkArbiter(resolve(s), "residents:music,a", "the user put the music first")
-    }
-
-    static func testActivitiesRankByRelevanceThenRecency() {
-        var s = ClosedNotchSituation()
-        s.activities = [activity("old", updated: 1), activity("new", updated: 2)]
-        checkArbiter(resolve(s), "residents:new,old", "equal relevance: the most recently updated first")
-
-        s.activities.append(activity("urgent", relevance: 0.9, updated: 0))
-        checkArbiter(resolve(s), "residents:urgent,new", "higher relevance first, whatever its age")
-    }
-
-    static func testOnlyTwoResidentsAreOnTheClosedNotch() {
-        var s = playing
-        s.activities = [activity("a", updated: 2), activity("b", updated: 1)]
-        checkArbiter(resolve(s), "residents:a,b", "two activities push the music to the open notch")
-        checkArbiter(ClosedNotchArbiter.rankedResidents(s).map(name).joined(separator: ","), "a,b,music",
-                     "where it is still ranked last")
     }
 }

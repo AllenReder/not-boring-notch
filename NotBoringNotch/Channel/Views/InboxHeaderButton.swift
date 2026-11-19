@@ -18,8 +18,7 @@ struct InboxHeaderButton: View {
     @ObservedObject private var coordinator = NotchViewCoordinator.shared
     @Default(.notchChannelEnabled) private var isEnabled
 
-    /// There when the Inbox has something in it, an activity or a notification — and while it is
-    /// open, so clearing the last
+    /// There when the Inbox has something in it, and while it is open, so clearing the last
     /// notification does not pull the button out from under the pointer.
     static func isShown(enabled: Bool, inboxIsEmpty: Bool, currentView: NotchViews) -> Bool {
         enabled && (!inboxIsEmpty || currentView == .inbox)
@@ -29,7 +28,7 @@ struct InboxHeaderButton: View {
 
     var body: some View {
         if Self.isShown(enabled: isEnabled,
-                        inboxIsEmpty: channel.inbox.isEmpty && channel.activities.isEmpty,
+                        inboxIsEmpty: channel.inbox.isEmpty,
                         currentView: coordinator.currentView) {
             Button {
                 withAnimation(.smooth) {

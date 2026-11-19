@@ -37,7 +37,7 @@ https://github.com/user-attachments/assets/df591b2b-1527-474d-a16f-4bf9b10d9573
 - 💎 **流体玻璃质感 (Liquid Glass Surface)**：基于原生 CoreAnimation GPU 光线折射着色器开发，拥有亚像素级色散效果与零模糊的高保真清澈透亮感。
 - 🚀 **应用启动器 (App Launcher)**：`⌥Space` 唤起应用搜索，敲几个字母、回车即可打开。五种名称匹配规则、中文名可按读音搜索、系统级最近使用，以及独立的设置面板。
 - 📊 **系统监控标签页 (Stats Tab)**：可选开启的 CPU、GPU、内存、温度、网络、磁盘六张实时卡片，每张都带历史走势迷你图。仅在标签页可见时采样，且全程在 App Sandbox 内。
-- 🔔 **刘海通道 (Notch Channel)**：允许命令行脚本、自动化钩子和各类 AI Agent 通过本地 HTTP 端口（`127.0.0.1:45999`）向刘海发送通知。通知先以横幅从闭合刘海两侧滑出，随后留在 Inbox 标签页里，直到你清除它，或点击它跳回来源（终端、编辑器、网页）。支持打扰级别、相同 `id` 原地更新、发送方撤回，以及最多三个操作按钮。对于正在进行的事（agent 会话、构建、倒计时），activity 会常驻在闭合刘海上原地更新，并与音乐共享位置。详见 [docs/notch-channel.md](docs/notch-channel.md)。
+- 🔔 **刘海通道 (Notch Channel)**：允许命令行脚本、自动化钩子和各类 AI Agent 通过本地 HTTP 端口（`127.0.0.1:45999`）向刘海发送通知。通知先以横幅从闭合刘海两侧滑出，随后留在 Inbox 标签页里，直到你清除它，或点击它跳回来源（终端、编辑器、网页）。支持打扰级别、相同 `id` 原地更新、发送方撤回，以及最多三个操作按钮。详见 [docs/notch-channel.md](docs/notch-channel.md)。
 - 🎵 **强大的媒体中心 (Media Powerhouse)**：深度集成 Apple Music、Spotify 与 YouTube Music。支持逐字实时歌词、高帧率动态音频频谱仪，以及取自封面配色的氛围光晕。
 - 📆 **日历与系统提醒 (Calendar & Reminders)**：完整的月历视图、即将开始的日程，以及可直接在刘海内勾选完成的系统待办事项。
 - 📚 **文件置物架 (File Shelf)**：拖拽文件至刘海即可临时置顶暂存，支持空格快速预览（Quick Look），可随时拖出至任意位置或通过 AirDrop 快速分享。
