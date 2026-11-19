@@ -56,7 +56,46 @@ struct BannerQueueTestsRunner {
         testRemovingWithdrawsVisibleOrWaiting()
         testTheInboxKeepsNewestFirstAndReplacesByID()
         testTheInboxForgetsPastCapacity()
+        testAWaiterThatBecomesTimeSensitiveMovesUp()
+        testFullscreenLetsTimeSensitiveThrough()
+        testDurationsAreKeptInRange()
         print("✅ BannerQueueTests: all passed")
+    }
+
+    /// Reposting a waiter at a new level is a new place in line, not the old one.
+    static func testAWaiterThatBecomesTimeSensitiveMovesUp() {
+        var queue = BannerQueue()
+        queue.enqueue(reminder("a"))
+        queue.enqueue(reminder("b"))
+        queue.enqueue(reminder("c"))
+        queue.enqueue(reminder("c", "c now", level: .timeSensitive))
+        checkQueue(visibleAndWaiting(queue).1, ["c", "b"], "promoted ahead of b")
+
+        queue.enqueue(reminder("b", "b again"))
+        checkQueue(visibleAndWaiting(queue).1, ["c", "b"], "a same-level replacement keeps its place")
+    }
+
+    /// An ordinary banner that fullscreen keeps off screen steps back for a time-sensitive one.
+    static func testFullscreenLetsTimeSensitiveThrough() {
+        var queue = BannerQueue()
+        queue.enqueue(reminder("a"))
+        queue.enqueue(reminder("b"))
+        queue.enqueue(reminder("t1", level: .timeSensitive))
+        queue.enqueue(reminder("t2", level: .timeSensitive))
+
+        checkQueue(queue.yieldToTimeSensitive(), "a time-sensitive banner was waiting")
+        checkQueue(visibleAndWaiting(queue).0, ["t1"], "it is shown")
+        checkQueue(visibleAndWaiting(queue).1, ["t2", "a", "b"],
+                   "the ordinary one goes back behind the time-sensitive ones, ahead of the rest")
+        checkQueue(!queue.yieldToTimeSensitive(), "a time-sensitive banner does not step back")
+    }
+
+    static func testDurationsAreKeptInRange() {
+        checkQueue(ChannelNotification.duration(nil) == ChannelNotification.defaultDuration, "default")
+        checkQueue(ChannelNotification.duration(1e300) == 60, "a huge duration is a minute")
+        checkQueue(ChannelNotification.duration(-5) == 1, "a negative one is a second")
+        let decoded = try? ChannelNotification.decode(Data(#"{"title":"t","duration":1e300}"#.utf8))
+        checkQueue(decoded?.duration == 60, "applied when decoding")
     }
 
     static func reminder(_ id: String, _ title: String? = nil,

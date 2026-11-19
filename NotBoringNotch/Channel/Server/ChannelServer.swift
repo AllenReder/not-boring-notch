@@ -47,10 +47,21 @@ final class ChannelServer {
     /// Every activity request that parsed and authenticated. Called on the listener's own queue.
     var onActivity: ((ActivityRequest) -> Void)?
 
+    // Everything below is touched only on `queue`. `start` and `stop` hop onto it, so the token a
+    // request is checked against can never be read halfway through being replaced.
     private let queue = DispatchQueue(label: "com.allenreder.notboringnotch.notch-channel")
     private var listener: NWListener?
     private var token = ""
     private var requestedPort: UInt16 = 0
+    /// The connections still being read or answered, so `stop` can end them too.
+    private var connections: [ObjectIdentifier: NWConnection] = [:]
+    /// Bumped by every `stop`. A connection accepted under an older generation belongs to a
+    /// listener that has been stopped, and nothing it carries is delivered.
+    private var generation = 0
+
+    /// How long a peer has to send a whole request. Counting reads alone would let one that sends
+    /// a byte and then nothing hold its connection open forever.
+    private static let readDeadline: DispatchTimeInterval = .seconds(10)
 
     /// The body sits inside this, plus room for the request line and headers.
     private static let maximumHeaderBytes = 8 * 1024
@@ -59,6 +70,14 @@ final class ChannelServer {
     private static let maximumReceives = 512
 
     func start(port: UInt16, token: String) {
+        queue.sync { startOnQueue(port: port, token: token) }
+    }
+
+    func stop() {
+        queue.sync { stopOnQueue() }
+    }
+
+    private func startOnQueue(port: UInt16, token: String) {
         // Same socket, so there is nothing to rebind. A new Channel Token is not a new socket:
         // keep listening and start refusing the old token instead.
         if listener != nil, requestedPort == port {
@@ -66,7 +85,7 @@ final class ChannelServer {
             return
         }
 
-        stop()
+        stopOnQueue()
         self.token = token
         self.requestedPort = port
 
@@ -87,10 +106,16 @@ final class ChannelServer {
         }
 
         listener.newConnectionHandler = { [weak self] connection in
-            self?.accept(connection)
+            guard let self, self.listener === listener else {
+                connection.cancel()
+                return
+            }
+            self.accept(connection)
         }
         listener.stateUpdateHandler = { [weak self] state in
-            guard let self else { return }
+            // A listener already replaced has nothing left to report, and stopping on its behalf
+            // would stop its successor.
+            guard let self, self.listener === listener else { return }
             switch state {
             case .ready:
                 // The port the socket actually took, which is what a caller asking for port 0 needs
@@ -98,7 +123,7 @@ final class ChannelServer {
                 self.onStateChange?(.ready(port: listener.port?.rawValue ?? port))
             case let .failed(error):
                 self.onStateChange?(.failed(Self.stoppedMessage(error, port: port)))
-                self.stop()
+                self.stopOnQueue()
             default:
                 break
             }
@@ -107,9 +132,12 @@ final class ChannelServer {
         self.listener = listener
     }
 
-    func stop() {
+    private func stopOnQueue() {
+        generation += 1
         listener?.cancel()
         listener = nil
+        connections.values.forEach { $0.cancel() }
+        connections.removeAll()
     }
 
     /// Why a listener that was running stopped, phrased for the Settings pane.
@@ -129,8 +157,21 @@ final class ChannelServer {
             connection.cancel()
             return
         }
+        let key = ObjectIdentifier(connection)
+        connections[key] = connection
         connection.start(queue: queue)
-        receive(connection, buffer: Data(), receives: 0)
+        queue.asyncAfter(deadline: .now() + Self.readDeadline) { [weak self] in
+            // Still here means the request never finished arriving.
+            guard let self, self.connections[key] != nil else { return }
+            self.finish(connection)
+        }
+        receive(connection, buffer: Data(), receives: 0, generation: generation)
+    }
+
+    /// Ends a connection and forgets it.
+    private func finish(_ connection: NWConnection) {
+        connection.cancel()
+        connections[ObjectIdentifier(connection)] = nil
     }
 
     private func isLoopback(_ endpoint: NWEndpoint) -> Bool {
@@ -147,11 +188,17 @@ final class ChannelServer {
         }
     }
 
-    private func receive(_ connection: NWConnection, buffer: Data, receives: Int) {
+    private func receive(_ connection: NWConnection, buffer: Data, receives: Int, generation: Int) {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) {
             [weak self] chunk, _, isComplete, error in
             guard let self else {
                 connection.cancel()
+                return
+            }
+            // Accepted before the channel was stopped or moved: whatever it asks, the answer is
+            // no answer.
+            guard generation == self.generation else {
+                self.finish(connection)
                 return
             }
 
@@ -168,21 +215,27 @@ final class ChannelServer {
                 send(response, on: connection)
             case .needMore:
                 if isComplete || error != nil {
-                    connection.cancel()
+                    finish(connection)
                 } else if receives >= Self.maximumReceives {
                     send(status: 400, reason: "Bad Request", json: ["error": "malformed"], on: connection)
                 } else {
                     // Hop through the queue rather than recursing, so a peer that sends one byte
                     // per packet cannot grow the stack.
-                    queue.async { self.receive(connection, buffer: buffer, receives: receives + 1) }
+                    queue.async {
+                        self.receive(connection, buffer: buffer, receives: receives + 1, generation: generation)
+                    }
                 }
             }
         }
     }
 
     private func send(_ response: Data, on connection: NWConnection) {
-        connection.send(content: response, completion: .contentProcessed { _ in
-            connection.cancel()
+        connection.send(content: response, completion: .contentProcessed { [weak self] _ in
+            guard let self else {
+                connection.cancel()
+                return
+            }
+            self.finish(connection)
         })
     }
 
@@ -203,8 +256,14 @@ final class ChannelServer {
     }
 
     private func progress(for buffer: Data) -> Progress {
-        guard let request = parse(buffer) else {
+        let request: Request
+        switch parse(buffer) {
+        case .incomplete:
             return .needMore
+        case let .refused(refusal):
+            return refusal
+        case let .complete(parsed):
+            request = parsed
         }
 
         guard let route = Route(method: request.method, path: request.path) else {
@@ -379,35 +438,64 @@ final class ChannelServer {
         return response(status: 413, reason: "Payload Too Large", json: json)
     }
 
-    /// Reads as much of a request as has arrived, or nil if it is still incomplete.
-    private func parse(_ buffer: Data) -> Request? {
-        guard let headerEnd = buffer.range(of: Data("\r\n\r\n".utf8)) else { return nil }
+    private enum Parsed {
+        /// The headers, or the body they announce, have not arrived in full yet.
+        case incomplete
+        /// The framing itself is wrong, so there is no request to route.
+        case refused(Progress)
+        case complete(Request)
+    }
+
+    /// Reads as much of a request as has arrived.
+    ///
+    /// The framing is settled the moment the headers are complete, before any body is waited for:
+    /// a length that cannot be a length, two lengths that disagree, or a transfer encoding we do
+    /// not speak is refused, and a body announced as too large is refused without reading it.
+    private func parse(_ buffer: Data) -> Parsed {
+        guard let headerEnd = buffer.range(of: Data("\r\n\r\n".utf8)) else { return .incomplete }
 
         let headerText = String(decoding: buffer[..<headerEnd.lowerBound], as: UTF8.self)
         var lines = headerText.components(separatedBy: "\r\n")
-        guard !lines.isEmpty else { return nil }
-
-        let requestLine = lines.removeFirst().split(separator: " ")
-        guard requestLine.count >= 2 else { return nil }
+        let requestLine = lines.isEmpty ? [] : lines.removeFirst().split(separator: " ")
+        guard requestLine.count >= 2 else {
+            return .refused(Self.failure(400, "Bad Request", "malformed"))
+        }
 
         var headers: [String: String] = [:]
+        var lengths: Set<String> = []
         for line in lines {
             guard let colon = line.firstIndex(of: ":") else { continue }
             let name = line[..<colon].trimmingCharacters(in: .whitespaces).lowercased()
             let value = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
+            if name == "content-length" { lengths.insert(value) }
             headers[name] = value
         }
 
-        let contentLength = headers["content-length"].flatMap(Int.init)
+        guard headers["transfer-encoding"] == nil, lengths.count <= 1 else {
+            return .refused(Self.failure(400, "Bad Request", "malformed"))
+        }
+        var contentLength: Int?
+        if let declared = lengths.first {
+            // Digits only: `Int("-1")` and `Int("+1")` both parse, and neither is a length.
+            guard !declared.isEmpty, declared.allSatisfy(\.isASCII), declared.allSatisfy(\.isNumber),
+                  let length = Int(declared) else {
+                return .refused(Self.failure(400, "Bad Request", "malformed"))
+            }
+            guard length <= ChannelNotification.maximumPayloadBytes else {
+                return .refused(Self.failure(413, "Payload Too Large", "too_large"))
+            }
+            contentLength = length
+        }
+
         let bodyStart = headerEnd.upperBound
         let declaredLength = contentLength ?? 0
-        guard buffer.count - bodyStart >= declaredLength else { return nil }
+        guard buffer.count - bodyStart >= declaredLength else { return .incomplete }
 
-        return Request(method: String(requestLine[0]),
-                       path: String(requestLine[1]),
-                       headers: headers,
-                       contentLength: contentLength,
-                       body: buffer[bodyStart ..< bodyStart + declaredLength])
+        return .complete(Request(method: String(requestLine[0]),
+                                 path: String(requestLine[1]),
+                                 headers: headers,
+                                 contentLength: contentLength,
+                                 body: buffer[bodyStart ..< bodyStart + declaredLength]))
     }
 
     private func send(status: Int, reason: String, json: [String: String], on connection: NWConnection) {

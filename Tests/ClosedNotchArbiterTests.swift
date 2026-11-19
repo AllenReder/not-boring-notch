@@ -145,6 +145,10 @@ struct ClosedNotchArbiterTests {
         checkArbiter(resolve(s), "residents:music,a", "a new track is announced in compact")
 
         s.musicExpansion = false
+        s.musicAnnounced = true
+        checkArbiter(resolve(s), "residents:music,a", "and so is one announced in the standard style")
+
+        s.musicAnnounced = false
         s.musicFirst = true
         checkArbiter(resolve(s), "residents:music,a", "the user put the music first")
     }

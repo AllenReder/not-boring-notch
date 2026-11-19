@@ -84,14 +84,25 @@ final class NotchChannel: ObservableObject {
         guard !started else { return }
         started = true
 
+        // A request accepted just before the channel was turned off arrives here just after. The
+        // check is made on arrival, so turning the channel off cannot be undone by a late delivery.
         server.onNotification = { [weak self] notification in
-            Task { @MainActor in self?.deliver(notification) }
+            Task { @MainActor in
+                guard let self, self.isEnabled else { return }
+                self.deliver(notification)
+            }
         }
         server.onWithdraw = { [weak self] id in
-            Task { @MainActor in self?.withdraw(id: id) }
+            Task { @MainActor in
+                guard let self, self.isEnabled else { return }
+                self.withdraw(id: id)
+            }
         }
         server.onActivity = { [weak self] request in
-            Task { @MainActor in self?.handle(request) }
+            Task { @MainActor in
+                guard let self, self.isEnabled else { return }
+                self.handle(request)
+            }
         }
         server.onStateChange = { [weak self] state in
             Task { @MainActor in self?.apply(state) }
@@ -276,10 +287,13 @@ final class NotchChannel: ObservableObject {
     // MARK: - Delivery
 
     func deliver(_ notification: ChannelNotification) {
+        let leavesTheBanner = notification.level == .passive || isInboxOnScreen
+        if leavesTheBanner, banners.visible?.id == notification.id { resetClock() }
+
         withAnimation(.smooth(duration: 0.35)) {
             inbox.deliver(notification, read: isInboxOnScreen)
 
-            if notification.level == .passive || isInboxOnScreen {
+            if leavesTheBanner {
                 // Either it never asked for a banner, or the user is already reading the list it
                 // just landed in. A banner it may have had under this id goes too.
                 banners.remove(id: notification.id)
@@ -392,9 +406,27 @@ final class NotchChannel: ObservableObject {
         dismissTask?.cancel()
         dismissTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(notification.duration))
-            guard !Task.isCancelled else { return }
-            self?.endTurn()
+            // Only the clock of the banner still on screen ends a turn. One whose banner was
+            // replaced or withdrawn meanwhile must not end its successor's.
+            guard !Task.isCancelled, let self, self.clocked == notification,
+                  self.banners.visible == notification else { return }
+            self.endTurn()
         }
+    }
+
+    /// The notch is hiding ordinary banners (fullscreen). A time-sensitive one waiting behind an
+    /// ordinary one that cannot be shown is let through instead of waiting for fullscreen to end.
+    /// Only a banner whose clock has not started steps back: one already on screen has been seen.
+    func letTimeSensitiveThrough() {
+        guard let visible = banners.visible, clocked?.id != visible.id else { return }
+        withAnimation(.smooth(duration: 0.35)) {
+            _ = banners.yieldToTimeSensitive()
+        }
+    }
+
+    /// Whether a time-sensitive banner is waiting behind the one on screen.
+    var hasTimeSensitiveWaiting: Bool {
+        banners.waiting.contains { $0.level == .timeSensitive }
     }
 
     private func endTurn() {

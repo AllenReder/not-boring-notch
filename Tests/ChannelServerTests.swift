@@ -84,6 +84,41 @@ func checkServerFreePort() -> UInt16? {
     return UInt16(bigEndian: address.sin_port)
 }
 
+/// Sends `request` byte for byte — framing URLSession would never produce — and returns the
+/// response's status line, or "" if the server closed without answering.
+func checkServerRaw(_ request: String, port: UInt16) -> String {
+    let handle = socket(AF_INET, SOCK_STREAM, 0)
+    guard handle >= 0 else { return "" }
+    defer { close(handle) }
+
+    var timeout = timeval(tv_sec: 5, tv_usec: 0)
+    setsockopt(handle, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
+
+    var address = sockaddr_in()
+    address.sin_family = sa_family_t(AF_INET)
+    address.sin_port = port.bigEndian
+    address.sin_addr.s_addr = inet_addr("127.0.0.1")
+    let connected = withUnsafePointer(to: &address) {
+        $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+            connect(handle, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+        }
+    }
+    guard connected == 0 else { return "" }
+
+    let bytes = Array(request.utf8)
+    _ = bytes.withUnsafeBytes { send(handle, $0.baseAddress, bytes.count, 0) }
+
+    var response = Data()
+    var chunk = [UInt8](repeating: 0, count: 4096)
+    while true {
+        let count = recv(handle, &chunk, chunk.count, 0)
+        if count <= 0 { break }
+        response.append(contentsOf: chunk[0 ..< count])
+    }
+    let text = String(decoding: response, as: UTF8.self)
+    return text.components(separatedBy: "\r\n").first ?? ""
+}
+
 @main
 struct ChannelServerTestsRunner {
     static func main() {
@@ -92,6 +127,8 @@ struct ChannelServerTestsRunner {
         testAChangedPortIsRebound()
         testTheRoutes()
         testTheActivityRoutes()
+        testBadFramingIsRefusedBeforeTheBody()
+        testStoppingEndsAcceptedConnections()
         print("✅ ChannelServerTests: all passed")
     }
 
@@ -258,6 +295,78 @@ struct ChannelServerTestsRunner {
                                "withdraw claude:42", "withdraw never-sent"],
                     "exactly the authorised, well-formed requests reach the notch, got \(events)")
         server.stop()
+    }
+
+    /// Framing is settled from the headers alone. A negative length used to reach a range
+    /// constructor and trap the whole app, before the token was even looked at.
+    static func testBadFramingIsRefusedBeforeTheBody() {
+        guard let port = checkServerFreePort() else {
+            print("⚠️  could not find a free port, skipping")
+            return
+        }
+        let server = ChannelServer()
+        let recorder = ServerStateRecorder()
+        server.onStateChange = { recorder.record(String(describing: $0)) }
+        server.start(port: port, token: "token")
+        checkServer(recorder.wait(until: { $0.contains { $0.hasPrefix("ready") } })
+                        .contains { $0.hasPrefix("ready") }, "listening")
+
+        let head = "POST /v2/notifications HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\n"
+        let cases: [(String, String, String)] = [
+            ("Content-Length: -1\r\n\r\n", "400", "a negative length"),
+            ("Content-Length: +5\r\n\r\n", "400", "a signed length"),
+            ("Content-Length: 5\r\nContent-Length: 6\r\n\r\n{}", "400", "two lengths that disagree"),
+            ("Transfer-Encoding: chunked\r\n\r\n0\r\n\r\n", "400", "a transfer encoding"),
+            ("Content-Length: 999999\r\n\r\n", "413", "a body announced too large, refused unread"),
+        ]
+        for (rest, status, what) in cases {
+            let line = checkServerRaw(head + rest, port: port)
+            checkServer(line.contains(" \(status) "), "\(what): got \(line)")
+        }
+
+        let (status, _) = request("POST", "/v2/notifications", port: port, body: #"{"title":"t"}"#)
+        checkServer(status == 202, "and the server is still up, got \(status)")
+        server.stop()
+    }
+
+    /// A request already accepted when the channel stops is ended, not delivered afterwards.
+    static func testStoppingEndsAcceptedConnections() {
+        guard let port = checkServerFreePort() else {
+            print("⚠️  could not find a free port, skipping")
+            return
+        }
+        let server = ChannelServer()
+        let recorder = ServerStateRecorder()
+        let delivered = ServerStateRecorder()
+        server.onStateChange = { recorder.record(String(describing: $0)) }
+        server.onNotification = { delivered.record($0.id) }
+        server.start(port: port, token: "token")
+        checkServer(recorder.wait(until: { $0.contains { $0.hasPrefix("ready") } })
+                        .contains { $0.hasPrefix("ready") }, "listening")
+
+        // Headers now, the body after the stop.
+        let handle = socket(AF_INET, SOCK_STREAM, 0)
+        var address = sockaddr_in()
+        address.sin_family = sa_family_t(AF_INET)
+        address.sin_port = port.bigEndian
+        address.sin_addr.s_addr = inet_addr("127.0.0.1")
+        _ = withUnsafePointer(to: &address) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                connect(handle, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+            }
+        }
+        let body = #"{"id":"late","title":"t"}"#
+        let head = "POST /v2/notifications HTTP/1.1\r\nAuthorization: Bearer token\r\n" +
+            "Content-Type: application/json\r\nContent-Length: \(body.utf8.count)\r\n\r\n"
+        _ = Array(head.utf8).withUnsafeBytes { send(handle, $0.baseAddress, $0.count, 0) }
+        Thread.sleep(forTimeInterval: 0.3)
+        server.stop()
+        _ = Array(body.utf8).withUnsafeBytes { send(handle, $0.baseAddress, $0.count, 0) }
+        Thread.sleep(forTimeInterval: 0.5)
+        close(handle)
+
+        checkServer(delivered.wait(until: { !$0.isEmpty }, timeout: 1).isEmpty,
+                    "nothing is delivered after the stop")
     }
 
     static func testTheActivityRoutes() {

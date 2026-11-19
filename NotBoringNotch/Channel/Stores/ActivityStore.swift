@@ -55,6 +55,14 @@ struct ActivityStore: Equatable {
                       now: Date) -> ChannelActivity? {
         if activity(id: id) == nil {
             guard case .set = update.title else { return nil }
+            if ending.dismissAfter == 0 {
+                // It would leave as soon as it arrived, so it does not take a place — or push out an
+                // activity still running — on the way.
+                var ended = ChannelActivity(id: id, startedAt: now)
+                ended.apply(update, now: now)
+                ended.end(ending, now: now)
+                return ended
+            }
         }
         self.update(id: id, with: update, now: now)
 

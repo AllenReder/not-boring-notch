@@ -70,8 +70,10 @@ struct ClosedNotchSituation {
     /// One of the notch's system expansions other than the music's (a download, the battery) is
     /// on screen. It keeps the residents and the face away while it lasts.
     var otherExpansion = false
-    /// The music's own expansion — a new track being announced — is on screen.
+    /// The music's own expansion — a new track being announced in the inline style — is on screen.
     var musicExpansion = false
+    /// A new track is being announced in the standard style, below the notch.
+    var musicAnnounced = false
 
     /// Something is playing, or paused but not idle, and the music's live activity is turned on.
     var musicPresent = false
@@ -112,7 +114,7 @@ enum ClosedNotchArbiter {
 
         var ranked: [NotchResident] = rank(s.activities).map { .activity(id: $0.id) }
         if s.musicPresent {
-            if s.musicFirst || s.musicExpansion {
+            if s.musicFirst || s.musicExpansion || s.musicAnnounced {
                 ranked.insert(.music, at: 0)
             } else {
                 ranked.append(.music)

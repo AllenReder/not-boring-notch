@@ -87,13 +87,20 @@ struct ContentView: View {
         return banner
     }
 
-    /// The banner the closed notch would draw. One that arrives while fullscreen hides the notch
+    /// The banner the closed notch may draw. One that arrives while fullscreen hides the notch
     /// stays queued and unlit — its clock only starts when it is actually on screen — unless it is
     /// time-sensitive, which is what time-sensitive is for.
-    private var closedBanner: ChannelNotification? {
-        guard vm.notchState == .closed, let banner = screenBanner else { return nil }
+    private var drawableBanner: ChannelNotification? {
+        guard let banner = screenBanner else { return nil }
         guard !vm.hideOnClosed || banner.level == .timeSensitive else { return nil }
         return banner
+    }
+
+    /// Fullscreen is holding back the banner whose turn it is, while a time-sensitive one waits
+    /// behind it — which it must not.
+    private var timeSensitiveIsHeldBack: Bool {
+        vm.notchState == .closed && vm.hideOnClosed && screenBanner != nil && drawableBanner == nil
+            && channel.hasTimeSensitiveWaiting
     }
 
     /// Everything the closed notch's content depends on, for the arbiter to decide from.
@@ -104,9 +111,10 @@ struct ContentView: View {
             && Defaults[.showPowerStatusNotifications]
         s.inlineHUD = coordinator.sneakPeek.show && Defaults[.inlineHUD]
             && coordinator.sneakPeek.type != .music && coordinator.sneakPeek.type != .battery
-        s.banner = closedBanner
+        s.banner = drawableBanner
         s.otherExpansion = coordinator.expandingView.show && coordinator.expandingView.type != .music
         s.musicExpansion = coordinator.expandingView.show && coordinator.expandingView.type == .music
+        s.musicAnnounced = coordinator.sneakPeek.show && coordinator.sneakPeek.type == .music
         s.musicPresent = (musicManager.isPlaying || !musicManager.isPlayerIdle)
             && coordinator.musicLiveActivityEnabled
         s.playerIdle = !musicManager.isPlaying && musicManager.isPlayerIdle
@@ -140,7 +148,16 @@ struct ContentView: View {
         let base = vm.closedNotchSize.width
         let squareWings = 2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20
 
-        switch closedContent {
+        var content = closedContent
+        if content == .inlineHUD {
+            // The HUD draws in the notch itself and claims no chin of its own; the chin stays the
+            // width of whatever it is drawn over, as it always has.
+            var beneath = closedSituation
+            beneath.inlineHUD = false
+            content = ClosedNotchArbiter.resolve(beneath)
+        }
+
+        switch content {
         case .batteryNotice:
             return 640
         case .banner(let banner):
@@ -257,6 +274,9 @@ struct ContentView: View {
                             }
                         }
                         followBanner(into: newState)
+                    }
+                    .onChange(of: timeSensitiveIsHeldBack, initial: true) { _, heldBack in
+                        if heldBack { channel.letTimeSensitiveThrough() }
                     }
                     .onChange(of: vm.isBatteryPopoverActive) {
                         if !vm.isBatteryPopoverActive && !isHovering && vm.notchState == .open && !SharingStateManager.shared.preventNotchClose && !Defaults[.preventAutoClose] {
@@ -647,9 +667,13 @@ struct ContentView: View {
     private func followBanner(into state: NotchState) {
         switch state {
         case .open:
-            guard channel.notchOpened(showingBanner: screenBanner),
-                  coordinator.currentView != .launcher,
-                  !vm.anyDropZoneTargeting else { return }
+            // An opening that chose its own tab is not the user reaching for the banner, and does
+            // not count as seeing it.
+            guard coordinator.currentView != .launcher, !vm.anyDropZoneTargeting else { return }
+            // The banner the closed notch was drawing a moment ago — not merely the one whose turn
+            // it is, which a HUD or the battery notice may have been covering.
+            guard case let .banner(shown) = ClosedNotchArbiter.resolve(closedSituation),
+                  channel.notchOpened(showingBanner: shown) else { return }
             coordinator.currentView = .inbox
         case .closed:
             channel.notchClosed()

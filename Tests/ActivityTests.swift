@@ -58,7 +58,30 @@ struct ActivityTests {
         testCapacityEvictsTheEndedThenTheNeglected()
         testStalenessAndTitles()
         testAlertsAndOutcomesShareOneNotification()
+        testEndingAnUnknownActivityAtOnceEvictsNobody()
+        testARestartGetsAFreshLifetime()
         print("✅ ActivityTests: all passed")
+    }
+
+    static func testEndingAnUnknownActivityAtOnceEvictsNobody() {
+        var store = ActivityStore()
+        for i in 0 ..< ActivityStore.capacity {
+            store.update(id: "a\(i)", with: update(#"{"title":"x"}"#), now: t0)
+        }
+        let ended = store.end(id: "flash", with: update(#"{"title":"Done"}"#),
+                              ending: ActivityEnding(dismissAfter: 0), now: t0 + 1)
+        checkActivity(ended?.isEnded == true, "its outcome is still returned")
+        checkActivity(store.activities.count, ActivityStore.capacity, "every running activity stays")
+    }
+
+    static func testARestartGetsAFreshLifetime() {
+        var store = ActivityStore()
+        let lifetime = ChannelActivity.maximumLifetime
+        store.update(id: "a", with: update(#"{"title":"x"}"#), now: t0)
+        store.end(id: "a", with: ActivityUpdate(), ending: ActivityEnding(), now: t0 + lifetime - 2)
+        store.update(id: "a", with: update(#"{"state":"again"}"#), now: t0 + lifetime - 1)
+        checkActivity(store.activity(id: "a")?.startedAt, t0 + lifetime - 1, "started anew")
+        checkActivity(store.sweep(now: t0 + lifetime + 1), [], "not swept on the old run's deadline")
     }
 
     static let t0 = Date(timeIntervalSince1970: 1_000_000)

@@ -51,7 +51,7 @@ struct ChannelActivity: Equatable, Identifiable {
     var relevance: Double = defaultRelevance
     var staleAfter: TimeInterval = defaultStaleAfter
     var open: ChannelOpenTarget?
-    let startedAt: Date
+    private(set) var startedAt: Date
     var updatedAt: Date
     var endedAt: Date?
     /// When an ended activity leaves the closed notch.
@@ -103,7 +103,9 @@ struct ChannelActivity: Equatable, Identifiable {
         case let .set(value): staleAfter = value
         }
         updatedAt = now
-        // An update after the end is the id being used again: it is in progress once more.
+        // An update after the end is the id being used again: it is in progress once more, with a
+        // lifetime of its own rather than whatever was left of the last one's.
+        if isEnded { startedAt = now }
         endedAt = nil
         dismissAt = nil
     }
@@ -263,7 +265,7 @@ struct ActivityUpdate: Equatable {
             decoded.body = ChannelNotification.nonEmpty(alert.body)
             decoded.level = try ChannelNotification.decodeLevel(alert.level)
             decoded.sound = try ChannelNotification.decodeSound(alert.sound)
-            decoded.duration = alert.duration ?? ChannelNotification.defaultDuration
+            decoded.duration = ChannelNotification.duration(alert.duration)
             return decoded
         }
         return (update, wire)

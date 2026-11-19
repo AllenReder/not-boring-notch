@@ -257,8 +257,11 @@ struct ActivityTimerText: View {
             case let .since(start):
                 Text(start, style: .timer)
             case let .until(end):
-                if end > Date() {
-                    Text(timerInterval: Date() ... end, countsDown: true)
+                // One reading of the clock for both the check and the range: two could straddle
+                // the deadline and build a range that ends before it starts.
+                let now = Date()
+                if end > now {
+                    Text(timerInterval: now ... end, countsDown: true)
                 } else {
                     Text(verbatim: "0:00")
                 }

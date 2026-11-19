@@ -27,7 +27,8 @@ struct BannerQueue {
     ///
     /// A repeated id replaces its banner where it stands: the one on screen stays on screen with
     /// its newer content, and a waiter keeps its place in line, so a chatty sender cannot jump
-    /// ahead of everyone else. A time-sensitive banner is the exception: it goes to the front.
+    /// ahead of everyone else. A time-sensitive banner is the exception: it goes to the front —
+    /// including a waiter that becomes time-sensitive when it is replaced.
     mutating func enqueue(_ notification: ChannelNotification) {
         if visible?.id == notification.id {
             visible = notification
@@ -36,8 +37,12 @@ struct BannerQueue {
         }
 
         if let index = waiting.firstIndex(where: { $0.id == notification.id }) {
-            waiting[index] = notification
-            return
+            if waiting[index].level == notification.level {
+                waiting[index] = notification
+                return
+            }
+            // A change of level is a change of place: take it out and queue it afresh.
+            waiting.remove(at: index)
         }
 
         if notification.level == .timeSensitive {
@@ -65,6 +70,24 @@ struct BannerQueue {
         } else {
             advance()
         }
+    }
+
+    /// The notch cannot show an ordinary banner right now (fullscreen), but a time-sensitive one may
+    /// be shown anyway. If the visible banner is not time-sensitive and one is waiting, they trade
+    /// places: the ordinary one goes back to the front of the line, unharmed — it was never seen —
+    /// and the time-sensitive one is shown. Returns whether anything changed.
+    @discardableResult
+    mutating func yieldToTimeSensitive() -> Bool {
+        guard let current = visible, current.level != .timeSensitive,
+              let index = waiting.firstIndex(where: { $0.level == .timeSensitive }) else {
+            return false
+        }
+        visible = waiting.remove(at: index)
+        isHolding = false
+        // Behind any other time-sensitive waiters, ahead of the rest.
+        let back = waiting.firstIndex { $0.level != .timeSensitive } ?? waiting.endIndex
+        waiting.insert(current, at: back)
+        return true
     }
 
     /// The user dismissed the visible banner, or looked at it.

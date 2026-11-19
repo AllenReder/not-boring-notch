@@ -22,6 +22,16 @@ struct ChannelNotification: Codable, Equatable, Hashable, Identifiable {
     /// How long a banner stays in the closed notch when its sender does not say.
     static let defaultDuration: TimeInterval = 4
 
+    /// The durations a sender may ask for. A banner is a moment, not a fixture: past a minute it
+    /// is the Inbox's job. Asking outside the range gets the nearest end of it, not a refusal.
+    static let durationRange: ClosedRange<TimeInterval> = 1 ... 60
+
+    /// A sender's requested duration, or the default, kept within `durationRange`.
+    static func duration(_ requested: TimeInterval?) -> TimeInterval {
+        guard let requested, requested.isFinite else { return defaultDuration }
+        return min(durationRange.upperBound, max(durationRange.lowerBound, requested))
+    }
+
     /// How many buttons a notification may carry besides its default action.
     static let maximumActions = 3
 
@@ -65,7 +75,7 @@ struct ChannelNotification: Codable, Equatable, Hashable, Identifiable {
             title: try requireTitle(payload.title),
             subtitle: nonEmpty(payload.subtitle),
             body: nonEmpty(payload.body),
-            duration: payload.duration ?? defaultDuration,
+            duration: duration(payload.duration),
             banner: (payload.sticky ?? false) ? .untilSeen : .temporary,
             sound: try decodeSound(payload.sound),
             open: nil,
@@ -93,7 +103,7 @@ struct ChannelNotification: Codable, Equatable, Hashable, Identifiable {
             title: try requireTitle(payload.title),
             subtitle: nonEmpty(payload.subtitle),
             body: nonEmpty(payload.body),
-            duration: payload.duration ?? defaultDuration,
+            duration: duration(payload.duration),
             banner: .temporary,
             sound: try decodeSound(payload.sound),
             open: try payload.open.map(decodeOpen),
