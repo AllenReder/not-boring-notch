@@ -44,6 +44,7 @@ struct EstimatedPositionTestsRunner {
         testEstimateIsDisplayedAfterTheWindow()
         testASeekTargetFromALongerTrackIsClamped()
         testAStaleReportDoesNotHoldTheSeekTarget()
+        testThePausedSettleWindowIsTheOnlyClockDependence()
         print("✅ EstimatedPositionTests: all passed")
     }
 
@@ -131,5 +132,21 @@ struct EstimatedPositionTestsRunner {
         checkTime(position.displayed(at: now, seekTarget: 5, isDragging: false,
                                      lastSeek: now.addingTimeInterval(-5)), 40,
                   "a five-second-old seek is over, however old the report is: the estimate takes the display back")
+    }
+
+    /// While paused, the only thing the clock changes on the slider is the end of the Seek
+    /// Settle Window. The progress slider's timeline keeps ticking while paused for exactly this
+    /// reason: a suspended schedule would never reach the end of the window (issue #23).
+    static func testThePausedSettleWindowIsTheOnlyClockDependence() {
+        let paused = playing(elapsed: 12, isPlaying: false)
+        checkTime(paused.displayed(at: now, seekTarget: 42, isDragging: false,
+                                   lastSeek: now.addingTimeInterval(-0.5)), 42,
+                  "inside the window a paused seek still displays its target")
+        checkTime(paused.displayed(at: now, seekTarget: 42, isDragging: false,
+                                   lastSeek: now.addingTimeInterval(-1)), 12,
+                  "once the window is over the paused report takes the display back")
+        checkTime(paused.displayed(at: now.addingTimeInterval(30), seekTarget: 42, isDragging: false,
+                                   lastSeek: now.addingTimeInterval(-1)), 12,
+                  "and later frames change nothing")
     }
 }
