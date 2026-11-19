@@ -367,6 +367,21 @@ func testNeverBlocksTheAgent() throws {
     }
 }
 
+func testSendsALargeBodyAtOnce() throws {
+    let sandbox = try HookSandbox()
+    defer { sandbox.cleanUp() }
+    let listener = HookListener()
+    try sandbox.publishDiscovery(port: listener.port)
+    // A tool result this size (a screenshot, a long file) is past where curl asks for a 100 Continue.
+    let large = Data("{\"hook_event_name\":\"PostToolUse\",\"tool_response\":\"\(String(repeating: "x", count: 3_000_000))\"}".utf8)
+    let run = sandbox.runScript("claude-code", input: large)
+    checkHook(run.status == 0, "exits 0")
+    let request = listener.waitForRequests(1).first
+    checkHook(request?.body == large, "the whole body arrives, got \(request?.body.count ?? 0) bytes")
+    checkHook(request?.headers["expect"] == nil, "without waiting on a 100 Continue")
+    checkHook(run.elapsed < 0.9, "inside the script's one-second limit, took \(run.elapsed)")
+}
+
 func testIsFast() throws {
     let sandbox = try HookSandbox()
     defer { sandbox.cleanUp() }
@@ -389,6 +404,7 @@ enum AgentHookScriptTests {
             try testSendsHeadersAndBodyUnchanged()
             try testOmitsEmptyAndUnsafeHeaders()
             try testNeverBlocksTheAgent()
+            try testSendsALargeBodyAtOnce()
             try testIsFast()
             print("✅ AgentHookScriptTests passed")
         } catch {

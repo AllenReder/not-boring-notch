@@ -16,7 +16,7 @@ import Foundation
 enum AgentHookScript {
     /// Bump whenever `source` changes, so an installed copy can be told apart from the bundled
     /// one. The number is written into the script as its second line.
-    static let version = 1
+    static let version = 2
 
     /// Usage: `notch-agent-hook <claude-code|codex>`, with the hook's JSON on stdin.
     ///
@@ -73,6 +73,8 @@ enum AgentHookScript {
     header X-Agent-Tmux-Pane "$TMUX_PANE"
     header X-Agent-T3-Thread "$T3CODE_THREAD_ID"
     header X-Agent-T3-Environment "$env_id"
+    # A body over 1 MB would otherwise make curl wait a second for a 100 Continue nobody sends.
+    printf 'header = "Expect:"\n' >> "$cfg"
 
     curl -s -m 1 -o /dev/null -X POST -K "$cfg" --data-binary @- "http://127.0.0.1:$port/v2/agents/$agent/events"
     cat >/dev/null
