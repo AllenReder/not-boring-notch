@@ -139,8 +139,8 @@ struct AgentStore {                       // 和 BannerQueue / NotificationInbox
 | toolStarted | working(tool)，**正在等待时不变** | |
 | permissionRequested | waiting(.approval / .question) | needsYou |
 | needsAttention | 已在 waiting 则不变（PermissionRequest 6 秒后还会再来一次） | 仅在新进入 waiting 时 needsYou |
-| toolFinished | working | calmed（若从 waiting 出来） |
-| wentIdle | 只从 working 变 idle，不通知 | calmed |
+| toolFinished | working；**在等批准的是另一个已知工具时不变**（并行工具） | calmed（若从 waiting 出来） |
+| wentIdle | working 或 waiting 变 idle，不通知（Claude 只在没有对话框时才发 idle_prompt，所以 waiting 时收到说明提示被 Esc 关掉了） | calmed |
 | turnEnded | idle；若还有子 agent 在跑 → 保持 working | 从 working 来才发 turnFinished |
 | interrupted | idle，不通知 | calmed |
 | sessionEnded / 进程退出 | 删除 | calmed |

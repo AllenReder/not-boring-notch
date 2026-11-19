@@ -125,7 +125,7 @@ struct AgentReducerTestsRunner {
         testAQuestionToolWaitsForAnAnswer()
         testAToolStartingDuringAWaitDoesNotEndIt()
         testFinishingAToolEndsTheWait()
-        testIdlePromptRecoversOnlyAWorkingSession()
+        testIdlePromptRecoversABusySession()
         testAFailedToolIsStillWorking()
         testStopOnlyAnnouncesATurnThatWasWorking()
         testAFailedTurnIsAnnouncedAsFailed()
@@ -409,7 +409,7 @@ struct AgentReducerTestsRunner {
         checkAgents(rig.send("PostToolUse", ["tool_name": "Read"]), [], "a tool finishing outside a wait calms nothing")
     }
 
-    static func testIdlePromptRecoversOnlyAWorkingSession() {
+    static func testIdlePromptRecoversABusySession() {
         var rig = agentsRig()
         rig.send("UserPromptSubmit")
         rig.send("PreToolUse", ["tool_name": "Bash"])
@@ -422,9 +422,9 @@ struct AgentReducerTestsRunner {
         var waiting = agentsRig()
         waiting.send("UserPromptSubmit")
         waiting.send("PermissionRequest", ["tool_name": "Bash"])
-        checkAgents(waiting.send("Notification", ["notification_type": "idle_prompt"]), [],
-                    "a session waiting for consent is not idle")
-        checkAgents(waiting.phase(), "waiting:approval:Bash")
+        checkAgents(waiting.send("Notification", after: 60, ["notification_type": "idle_prompt"]), ["calmed"],
+                    "Claude is idle only with no dialog up: the prompt was dismissed, and its banner goes")
+        checkAgents(waiting.phase(), "idle")
     }
 
     static func testAFailedToolIsStillWorking() {

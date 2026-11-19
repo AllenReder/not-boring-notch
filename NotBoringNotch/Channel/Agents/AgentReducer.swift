@@ -105,9 +105,9 @@ enum AgentReducer {
             work(nil)
 
         case .wentIdle:
-            // Only a working session is recovered: an idle one has nothing to recover from, and a
-            // waiting one is still waiting.
-            if before.isWorking {
+            // Claude says so only when nothing is loading and no dialog is on screen, so a session
+            // that was waiting is not any more: the user dismissed the prompt with Esc.
+            if before != .idle {
                 goIdle(&s)
                 calm()
             }
