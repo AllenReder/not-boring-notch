@@ -144,7 +144,6 @@ struct AgentStore: Equatable {
         summary.kinds = AgentKind.allCases.filter { perKind[$0] != nil }
         // `max(by:)` keeps the first of equals.
         summary.leadKind = summary.kinds.max { perKind[$0]! < perKind[$1]! }
-        summary.mostUrgent = ordered.first { $0.phase != .idle }
         return summary
     }
 }

@@ -46,7 +46,7 @@ final class NotchChannel: ObservableObject {
 
     @Published private var banners = BannerQueue()
     @Published private(set) var inbox = NotificationInbox()
-    /// The Claude Code and Codex sessions the hooks have told the notch about.
+    /// The agent sessions the hooks and the pi extension have told the notch about.
     @Published private(set) var agents = AgentStore()
     @Published private(set) var status: Status = .off
     /// Where the port and token are published for clients to read, once the channel is up.

@@ -27,7 +27,7 @@ import Foundation
 /// A claim that stays on the closed notch for as long as it lasts.
 enum NotchResident: Hashable {
     case music
-    /// How many Claude Code and Codex sessions are working or waiting on the user.
+    /// The agent sessions working or waiting on the user.
     case agents
 }
 

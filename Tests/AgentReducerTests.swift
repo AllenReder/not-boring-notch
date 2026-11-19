@@ -667,14 +667,13 @@ struct AgentReducerTestsRunner {
         checkAgents(summary.waiting, 1, "one is waiting")
         checkAgents(summary.kinds, [.claudeCode, .codex], "both agents are at work")
         checkAgents(summary.leadKind, .claudeCode, "Claude has two sessions to Codex's one")
-        checkAgents(summary.mostUrgent?.projectName, "gamma", "whoever waits is the one to look at")
         checkAgents(rig.store.ordered.map(\.projectName), ["gamma", "beta", "alpha", ""],
                     "waiting first, then working newest first, then idle")
 
         var one = agentsRig(.codex)
         one.send("UserPromptSubmit")
         checkAgents(one.store.summary.kinds, [.codex], "a single kind")
-        checkAgents(one.store.summary.mostUrgent?.phase, .working(tool: nil), "with nobody waiting, the one at work")
+        checkAgents(one.store.summary.leadKind, .codex, "and it leads")
 
         var tie = agentsRig(.codex)
         tie.send("UserPromptSubmit", session: "x")

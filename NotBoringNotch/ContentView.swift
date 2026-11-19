@@ -516,7 +516,7 @@ struct ContentView: View {
     @ViewBuilder
     /// `trailingAgents` takes the right wing instead of the spectrum: the music holds compact, the
     /// agents minimal.
-    func MusicLiveActivity(trailingAgents: AgentSummary? = nil) -> some View {
+    func MusicLiveActivity(trailingAgents: AgentSummary?) -> some View {
         HStack {
             Image(nsImage: musicManager.albumArt)
                 .resizable()

@@ -2,9 +2,9 @@
 //  AgentHooksController.swift
 //  NotBoringNotch
 //
-//  What the settings section shows and does about the hooks that report Claude Code and Codex
-//  sessions to the notch. The sandboxed app can't touch ~/.claude, ~/.codex or ~/.not-boring-notch,
-//  so every action goes to the XPC helper; this holds the answer.
+//  What the settings section shows and does about the hooks (and pi's extension) that report agent
+//  sessions to the notch. The sandboxed app can't touch ~/.claude, ~/.codex, ~/.pi or
+//  ~/.not-boring-notch, so every action goes to the XPC helper; this holds the answer.
 //
 
 import Combine
