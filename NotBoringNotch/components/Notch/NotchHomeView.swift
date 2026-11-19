@@ -185,6 +185,8 @@ struct MusicControlsView: View {
     }
 
     private var musicSlider: some View {
+        // A fixed interval, also while paused. The Seek Settle Window only ends on a tick, so a
+        // paused or sparse schedule would leave a seek target on screen after a paused seek (#23).
         TimelineView(.animation(minimumInterval: 0.1)) { timeline in
             MusicSliderView(
                 sliderValue: $sliderValue,
