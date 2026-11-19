@@ -208,7 +208,6 @@ func testScriptShape() {
     checkHook(lines[0] == "#!/bin/sh", "starts with a /bin/sh shebang")
     checkHook(lines[1] == "# notch-agent-hook-version: \(AgentHookScript.version)",
               "the second line is the version marker, got \(lines[1])")
-    checkHook(!AgentHookScript.installPath.contains(" "), "Codex splits a command on whitespace")
 }
 
 func testSendsHeadersAndBodyUnchanged() throws {

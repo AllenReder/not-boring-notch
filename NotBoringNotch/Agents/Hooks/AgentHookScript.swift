@@ -8,7 +8,7 @@
 //  that only its own process can see: which process is the agent, and where it runs.
 //
 //  The sandboxed app cannot write to ~/.not-boring-notch, so the text travels over XPC to the
-//  helper, which installs it. See NotBoringNotchXPCHelper/AgentHooks/.
+//  helper, which installs it and decides where. See NotBoringNotchXPCHelper/AgentHooks/.
 //
 
 import Foundation
@@ -17,10 +17,6 @@ enum AgentHookScript {
     /// Bump whenever `source` changes, so an installed copy can be told apart from the bundled
     /// one. The number is written into the script as its second line.
     static let version = 1
-
-    /// Where the helper installs it, relative to the home directory. No space in the path: Codex
-    /// splits a hook's command on whitespace.
-    static let installPath = ".not-boring-notch/bin/notch-agent-hook"
 
     /// Usage: `notch-agent-hook <claude-code|codex>`, with the hook's JSON on stdin.
     ///
