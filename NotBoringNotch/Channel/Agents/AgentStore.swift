@@ -1,0 +1,114 @@
+//
+//  AgentStore.swift
+//  NotBoringNotch
+//
+//  The sessions the notch knows about, in the same style as `BannerQueue` and `NotificationInbox`:
+//  a value, changed by `mutating` calls that take the time as an argument, so every rule is tested
+//  without waiting for it.
+//
+//  Not kept across restarts. A session is a claim that something is running now; after a restart
+//  that claim is unverified, and the next hook from the session brings it back.
+//
+
+import Foundation
+
+struct AgentStore: Equatable {
+    private(set) var sessions: [AgentSessionKey: AgentSession] = [:]
+
+    var isEmpty: Bool { sessions.isEmpty }
+
+    /// Applies what a hook said, and returns what the rest of the app should do about it.
+    @discardableResult
+    mutating func apply(_ envelope: AgentEnvelope, now: Date) -> [AgentEffect] {
+        let result = AgentReducer.reduce(sessions[envelope.key], envelope, now: now)
+        sessions[envelope.key] = result.session
+        return result.effects
+    }
+
+    /// Takes away sessions whose process has gone, and settles working ones that have gone quiet.
+    ///
+    /// `alive` maps the pid of every process that still exists to when it started; a pid that is
+    /// absent has exited, and one that started at a different time has been reused. Nil means
+    /// liveness cannot be known right now, in which case only the quiet-for-too-long rule applies.
+    @discardableResult
+    mutating func sweep(alive: [Int32: Date]?, now: Date) -> [AgentEffect] {
+        var effects: [AgentEffect] = []
+
+        for (key, var session) in sessions {
+            let isAlive = Self.confirmAlive(&session, in: alive)
+            if isAlive == false {
+                sessions[key] = nil
+                effects.append(.calmed(key))
+                continue
+            }
+            sessions[key] = session
+
+            // Working, silent for a quarter of an hour, and nothing says the process is still
+            // there: it stopped without saying so. Quietly, because nothing happened that the user
+            // needs to hear about.
+            if isAlive != true, session.phase.isWorking,
+               now.timeIntervalSince(session.updatedAt) >= AgentReducer.staleAfter {
+                session.phase = .idle
+                session.turnStartedAt = nil
+                session.subagents = []
+                sessions[key] = session
+                effects.append(.calmed(key))
+            }
+        }
+        return effects
+    }
+
+    /// Whether the session's process is there: true, false, or nil when it cannot be told. Learns
+    /// the process's start time the first time it is seen.
+    private static func confirmAlive(_ session: inout AgentSession, in alive: [Int32: Date]?) -> Bool? {
+        guard let alive, var process = session.process else { return nil }
+        guard let startedAt = alive[process.pid] else { return false }
+
+        if let known = process.startedAt {
+            // Readings of the same start time can differ in the last bits.
+            guard abs(known.timeIntervalSince(startedAt)) < 1 else { return false }
+        } else {
+            process.startedAt = startedAt
+            session.process = process
+        }
+        return true
+    }
+
+    /// Every pid worth asking about.
+    var pids: [Int32] {
+        sessions.values.compactMap { $0.process?.pid }
+    }
+
+    /// For the Inbox: sessions that need the user first, then those at work, then the rest, each
+    /// group newest first.
+    var ordered: [AgentSession] {
+        func rank(_ session: AgentSession) -> Int {
+            switch session.phase {
+            case .waiting: return 0
+            case .working: return 1
+            case .idle: return 2
+            }
+        }
+        return sessions.values.sorted { a, b in
+            if rank(a) != rank(b) { return rank(a) < rank(b) }
+            if a.updatedAt != b.updatedAt { return a.updatedAt > b.updatedAt }
+            return a.key.raw < b.key.raw
+        }
+    }
+
+    var summary: AgentSummary {
+        var summary = AgentSummary()
+        var kinds: Set<AgentKind> = []
+        for session in sessions.values {
+            switch session.phase {
+            case .idle: continue
+            case .working: summary.working += 1
+            case .waiting: summary.waiting += 1
+            }
+            kinds.insert(session.agent)
+        }
+        summary.kinds = AgentKind.allCases.filter(kinds.contains)
+        summary.mostUrgent = ordered.first { $0.phase != .idle }
+        return summary
+    }
+}
