@@ -331,6 +331,9 @@ enum ChannelIcon: Codable, Equatable, Hashable {
     case image(Data)
     /// An installed application's bundle identifier, whose icon the notch looks up itself.
     case appBundle(String)
+    /// An agent's mark with a dot for how its turn came out. Only the notch's own agent
+    /// notifications wear it: the wire has no kind that decodes to it.
+    case agent(AgentKind, AgentBadge)
 }
 
 enum ChannelSound: String, Codable, Equatable, Hashable {

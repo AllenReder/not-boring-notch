@@ -6,7 +6,7 @@
 //  sources declared below. The Tests folder is not part of an Xcode target, so each
 //  runner is compiled on its own.
 //
-// SOURCES: NotBoringNotch/Channel/Stores/BannerQueue.swift NotBoringNotch/Channel/Stores/NotificationInbox.swift NotBoringNotch/Channel/Protocol/ChannelNotification.swift
+// SOURCES: NotBoringNotch/Channel/Stores/BannerQueue.swift NotBoringNotch/Channel/Stores/NotificationInbox.swift NotBoringNotch/Channel/Protocol/ChannelNotification.swift NotBoringNotch/Channel/Agents/AgentSession.swift
 //
 //  Helper names are prefixed (`checkQueue*`) so they stay distinguishable from the
 //  helpers in the other standalone runners in this folder.

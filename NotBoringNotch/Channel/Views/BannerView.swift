@@ -35,6 +35,8 @@ struct ChannelIconView: View {
             } else {
                 symbol(named: "app")
             }
+        case let .agent(kind, badge):
+            AgentBadgedMark(kind: kind, badge: badge)
         case nil:
             symbol(named: "bell")
         }

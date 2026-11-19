@@ -153,3 +153,5 @@ This project is open-source under the [GNU General Public License v3.0](LICENSE)
 - **[MediaRemoteAdapter](https://github.com/ungive/mediaremote-adapter)** – High-performance Now Playing source for macOS.
 - **[NotchDrop](https://github.com/Lakr233/NotchDrop)** – Inspired the initial concept of the shelf drag-and-drop mechanics.
 - **[SkyLightWindow](https://github.com/Lakr233/SkyLightWindow)** – macOS SkyLight window management.
+- **[CodeIsland](https://github.com/wxtsky/CodeIsland)** (MIT) – The agent attention rhythm and hook-installation approach the agent notifications follow.
+- **[LobeHub Icons](https://github.com/lobehub/lobe-icons)** (MIT) – The Claude Code and Codex marks. The marks themselves are trademarks of Anthropic and OpenAI.

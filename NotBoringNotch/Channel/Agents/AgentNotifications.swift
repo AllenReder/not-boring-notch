@@ -11,16 +11,6 @@
 
 import Foundation
 
-extension AgentKind {
-    /// An SF Symbol standing in for the agent's own mark.
-    var symbolName: String {
-        switch self {
-        case .claudeCode: return "asterisk"
-        case .codex: return "chevron.left.forwardslash.chevron.right"
-        }
-    }
-}
-
 extension AgentSession {
     /// Where a click on the session goes: its T3 thread, or the app that holds it.
     var jumpTarget: ChannelOpenTarget? {
@@ -74,7 +64,7 @@ enum AgentNotifications {
                 source: session.agent.rawValue,
                 thread: session.key.raw,
                 level: duration < shortTurn ? .passive : .active,
-                icon: .symbol(failed ? "exclamationmark.triangle.fill" : "checkmark.circle.fill"),
+                icon: .agent(session.agent, failed ? .failed : .finished),
                 title: title(of: session),
                 subtitle: failed ? String(localized: "Failed") : String(localized: "Finished"),
                 body: summary,
@@ -100,7 +90,7 @@ enum AgentNotifications {
                 source: session.agent.rawValue,
                 thread: session.key.raw,
                 level: .timeSensitive,
-                icon: .symbol("hand.raised.fill"),
+                icon: .agent(session.agent, .waiting),
                 title: title(of: session),
                 subtitle: subtitle,
                 body: body,

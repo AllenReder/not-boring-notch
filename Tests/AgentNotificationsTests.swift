@@ -93,7 +93,7 @@ struct AgentNotificationsTestsRunner {
         let note = delivered(result[1])
         checkAgentNotes(note.level, .active)
         checkAgentNotes(note.body, "rate_limit")
-        checkAgentNotes(note.icon, .symbol("exclamationmark.triangle.fill"), "and does not wear the success icon")
+        checkAgentNotes(note.icon, .agent(.claudeCode, .failed), "and wears the failure dot, not the finished one")
     }
 
     static func testAWaitIsTimeSensitiveAndTakenBackWhenItEnds() {

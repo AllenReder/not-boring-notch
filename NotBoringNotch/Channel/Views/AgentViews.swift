@@ -4,8 +4,9 @@
 //
 //  The agents on the closed notch, in the two sizes the arbiter hands out:
 //
-//  - compact: both wings — the agent's mark and a spinner on the left, how many are at work on
-//    the right, or `! waiting · working` in amber when somebody is waiting for the user.
+//  - compact: both wings — the marks of the kinds at work, stacked, and a spinner on the left;
+//    how many are at work on the right, or `! waiting · working` in amber when somebody is
+//    waiting for the user.
 //  - minimal: the right wing alone — the spinner with the count in it — beside the music.
 //
 //  The geometry follows the banner's: both wings the same width, so the content stays centred on
@@ -20,12 +21,6 @@ extension AgentSummary {
         isWaiting ? .waiting : (working > 0 ? .working : .none)
     }
 
-    /// The mark of the agents at work: their own when they are all one kind, a generic one when
-    /// the kinds are mixed.
-    var symbolName: String {
-        kinds.count == 1 ? kinds[0].symbolName : "sparkles"
-    }
-
     var isWaiting: Bool { waiting > 0 }
 
     /// "3", or "! 1 · 2" when somebody is waiting; without the second number when nobody is at work.
@@ -38,15 +33,96 @@ extension AgentSummary {
 /// Amber, as the system uses for "this needs you".
 private let agentAttentionColor = Color.orange
 
+extension AgentKind {
+    var markAsset: String {
+        switch self {
+        case .claudeCode: return "AgentClaudeCode"
+        case .codex: return "AgentCodex"
+        }
+    }
+
+    var markTint: Color {
+        switch self {
+        case .claudeCode: return Color(red: 0xD9 / 255, green: 0x77 / 255, blue: 0x57 / 255)
+        case .codex: return .white
+        }
+    }
+}
+
+extension AgentBadge {
+    var color: Color {
+        switch self {
+        case .finished: return .green
+        case .failed: return .red
+        case .waiting: return agentAttentionColor
+        }
+    }
+}
+
+/// The agent's own mark, in its own colour.
+struct AgentMark: View {
+    let kind: AgentKind
+
+    var body: some View {
+        Image(kind.markAsset)
+            .resizable()
+            .renderingMode(.template)
+            .aspectRatio(contentMode: .fit)
+            .foregroundStyle(kind.markTint)
+    }
+}
+
+/// A mark with a dot on its corner for how the turn came out.
+struct AgentBadgedMark: View {
+    let kind: AgentKind
+    let badge: AgentBadge
+
+    var body: some View {
+        AgentMark(kind: kind)
+            .overlay(alignment: .bottomTrailing) {
+                Circle()
+                    .fill(badge.color)
+                    .frame(width: 7, height: 7)
+                    .background(Circle().fill(.black).padding(-1.5))
+                    .offset(x: 2, y: 2)
+            }
+    }
+}
+
+/// One mark per kind of agent at work, each overlapping the one before it.
+struct AgentMarkStack: View {
+    let kinds: [AgentKind]
+
+    static let markSize: CGFloat = 16
+    private static let step: CGFloat = 14
+
+    static func width(for count: Int) -> CGFloat {
+        markSize + step * CGFloat(max(0, count - 1))
+    }
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            ForEach(Array(kinds.enumerated()), id: \.element) { index, kind in
+                AgentMark(kind: kind)
+                    .frame(width: Self.markSize, height: Self.markSize)
+                    // Cuts the mark beneath, so the two read as a stack rather than a smudge.
+                    .background(Circle().fill(.black).padding(-1.5))
+                    .offset(x: CGFloat(index) * Self.step)
+            }
+        }
+        .frame(width: Self.width(for: kinds.count), height: Self.markSize, alignment: .leading)
+    }
+}
+
 struct AgentCompactView: View {
     @EnvironmentObject var vm: NotchViewModel
     let summary: AgentSummary
 
-    /// padding(8) + mark(16) + spacing(6) + spinner(14) + padding(6)
-    private static let leftNeeded: CGFloat = 50
     private static let minimumWingWidth: CGFloat = 28
 
     static func wingWidth(for summary: AgentSummary) -> CGFloat {
+        // padding(8) + marks + spacing(6) + spinner(14) + padding(6)
+        let leftNeeded = 34 + AgentMarkStack.width(for: summary.kinds.count)
         // text + padding(10) on the right, and a little air on the left of it
         let rightNeeded = 16 + ScrollableBannerText.measureWidth(summary.countText, weight: .semibold)
         return max(minimumWingWidth, leftNeeded, rightNeeded)
@@ -57,12 +133,7 @@ struct AgentCompactView: View {
     var body: some View {
         HStack(spacing: 0) {
             HStack(spacing: 6) {
-                Image(systemName: summary.symbolName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.white)
-                    .frame(width: 16, height: 16)
+                AgentMarkStack(kinds: summary.kinds)
                 AgentSpinner(isSpinning: summary.working > 0,
                              tint: summary.isWaiting ? agentAttentionColor : .white)
                     .frame(width: 14, height: 14)
@@ -135,13 +206,15 @@ struct AgentRow: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            Image(systemName: session.agent.symbolName)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.white)
-                .padding(7)
-                .frame(width: 28, height: 28)
+            Group {
+                if case .waiting = session.phase {
+                    AgentBadgedMark(kind: session.agent, badge: .waiting)
+                } else {
+                    AgentMark(kind: session.agent)
+                }
+            }
+            .padding(5)
+            .frame(width: 28, height: 28)
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {

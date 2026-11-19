@@ -16,6 +16,13 @@ enum AgentKind: String, Codable, CaseIterable {
     case codex
 }
 
+/// How a session's turn came out, as the dot on its mark in a banner or the Inbox.
+enum AgentBadge: String, Codable {
+    case finished
+    case failed
+    case waiting
+}
+
 /// Where a session runs. It decides the session's identity, where a click goes, and what it is
 /// called. The hook script reports facts about its environment; this is what they add up to.
 enum AgentHost: Equatable {

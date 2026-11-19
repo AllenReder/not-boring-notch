@@ -4,7 +4,7 @@
 //
 //  Standalone runner, discovered by scripts/run-tests.sh.
 //
-// SOURCES: NotBoringNotch/Channel/Arbiter/ClosedNotchArbiter.swift NotBoringNotch/Channel/Protocol/ChannelNotification.swift
+// SOURCES: NotBoringNotch/Channel/Arbiter/ClosedNotchArbiter.swift NotBoringNotch/Channel/Protocol/ChannelNotification.swift NotBoringNotch/Channel/Agents/AgentSession.swift
 //
 //  Helper names are prefixed (`checkArbiter*`) so they stay distinguishable from the
 //  helpers in the other standalone runners in this folder.
