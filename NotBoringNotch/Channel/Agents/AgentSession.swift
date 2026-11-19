@@ -147,6 +147,9 @@ struct AgentSummary: Equatable {
     var waiting = 0
     /// The kinds of agent that are working or waiting, in a stable order.
     var kinds: [AgentKind] = []
+    /// The kind with the most sessions working or waiting, the first in `kinds` on a tie. Unlike
+    /// `mostUrgent`, it does not change hands each time another session is heard from.
+    var leadKind: AgentKind?
     /// The session most worth the user's glance: one that is waiting, else one at work, the most
     /// recently heard from first.
     var mostUrgent: AgentSession?

@@ -666,6 +666,7 @@ struct AgentReducerTestsRunner {
         checkAgents(summary.working, 2, "two are working")
         checkAgents(summary.waiting, 1, "one is waiting")
         checkAgents(summary.kinds, [.claudeCode, .codex], "both agents are at work")
+        checkAgents(summary.leadKind, .claudeCode, "Claude has two sessions to Codex's one")
         checkAgents(summary.mostUrgent?.projectName, "gamma", "whoever waits is the one to look at")
         checkAgents(rig.store.ordered.map(\.projectName), ["gamma", "beta", "alpha", ""],
                     "waiting first, then working newest first, then idle")
@@ -674,6 +675,18 @@ struct AgentReducerTestsRunner {
         one.send("UserPromptSubmit")
         checkAgents(one.store.summary.kinds, [.codex], "a single kind")
         checkAgents(one.store.summary.mostUrgent?.phase, .working(tool: nil), "with nobody waiting, the one at work")
+
+        var tie = agentsRig(.codex)
+        tie.send("UserPromptSubmit", session: "x")
+        tie.agent = .pi
+        tie.send("agent_start", session: "y")
+        tie.agent = .claudeCode
+        tie.send("UserPromptSubmit", session: "z")
+        tie.send("Stop", session: "z")
+        checkAgents(tie.store.summary.leadKind, .codex, "on a tie, the first in the stable order; idle ones do not count")
+        tie.agent = .pi
+        tie.send("agent_start", session: "w")
+        checkAgents(tie.store.summary.leadKind, .pi, "until one kind has more")
     }
 
     static func testSweepRemovesWhatHasExited() {

@@ -132,16 +132,18 @@ struct AgentStore: Equatable {
 
     var summary: AgentSummary {
         var summary = AgentSummary()
-        var kinds: Set<AgentKind> = []
+        var perKind: [AgentKind: Int] = [:]
         for session in sessions.values {
             switch session.phase {
             case .idle: continue
             case .working: summary.working += 1
             case .waiting: summary.waiting += 1
             }
-            kinds.insert(session.agent)
+            perKind[session.agent, default: 0] += 1
         }
-        summary.kinds = AgentKind.allCases.filter(kinds.contains)
+        summary.kinds = AgentKind.allCases.filter { perKind[$0] != nil }
+        // `max(by:)` keeps the first of equals.
+        summary.leadKind = summary.kinds.max { perKind[$0]! < perKind[$1]! }
         summary.mostUrgent = ordered.first { $0.phase != .idle }
         return summary
     }

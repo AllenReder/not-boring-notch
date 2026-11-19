@@ -7,7 +7,8 @@
 //  - compact: both wings — the marks of the kinds at work on the left, stacked, breathing while
 //    any of them works, still with an amber dot while somebody waits for the user; on the right,
 //    how many wait (`! 1`, amber) and how many work (white), a light rule between.
-//  - minimal: the right wing alone — the spinner with the count in it — beside the music.
+//  - minimal: the right wing alone, beside the music — the mark of the kind with the most
+//    sessions, breathing, with how many are at work on its corner when there is more than one.
 //
 //  The geometry follows the banner's: both wings the same width, so the content stays centred on
 //  the camera housing.
@@ -221,37 +222,33 @@ struct AgentCompactView: View {
     }
 }
 
-/// The agents in a single wing: the spinner with the count inside it.
+/// The agents in a single wing. Agents waiting on the user never get here: they take the whole notch.
 struct AgentMinimalView: View {
     let summary: AgentSummary
 
+    private var count: Int { summary.working + summary.waiting }
+
     var body: some View {
-        ZStack {
-            AgentSpinner(isSpinning: summary.working > 0,
-                         tint: summary.isWaiting ? agentAttentionColor : .white)
-            Text(summary.isWaiting ? "!" : String(summary.working))
-                .font(.system(size: 9, weight: .bold))
-                .monospacedDigit()
-                .foregroundStyle(summary.isWaiting ? agentAttentionColor : Color.white)
+        if let kind = summary.leadKind {
+            AgentMark(kind: kind)
+                .modifier(AgentBreathing(isActive: summary.working > 0))
+                .overlay(alignment: .bottomTrailing) {
+                    if count > 1 { countBadge }
+                }
+                .frame(width: AgentMarkStack.markSize, height: AgentMarkStack.markSize)
         }
-        .frame(width: 18, height: 18)
     }
-}
 
-/// A ring that turns while something is at work, and stands still when nothing is.
-struct AgentSpinner: View {
-    let isSpinning: Bool
-    let tint: Color
-
-    var body: some View {
-        // The timeline stops asking for frames when the ring is not turning.
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !isSpinning)) { context in
-            let turn = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 0.9) / 0.9
-            Circle()
-                .trim(from: 0, to: 0.72)
-                .stroke(tint, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                .rotationEffect(.degrees(isSpinning ? turn * 360 : -90))
-        }
+    /// The count on the mark's corner, ringed in black like the Inbox's dots.
+    private var countBadge: some View {
+        Text(verbatim: String(count))
+            .font(.system(size: 8, weight: .bold))
+            .monospacedDigit()
+            .foregroundStyle(Color.gray)
+            .padding(.horizontal, 1.5)
+            .background(RoundedRectangle(cornerRadius: 3).fill(.black))
+            .fixedSize()
+            .offset(x: 5, y: 4)
     }
 }
 

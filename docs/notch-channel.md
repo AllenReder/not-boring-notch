@@ -224,7 +224,9 @@ are left out.
   then a light rule, then two working, in grey. Agents waiting
   for you always go ahead of the music; agents that are only working go ahead of it too, unless
   the music has been put first for good (the `musicAheadOfAgents` default). When the music holds
-  the wings, the agents shrink to the right one: the spinner with the count inside it.
+  the wings, the agents shrink to the right one: the mark of the kind with the most sessions,
+  breathing in time with the rest, and the number of sessions on its corner in grey when there is
+  more than one.
 - **A turn ends.** A banner titled with the project's name (the last segment of `cwd`), with the
   first line of the agent's last message as its body. A turn shorter than 10 seconds goes to the
   Inbox without a banner. A turn that failed says so.
