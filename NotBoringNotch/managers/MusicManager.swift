@@ -560,7 +560,12 @@ class MusicManager: ObservableObject {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
 
-            let artworkImage = NSImage(data: artworkData)
+            // Bytes behind a valid header (a PNG signature or JPEG SOI followed by garbage)
+            // yield an empty, non-nil NSImage with no representations. Only an image that can
+            // actually be drawn counts as decoded; anything else is absent artwork.
+            let artworkImage = NSImage(data: artworkData).flatMap {
+                $0.cgImage(forProposedRect: nil, context: nil, hints: nil) != nil ? $0 : nil
+            }
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
                 guard self.tintPipeline.acceptsArtwork(order: order) else {
