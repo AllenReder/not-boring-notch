@@ -388,6 +388,15 @@ struct AgentReducerTestsRunner {
         rig.send("PermissionRequest", ["tool_name": "Bash"])
         checkAgents(rig.send("PreToolUse", ["tool_name": "Read"]), [], "another tool starting says nothing new")
         checkAgents(rig.phase(), "waiting:approval:Bash", "the session is still waiting for consent")
+        checkAgents(rig.send("PostToolUse", ["tool_name": "Read"]), [], "nor does it finishing, run alongside")
+        checkAgents(rig.phase(), "waiting:approval:Bash")
+        checkAgents(rig.send("PostToolUse", ["tool_name": "Bash"]), ["calmed"], "the tool waited on finishing does")
+
+        var unnamed = agentsRig()
+        unnamed.send("UserPromptSubmit")
+        unnamed.send("Notification", ["notification_type": "permission_prompt"])
+        checkAgents(unnamed.send("PostToolUse", ["tool_name": "Read"]), ["calmed"],
+                    "a wait that never said which tool ends with any tool finishing")
     }
 
     static func testFinishingAToolEndsTheWait() {

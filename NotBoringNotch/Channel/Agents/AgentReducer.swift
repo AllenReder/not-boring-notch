@@ -98,7 +98,10 @@ enum AgentReducer {
             // same fact, late.
             if before.wait == nil { wait(newWait) }
 
-        case .toolFinished:
+        case let .toolFinished(name):
+            // Another tool, run alongside the one waiting for consent, finishing does not end the
+            // wait. Only a wait whose tool is known can tell the two apart.
+            if case let .approval(waitingOn?) = before.wait, let name, name != waitingOn { break }
             work(nil)
 
         case .wentIdle:

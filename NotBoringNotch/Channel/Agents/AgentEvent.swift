@@ -12,7 +12,7 @@ enum AgentEvent: Equatable {
     case sessionStarted
     case promptSubmitted
     case toolStarted(name: String?, asksUser: Bool)
-    case toolFinished
+    case toolFinished(name: String?)
     case permissionRequested(tool: String?, asksUser: Bool)
     /// Claude's `Notification`: permission_prompt, elicitation_dialog.
     case needsAttention(AgentWait)

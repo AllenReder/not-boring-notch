@@ -92,9 +92,9 @@ enum AgentAdapter {
             "SessionStart": { _ in .sessionStarted },
             "UserPromptSubmit": { _ in .promptSubmitted },
             "PreToolUse": { .toolStarted(name: $0.toolName, asksUser: $0.asksUser) },
-            "PostToolUse": { _ in .toolFinished },
+            "PostToolUse": { .toolFinished(name: $0.toolName) },
             // A tool that failed is still a tool that finished: the turn goes on.
-            "PostToolUseFailure": { _ in .toolFinished },
+            "PostToolUseFailure": { .toolFinished(name: $0.toolName) },
             "PermissionRequest": { .permissionRequested(tool: $0.toolName, asksUser: $0.asksUser) },
             "Notification": { hook in
                 // Only the subtypes that describe this session. `agent_completed` and
@@ -120,7 +120,7 @@ enum AgentAdapter {
             "SessionStart": { _ in .sessionStarted },
             "UserPromptSubmit": { _ in .promptSubmitted },
             "PreToolUse": { .toolStarted(name: $0.toolName, asksUser: $0.asksUser) },
-            "PostToolUse": { _ in .toolFinished },
+            "PostToolUse": { .toolFinished(name: $0.toolName) },
             "PermissionRequest": { .permissionRequested(tool: $0.toolName, asksUser: $0.asksUser) },
             "Stop": { .turnEnded(summary: $0.summary, failed: false) },
             "SubagentStart": { _ in .subagentStarted },
@@ -138,13 +138,13 @@ enum AgentAdapter {
             "session_start": { _ in .sessionStarted },
             "agent_start": { _ in .promptSubmitted },
             "tool_execution_start": { .toolStarted(name: $0.toolName, asksUser: $0.asksUser) },
-            "tool_execution_end": { _ in .toolFinished },
+            "tool_execution_end": { .toolFinished(name: $0.toolName) },
             "ui_prompt_start": { hook in
                 hook.string("prompt_kind") == "confirm"
                     ? .permissionRequested(tool: hook.toolName, asksUser: hook.asksUser)
                     : .needsAttention(.question)
             },
-            "ui_prompt_end": { _ in .toolFinished },
+            "ui_prompt_end": { _ in .toolFinished(name: nil) },
             "agent_settled": { hook in
                 if hook.json["aborted"] as? Bool == true { return .interrupted }
                 let failed = hook.string("stop_reason") == "error"
