@@ -123,6 +123,8 @@ enum AgentAdapter {
             "PostToolUse": { _ in .toolFinished },
             "PermissionRequest": { .permissionRequested(tool: $0.toolName, asksUser: $0.asksUser) },
             "Stop": { .turnEnded(summary: $0.summary, failed: false) },
+            "SubagentStart": { _ in .subagentStarted },
+            "SubagentStop": { _ in .subagentStopped },
             "Interrupt": { _ in .interrupted },
             "SessionEnd": { _ in .sessionEnded },
         ])

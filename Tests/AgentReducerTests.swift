@@ -132,6 +132,7 @@ struct AgentReducerTestsRunner {
         testSubagentsLeaveTheirParentAlone()
         testASubagentsRequestNeedsTheUserAndItsAnswerEndsTheWait()
         testTheTurnIsNotOverWhileASubagentRuns()
+        testACodexTurnWithASubagentEnds()
         testInterruptAndSessionEnd()
         testAnIdleSessionRemembersHowItsLastTurnEnded()
         testAgentsSharingAT3ThreadAreTwoSessions()
@@ -526,6 +527,18 @@ struct AgentReducerTestsRunner {
         checkAgents(failed.send("StopFailure", ["error": "server_error"]), ["finished(server_error,failed,2s)"],
                     "a turn that failed is over, whatever else is running")
         checkAgents(failed.phase(), "idle")
+    }
+
+    static func testACodexTurnWithASubagentEnds() {
+        // Codex's Stop carries no agent_id, so only its SubagentStop takes the sub-agent away.
+        var rig = agentsRig(.codex)
+        rig.send("UserPromptSubmit")
+        rig.send("SubagentStart", ["agent_id": "sub-1"])
+        rig.send("PreToolUse", ["tool_name": "Bash", "agent_id": "sub-1"])
+        rig.send("PostToolUse", ["tool_name": "Bash", "agent_id": "sub-1"])
+        checkAgents(rig.send("SubagentStop", ["agent_id": "sub-1"]), [], "the sub-agent finishing is not a turn ending")
+        checkAgents(rig.send("Stop", after: 4), ["finished(-,ok,8s)"], "the parent's Stop ends the turn")
+        checkAgents(rig.phase(), "idle")
     }
 
     static func testAnIdleSessionRemembersHowItsLastTurnEnded() {
