@@ -44,6 +44,11 @@ struct TintPipeline {
 
     private var armedTrack: TrackIdentity?
 
+    /// Whether the artwork bytes the notch holds failed to decode. They stay "seen", so the
+    /// same bytes arriving again do not start another decode, but they never count as a cover:
+    /// a track that receives them is Colorless, not covered.
+    private(set) var heldArtworkUndecodable = false
+
     /// A derivation may publish only if no newer artwork has been applied since it started.
     func accepts(generation: Int) -> Bool {
         generation == self.generation
@@ -55,6 +60,7 @@ struct TintPipeline {
         generation &+= 1
         artworkTrack = track
         armedTrack = nil
+        heldArtworkUndecodable = false
         return generation
     }
 
@@ -63,7 +69,35 @@ struct TintPipeline {
     /// track it was requested for.
     mutating func artworkRequested() -> Int {
         artworkOrder &+= 1
+        heldArtworkUndecodable = false
         return artworkOrder
+    }
+
+    /// The decode claimed with `order` produced no image. Artwork that cannot be decoded is
+    /// absent artwork, so the track settles Colorless now — the Tint Settle Window was
+    /// cancelled when the bytes arrived and will not do it later.
+    ///
+    /// Returns the new generation when the track is Colorless, or `nil` when there is nothing
+    /// to do: the decode is stale (a newer request or a change of track superseded it, and a
+    /// stale failure must not touch state that belongs to the newer one), or the track already
+    /// owns artwork that did decode.
+    mutating func artworkDecodeFailed(order: Int, for track: TrackIdentity) -> Int? {
+        guard acceptsArtwork(order: order) else { return nil }
+        heldArtworkUndecodable = true
+        return declareColorlessIfSettled(for: track)
+    }
+
+    /// The artwork bytes the notch already holds arrived for this track, so no decode starts.
+    /// Bytes that decoded become this track's cover (`noteCoverApplied`); bytes that failed to
+    /// decode leave the track Colorless, exactly as when they first failed.
+    ///
+    /// Returns the new generation when the track is Colorless, otherwise `nil`.
+    mutating func heldArtworkArrived(for track: TrackIdentity) -> Int? {
+        guard heldArtworkUndecodable else {
+            noteCoverApplied(for: track)
+            return nil
+        }
+        return declareColorlessIfSettled(for: track)
     }
 
     /// Records the track the notch is on now. Moving to a different track supersedes every decode

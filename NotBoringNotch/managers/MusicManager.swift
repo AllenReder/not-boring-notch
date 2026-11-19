@@ -228,7 +228,7 @@ class MusicManager: ObservableObject {
 
             if artworkChanged, let artwork = state.artwork {
                 self.cancelTintSettleWindow()
-                self.updateArtwork(artwork, for: track)
+                self.updateArtwork(artwork, for: track, bundleIdentifier: state.bundleIdentifier)
             } else if state.artwork == nil {
                 // A track's artwork usually arrives in a later event than its metadata,
                 // so wait out the Tint Settle Window before falling back to the app icon.
@@ -237,9 +237,15 @@ class MusicManager: ObservableObject {
                 // The artwork bytes did not change, but they now belong to this track: the
                 // rest of an album shares one cover, so without recording the ownership
                 // here the track would look coverless and settle Colorless with its own
-                // cover on screen.
+                // cover on screen. Bytes that already failed to decode are not a cover, so
+                // a track that receives them again is Colorless instead.
                 self.cancelTintSettleWindow()
-                self.tintPipeline.noteCoverApplied(for: track)
+                if let generation = self.tintPipeline.heldArtworkArrived(for: track) {
+                    #if DEBUG
+                    NSLog("TintPipeline: undecodable artwork arrived again for \(track.title) → Colorless (gen=\(generation))")
+                    #endif
+                    self.showColorless(for: track, bundleIdentifier: state.bundleIdentifier)
+                }
             }
             self.artworkData = state.artwork
 
@@ -546,7 +552,7 @@ class MusicManager: ObservableObject {
         DispatchQueue.main.async(execute: workItem)
     }
 
-    private func updateArtwork(_ artworkData: Data, for track: TrackIdentity) {
+    private func updateArtwork(_ artworkData: Data, for track: TrackIdentity, bundleIdentifier: String) {
         // Claim the order before the decode starts: a decode that returns after a newer
         // artwork was requested must not touch the image, the fallback flag, or the tint.
         let order = tintPipeline.artworkRequested()
@@ -554,18 +560,29 @@ class MusicManager: ObservableObject {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
 
-            if let artworkImage = NSImage(data: artworkData) {
-                DispatchQueue.main.async { [weak self] in
-                    guard let self else { return }
-                    guard self.tintPipeline.acceptsArtwork(order: order) else {
-                        #if DEBUG
-                        NSLog("TintPipeline: dropped stale artwork decode (order=\(order), current=\(self.tintPipeline.artworkOrder))")
-                        #endif
-                        return
-                    }
-                    self.usingAppIconForArtwork = false
-                    self.updateAlbumArt(newAlbumArt: artworkImage, provenance: .trackArtwork, track: track)
+            let artworkImage = NSImage(data: artworkData)
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                guard self.tintPipeline.acceptsArtwork(order: order) else {
+                    #if DEBUG
+                    NSLog("TintPipeline: dropped stale artwork decode (order=\(order), current=\(self.tintPipeline.artworkOrder))")
+                    #endif
+                    return
                 }
+                guard let artworkImage else {
+                    // Undecodable artwork is absent artwork. The Tint Settle Window was
+                    // cancelled when these bytes arrived, so settle Colorless now rather than
+                    // leave the previous track's cover and tint on screen.
+                    if let generation = self.tintPipeline.artworkDecodeFailed(order: order, for: track) {
+                        #if DEBUG
+                        NSLog("TintPipeline: artwork for \(track.title) did not decode → Colorless (gen=\(generation))")
+                        #endif
+                        self.showColorless(for: track, bundleIdentifier: bundleIdentifier)
+                    }
+                    return
+                }
+                self.usingAppIconForArtwork = false
+                self.updateAlbumArt(newAlbumArt: artworkImage, provenance: .trackArtwork, track: track)
             }
         }
     }
@@ -638,7 +655,12 @@ class MusicManager: ObservableObject {
         #if DEBUG
         NSLog("TintPipeline: no artwork after the settle window for \(track.title) → Colorless (gen=\(generation))")
         #endif
+        showColorless(for: track, bundleIdentifier: bundleIdentifier)
+    }
 
+    /// Renders a track that has been declared Colorless: the Artwork Fallback, and no tint.
+    @MainActor
+    private func showColorless(for track: TrackIdentity, bundleIdentifier: String) {
         // The image advances on the same timeline as the tint. A playback app with no
         // resolvable icon falls back to the placeholder rather than leaving the previous
         // track's cover on screen.
