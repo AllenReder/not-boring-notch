@@ -70,7 +70,7 @@ struct InlineHUD: View {
             
             Rectangle()
                 .fill(.black)
-                .frame(width: vm.closedNotchSize.width - 20)
+                .frame(width: vm.closedNotchGap)
             
             HStack {
                 if (type == .mic) {

@@ -34,6 +34,8 @@ class NotchViewModel: NSObject, ObservableObject {
     @Published var screenUUID: String?
 
     @Published var closedNotchSize: CGSize = getClosedNotchSize()
+    /// The middle of the closed notch that content keeps out of: the camera housing and a margin.
+    @Published var closedNotchGap: CGFloat = getClosedNotchGap()
 
     /// The surface the notch is drawing: the closed notch, or the size the open tab asks for.
     /// Derived, so the open state and the tab can never disagree about it.
@@ -71,6 +73,7 @@ class NotchViewModel: NSObject, ObservableObject {
         
         self.screenUUID = screenUUID
         closedNotchSize = getClosedNotchSize(screenUUID: screenUUID)
+        closedNotchGap = getClosedNotchGap(screenUUID: screenUUID)
 
         Publishers.CombineLatest3($dropZoneTargeting, $dragDetectorTargeting, $generalDropTargeting)
             .map { shelf, drag, general in
@@ -227,6 +230,7 @@ class NotchViewModel: NSObject, ObservableObject {
             return
         }
         self.closedNotchSize = getClosedNotchSize(screenUUID: self.screenUUID)
+        self.closedNotchGap = getClosedNotchGap(screenUUID: self.screenUUID)
         self.notchState = .closed
         self.isBatteryPopoverActive = false
         self.coordinator.sneakPeek.show = false

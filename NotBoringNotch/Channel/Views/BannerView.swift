@@ -152,7 +152,7 @@ struct BannerView: View {
                 // The flat base of the physical camera housing.
                 Rectangle()
                     .fill(.black)
-                    .frame(width: vm.closedNotchSize.width - 20)
+                    .frame(width: vm.closedNotchGap)
 
                 rightWing
                     .frame(width: wingWidth, alignment: .trailing)
@@ -171,7 +171,7 @@ struct BannerView: View {
 
     /// Spans the banner, scrolling when the line is longer than that.
     private func peekLine(_ text: String) -> some View {
-        let width = 2 * wingWidth + vm.closedNotchSize.width - 20 - 2 * Self.peekInset
+        let width = 2 * wingWidth + vm.closedNotchGap - 2 * Self.peekInset
         return ScrollableBannerText(
             text: text,
             font: .subheadline,

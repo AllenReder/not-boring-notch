@@ -74,7 +74,7 @@ struct AgentCompactView: View {
             // The flat base of the physical camera housing.
             Rectangle()
                 .fill(.black)
-                .frame(width: vm.closedNotchSize.width - 20)
+                .frame(width: vm.closedNotchGap)
 
             Text(summary.countText)
                 .font(.subheadline)

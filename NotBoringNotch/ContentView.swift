@@ -132,7 +132,8 @@ struct ContentView: View {
 
     private var computedChinWidth: CGFloat {
         let base = vm.closedNotchSize.width
-        let squareWings = 2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20
+        let gap = vm.closedNotchGap
+        let squareWings = 2 * max(0, vm.effectiveClosedNotchHeight - 12) + 40
 
         var content = closedContent
         if content == .inlineHUD {
@@ -147,11 +148,11 @@ struct ContentView: View {
         case .batteryNotice:
             return 640
         case .banner(let banner):
-            return base + 2 * BannerView.wingWidth(for: banner) - 20
+            return gap + 2 * BannerView.wingWidth(for: banner)
         case .residents(.agents, _):
-            return base + 2 * AgentCompactView.wingWidth(for: channel.agents.summary) - 20
+            return gap + 2 * AgentCompactView.wingWidth(for: channel.agents.summary)
         case .residents, .face:
-            return base + squareWings
+            return gap + squareWings
         default:
             return base
         }
@@ -414,7 +415,7 @@ struct ContentView: View {
                         case .face:
                             NotchFaceAnimation()
                         case .hello, .nothing:
-                            Rectangle().fill(.clear).frame(width: vm.closedNotchSize.width - 20, height: vm.effectiveClosedNotchHeight)
+                            Rectangle().fill(.clear).frame(width: vm.closedNotchGap, height: vm.effectiveClosedNotchHeight)
                         }
                     }
 
@@ -503,7 +504,7 @@ struct ContentView: View {
                     )
                 Rectangle()
                     .fill(.black)
-                    .frame(width: vm.closedNotchSize.width - 20)
+                    .frame(width: vm.closedNotchGap)
                 MinimalFaceFeatures()
             }
         }.frame(

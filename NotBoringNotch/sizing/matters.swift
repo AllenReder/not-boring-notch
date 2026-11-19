@@ -64,6 +64,24 @@ enum MusicPlayerImageSizes {
     return nil
 }
 
+/// How far the closed notch's content keeps from the camera housing's reported edge. The panel's
+/// mask reaches a few points past that edge, and content drawn right up to it is cut.
+let closedNotchHousingMargin: CGFloat = 8
+
+/// The width the closed notch keeps clear in its middle, for the camera housing. On a screen with
+/// one it is the housing as macOS reports it, a margin either side; on a screen without, the drawn
+/// notch's own middle, as it has always been.
+@MainActor func getClosedNotchGap(screenUUID: String? = nil) -> CGFloat {
+    let screen = screenUUID.flatMap { NSScreen.screen(withUUID: $0) } ?? NSScreen.main
+    if let screen,
+       let left = screen.auxiliaryTopLeftArea?.width,
+       let right = screen.auxiliaryTopRightArea?.width
+    {
+        return screen.frame.width - left - right + 2 * closedNotchHousingMargin
+    }
+    return getClosedNotchSize(screenUUID: screenUUID).width - 20
+}
+
 @MainActor func getClosedNotchSize(screenUUID: String? = nil) -> CGSize {
     // Default notch size, to avoid using optionals
     var notchHeight: CGFloat = Defaults[.nonNotchHeight]
