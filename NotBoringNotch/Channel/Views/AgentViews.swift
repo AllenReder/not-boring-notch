@@ -4,7 +4,7 @@
 //
 //  The agents on the closed notch, in the two sizes the arbiter hands out:
 //
-//  - compact: both wings — the marks of the kinds at work on the left, side by side, breathing while
+//  - compact: both wings — the marks of the kinds at work on the left, stacked, breathing while
 //    any of them works, still with an amber dot while somebody waits for the user; on the right,
 //    how many wait (`! 1`, amber) and how many work (white), a light rule between.
 //  - minimal: the right wing alone — the spinner with the count in it — beside the music.
@@ -96,7 +96,7 @@ struct AgentBadgeDot: View {
     }
 }
 
-/// One mark per kind of agent at work, side by side. The row breathes
+/// One mark per kind of agent at work, each overlapping the one before it. The stack breathes
 /// while something works; while somebody waits it holds still, with an amber dot.
 struct AgentMarkStack: View {
     let kinds: [AgentKind]
@@ -107,11 +107,10 @@ struct AgentMarkStack: View {
     private static let breath: TimeInterval = 2.4
 
     static let markSize: CGFloat = 16
-    private static let spacing: CGFloat = 4
+    private static let step: CGFloat = 14
 
     static func width(for count: Int) -> CGFloat {
-        let count = CGFloat(max(1, count))
-        return markSize * count + spacing * (count - 1)
+        markSize + step * CGFloat(max(0, count - 1))
     }
 
     var body: some View {
@@ -137,10 +136,11 @@ struct AgentMarkStack: View {
     }
 
     private var marks: some View {
-        HStack(spacing: Self.spacing) {
-            ForEach(kinds, id: \.self) { kind in
+        ZStack(alignment: .leading) {
+            ForEach(Array(kinds.enumerated()), id: \.element) { index, kind in
                 AgentMark(kind: kind)
                     .frame(width: Self.markSize, height: Self.markSize)
+                    .offset(x: CGFloat(index) * Self.step)
             }
         }
         .frame(width: Self.width(for: kinds.count), height: Self.markSize, alignment: .leading)

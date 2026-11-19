@@ -208,7 +208,7 @@ are left out.
 ### On the notch
 
 - **Closed notch.** The agents are a resident, like the music. The left wing shows the mark of
-  each kind of agent at work, side by side, slowly dimming and brightening while any of them works.
+  each kind of agent at work, stacked, slowly dimming and brightening while any of them works.
   The right wing shows how many sessions are working, in grey. When one is waiting for you, the
   marks hold still with an amber dot, and the right wing reads `! 1 | 2`: one waiting, in amber,
   then a light rule, then two working, in grey. Agents waiting

@@ -161,7 +161,7 @@ struct AgentStore {                       // 和 BannerQueue / NotificationInbox
 ## 刘海
 
 - 仲裁器：`NotchResident` 从 `.music | .activity(id)` 改成 `.music | .agents`。有会话在 waiting 时 agents 永远排在音乐前面；只有 working 时沿用 `musicAheadOfActivities`（改名 `musicAheadOfAgents`）。
-- 合上：左翼是在干活的每种 agent 的图标，并排，有 agent 在干活时慢慢明暗起伏（呼吸）；右翼是灰色数字。有人等你时图标停下、右下角亮琥珀色点，右翼显示 `! 1 | 2`：琥珀色的等待数，浅色竖线，灰色的干活数。
+- 合上：左翼是在干活的每种 agent 的图标，叠在一起，有 agent 在干活时慢慢明暗起伏（呼吸）；右翼是灰色数字。有人等你时图标停下、右下角亮琥珀色点，右翼显示 `! 1 | 2`：琥珀色的等待数，浅色竖线，灰色的干活数。
 - 横幅：回合结束 → active 级通知，标题是项目名，正文是摘要（横幅里显示在刘海下方一条，见第三层 sneak peek），`thread` = 会话 key，`open` = 跳转目标。等你 → time-sensitive 通知，同一会话 calmed 时撤回。不足 10 秒的回合不弹横幅，只进 Inbox。
 - 展开：Inbox 顶部是"Agents"一节，每个会话一行（图标、项目名、状态、计时），点击跳转。
 
