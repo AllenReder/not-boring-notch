@@ -160,6 +160,13 @@ final class NotchChannel: ObservableObject {
         applySettings()
     }
 
+    /// When the app quits. The files that point clients at the listener go with it, so a hook
+    /// finds no notch instead of sending its payload and the token to whatever takes the port next.
+    func stop() {
+        server.stop()
+        removeDiscoveryFiles()
+    }
+
     // MARK: - Settings
 
     var port: Int { Defaults[.notchChannelPort] }
