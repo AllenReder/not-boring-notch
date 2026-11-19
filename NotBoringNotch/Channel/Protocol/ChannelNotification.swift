@@ -104,7 +104,7 @@ struct ChannelNotification: Codable, Equatable, Hashable, Identifiable {
 
     // MARK: - Shared decoding
 
-    private static func decodePayload<Payload: Decodable>(_ data: Data) throws -> Payload {
+    static func decodePayload<Payload: Decodable>(_ data: Data) throws -> Payload {
         guard data.count <= maximumPayloadBytes else { throw ChannelPayloadError.tooLarge }
         do {
             return try JSONDecoder().decode(Payload.self, from: data)
@@ -113,14 +113,14 @@ struct ChannelNotification: Codable, Equatable, Hashable, Identifiable {
         }
     }
 
-    private static func requireTitle(_ title: String?) throws -> String {
+    static func requireTitle(_ title: String?) throws -> String {
         guard let title = title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else {
             throw ChannelPayloadError.missingTitle
         }
         return title
     }
 
-    private static func decodeIcon(_ icon: WireIcon) throws -> ChannelIcon {
+    static func decodeIcon(_ icon: WireIcon) throws -> ChannelIcon {
         switch icon.kind {
         case "sf_symbol":
             return .symbol(icon.value)
@@ -136,7 +136,7 @@ struct ChannelNotification: Codable, Equatable, Hashable, Identifiable {
         }
     }
 
-    private static func decodeSound(_ sound: String?) throws -> ChannelSound {
+    static func decodeSound(_ sound: String?) throws -> ChannelSound {
         switch sound {
         case nil, "none":
             return .none
@@ -147,7 +147,7 @@ struct ChannelNotification: Codable, Equatable, Hashable, Identifiable {
         }
     }
 
-    private static func decodeLevel(_ level: String?) throws -> ChannelInterruptionLevel {
+    static func decodeLevel(_ level: String?) throws -> ChannelInterruptionLevel {
         switch level {
         case nil:
             return .active
@@ -161,14 +161,14 @@ struct ChannelNotification: Codable, Equatable, Hashable, Identifiable {
 
     /// A URL the system can hand to something: it has a scheme. `URL(string: "://nope")` is not
     /// nil, it is a URL with an empty scheme, so parsing alone does not prove that.
-    private static func openableURL(_ string: String) -> URL? {
+    static func openableURL(_ string: String) -> URL? {
         guard let url = URL(string: string), let scheme = url.scheme, !scheme.isEmpty else {
             return nil
         }
         return url
     }
 
-    private static func decodeOpen(_ open: WireOpen) throws -> ChannelOpenTarget {
+    static func decodeOpen(_ open: WireOpen) throws -> ChannelOpenTarget {
         switch (nonEmpty(open.url), nonEmpty(open.app)) {
         case let (url?, nil):
             guard let url = openableURL(url) else { throw ChannelPayloadError.invalidOpen }
@@ -204,19 +204,19 @@ struct ChannelNotification: Codable, Equatable, Hashable, Identifiable {
         return ChannelAction(title: action.title, kind: .url(url))
     }
 
-    private static func nonEmpty(_ text: String?) -> String? {
+    static func nonEmpty(_ text: String?) -> String? {
         guard let text, !text.isEmpty else { return nil }
         return text
     }
 
     // MARK: - Wire shapes
 
-    private struct WireIcon: Decodable {
+    struct WireIcon: Decodable, Equatable {
         let kind: String
         let value: String
     }
 
-    private struct WireOpen: Decodable {
+    struct WireOpen: Decodable, Equatable {
         let url: String?
         let app: String?
     }
@@ -277,6 +277,10 @@ enum ChannelPayloadError: Error, Equatable {
     case tooManyActions
     /// An `open` that is not exactly one of a usable URL and an app's bundle identifier.
     case invalidOpen
+    /// An activity's `timer` that is not exactly one of `since` and `until`.
+    case invalidTimer
+    /// A number outside what its field allows, named by its wire key: a negative `stale_after`.
+    case invalidNumber(String)
 
     /// The code a sender is told, stable across releases.
     var code: String {
@@ -291,6 +295,8 @@ enum ChannelPayloadError: Error, Equatable {
         case .invalidAction: return "invalid_action"
         case .tooManyActions: return "too_many_actions"
         case .invalidOpen: return "invalid_open"
+        case .invalidTimer: return "invalid_timer"
+        case .invalidNumber: return "invalid_number"
         }
     }
 }

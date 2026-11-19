@@ -6,7 +6,7 @@
 //  sources declared below. The Tests folder is not part of an Xcode target, so each
 //  runner is compiled on its own.
 //
-// SOURCES: NotBoringNotch/Channel/Server/ChannelServer.swift NotBoringNotch/Channel/Protocol/ChannelNotification.swift
+// SOURCES: NotBoringNotch/Channel/Server/ChannelServer.swift NotBoringNotch/Channel/Protocol/ChannelNotification.swift NotBoringNotch/Channel/Protocol/ChannelActivity.swift
 //
 //  Helper names are prefixed (`checkServer*`) so they stay distinguishable from the
 //  helpers in the other standalone runners in this folder.
@@ -91,6 +91,7 @@ struct ChannelServerTestsRunner {
         testANewTokenDoesNotDropTheSocket()
         testAChangedPortIsRebound()
         testTheRoutes()
+        testTheActivityRoutes()
         print("✅ ChannelServerTests: all passed")
     }
 
@@ -243,7 +244,7 @@ struct ChannelServerTestsRunner {
         checkServer(status == 405, "a known path with the wrong method, got \(status)")
         (status, _) = request("POST", "/v2/notifications/x", port: port, body: "{}")
         checkServer(status == 405, "a notification's path only takes DELETE, got \(status)")
-        (status, _) = request("POST", "/v2/activities", port: port, body: "{}")
+        (status, _) = request("POST", "/v2/nothing", port: port, body: "{}")
         checkServer(status == 404, "an unknown path, got \(status)")
 
         (status, _) = request("DELETE", "/v2/notifications/n1", port: port, token: "wrong")
@@ -256,6 +257,63 @@ struct ChannelServerTestsRunner {
         checkServer(events == ["deliver n1 passive temporary", "deliver r1 active untilSeen",
                                "withdraw claude:42", "withdraw never-sent"],
                     "exactly the authorised, well-formed requests reach the notch, got \(events)")
+        server.stop()
+    }
+
+    static func testTheActivityRoutes() {
+        guard let port = checkServerFreePort() else {
+            print("⚠️  could not find a free port, skipping")
+            return
+        }
+
+        let server = ChannelServer()
+        let recorder = ServerStateRecorder()
+        let received = ServerStateRecorder()
+        server.onStateChange = { recorder.record(String(describing: $0)) }
+        server.onActivity = { request in
+            switch request {
+            case let .update(id, update):
+                received.record("update \(id) \(update.state)")
+            case let .end(id, _, ending):
+                received.record("end \(id) \(ending.dismissAfter)")
+            case let .remove(id):
+                received.record("remove \(id)")
+            }
+        }
+        server.start(port: port, token: "token")
+        checkServer(recorder.wait(until: { $0.contains { $0.hasPrefix("ready") } })
+                        .contains { $0.hasPrefix("ready") }, "listening")
+
+        var (status, json) = request("PUT", "/v2/activities/claude%3As1", port: port,
+                                     body: #"{"title":"Session","state":"Thinking"}"#)
+        checkServer(status == 202 && json["status"] == "updated" && json["id"] == "claude:s1",
+                    "an update is accepted under its decoded id, got \(status) \(json)")
+
+        (status, json) = request("PUT", "/v2/activities/s1", port: port, body: #"{"stale_after":-5}"#)
+        checkServer(status == 400 && json["error"] == "invalid_number" && json["field"] == "stale_after",
+                    "a bad number names its field, got \(status) \(json)")
+
+        (status, json) = request("POST", "/v2/activities/s1/end", port: port, body: #"{"dismiss_after":0}"#)
+        checkServer(status == 202 && json["status"] == "ended", "an end is accepted, got \(status) \(json)")
+
+        (status, json) = request("POST", "/v2/activities/s2/end", port: port, body: "")
+        checkServer(status == 202, "an end with an empty JSON body, got \(status) \(json)")
+
+        (status, json) = request("DELETE", "/v2/activities/s1", port: port)
+        checkServer(status == 200 && json["status"] == "removed", "a removal, got \(status) \(json)")
+
+        (status, _) = request("POST", "/v2/activities/s1", port: port, body: "{}")
+        checkServer(status == 405, "an activity is updated with PUT, got \(status)")
+        (status, _) = request("PUT", "/v2/activities/s1/end", port: port, body: "{}")
+        checkServer(status == 405, "and ended with POST, got \(status)")
+        (status, _) = request("PUT", "/v2/activities/s1", port: port)
+        checkServer(status == 415, "an update without JSON, got \(status)")
+        (status, _) = request("PUT", "/v2/activities/s1", port: port, token: nil, body: "{}")
+        checkServer(status == 401, "an update without the token, got \(status)")
+
+        let events = received.wait(until: { $0.count >= 4 })
+        checkServer(events == ["update claude:s1 set(\"Thinking\")", "end s1 0.0", "end s2 4.0", "remove s1"],
+                    "exactly the well-formed activity requests reach the notch, got \(events)")
         server.stop()
     }
 }

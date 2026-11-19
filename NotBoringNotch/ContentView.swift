@@ -45,6 +45,7 @@ struct ContentView: View {
     @Default(.useMusicVisualizer) var useMusicVisualizer
 
     @Default(.showNotHumanFace) var showNotHumanFace
+    @Default(.musicAheadOfActivities) var musicAheadOfActivities
     @Default(.preventAutoClose) var preventAutoClose
 
     // Shared interactive spring for movement/resizing to avoid conflicting animations
@@ -111,7 +112,23 @@ struct ContentView: View {
         s.playerIdle = !musicManager.isPlaying && musicManager.isPlayerIdle
         s.faceEnabled = Defaults[.showNotHumanFace]
         s.hideOnClosed = vm.hideOnClosed
+        s.activities = coordinator.showsBanner(on: vm.screenUUID) ? channel.activities.standings : []
+        s.musicFirst = musicAheadOfActivities
         return s
+    }
+
+    private func activity(of resident: NotchResident) -> ChannelActivity? {
+        guard case let .activity(id) = resident else { return nil }
+        return channel.activities.activity(id: id)
+    }
+
+    /// Who holds the right wing beside a compact activity.
+    private func accessory(_ resident: NotchResident?) -> ActivityAccessory {
+        switch resident {
+        case .music: return .music
+        case let .activity(id): return channel.activities.activity(id: id).map { .activity($0) } ?? .none
+        case nil: return .none
+        }
     }
 
     /// What the closed notch shows, or nil while it is open.
@@ -128,6 +145,9 @@ struct ContentView: View {
             return 640
         case .banner(let banner):
             return base + 2 * BannerView.wingWidth(for: banner) - 20
+        case let .residents(.activity(id), secondary):
+            guard let activity = channel.activities.activity(id: id) else { return base }
+            return base + 2 * ActivityCompactView.wingWidth(for: activity, accessory: accessory(secondary)) - 20
         case .residents, .face:
             return base + squareWings
         default:
@@ -380,12 +400,18 @@ struct ContentView: View {
                                 .id(banner.id)
                                 .frame(alignment: .center)
                                 .transition(.opacity)
-                        case .residents(.music, _):
-                            MusicLiveActivity()
+                        case let .residents(.music, secondary):
+                            MusicLiveActivity(trailingActivity: secondary.flatMap(activity(of:)))
                                 .frame(alignment: .center)
+                        case let .residents(.activity(id), secondary):
+                            if let activity = channel.activities.activity(id: id) {
+                                ActivityCompactView(activity: activity, accessory: accessory(secondary))
+                                    .id(activity.id)
+                                    .transition(.opacity)
+                            }
                         case .face:
                             NotchFaceAnimation()
-                        case .hello, .residents, .nothing:
+                        case .hello, .nothing:
                             Rectangle().fill(.clear).frame(width: vm.closedNotchSize.width - 20, height: vm.effectiveClosedNotchHeight)
                         }
                     }
@@ -485,7 +511,9 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    func MusicLiveActivity() -> some View {
+    /// `trailingActivity` takes the right wing instead of the spectrum: the music holds compact,
+    /// an activity minimal.
+    func MusicLiveActivity(trailingActivity: ChannelActivity? = nil) -> some View {
         HStack {
             Image(nsImage: musicManager.albumArt)
                 .resizable()
@@ -548,7 +576,9 @@ struct ContentView: View {
                 )
 
             HStack {
-                if useMusicVisualizer {
+                if let trailingActivity {
+                    ActivityMinimalView(activity: trailingActivity)
+                } else if useMusicVisualizer {
                     Rectangle()
                         .fill(
                             Defaults[.coloredSpectrogram]

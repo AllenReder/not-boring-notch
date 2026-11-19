@@ -46,6 +46,7 @@ final class NotchChannel: ObservableObject {
 
     @Published private var banners = BannerQueue()
     @Published private(set) var inbox = NotificationInbox()
+    @Published private(set) var activities = ActivityStore()
     @Published private(set) var status: Status = .off
     /// Where the port and token are published for clients to read, once the channel is up.
     @Published private(set) var discoveryPath: String?
@@ -66,6 +67,8 @@ final class NotchChannel: ObservableObject {
 
     private let server = ChannelServer()
     private var dismissTask: Task<Void, Never>?
+    /// Wakes when the next activity is due to leave.
+    private var sweepTask: Task<Void, Never>?
     /// The banner whose clock is running, so that drawing the same one again does not refund its
     /// duration.
     private var clocked: ChannelNotification?
@@ -86,6 +89,9 @@ final class NotchChannel: ObservableObject {
         }
         server.onWithdraw = { [weak self] id in
             Task { @MainActor in self?.withdraw(id: id) }
+        }
+        server.onActivity = { [weak self] request in
+            Task { @MainActor in self?.handle(request) }
         }
         server.onStateChange = { [weak self] state in
             Task { @MainActor in self?.apply(state) }
@@ -155,8 +161,10 @@ final class NotchChannel: ObservableObject {
             dismissTask?.cancel()
             clocked = nil
             seenBannerID = nil
+            sweepTask?.cancel()
             withAnimation(.smooth(duration: 0.35)) {
                 banners.removeAll()
+                activities.removeAll()
             }
             status = .off
             removeDiscoveryFiles()
@@ -294,6 +302,78 @@ final class NotchChannel: ObservableObject {
             inbox.remove(id: id)
         }
         saveInbox()
+    }
+
+    // MARK: - Activities
+
+    /// An activity request from a sender. Updates change the activity in place and silently; only an
+    /// `alert` reaches the user as a notification, and only an end leaves one in the Inbox.
+    func handle(_ request: ChannelServer.ActivityRequest) {
+        let now = Date()
+        switch request {
+        case let .update(id, update):
+            let activity = withAnimation(.smooth(duration: 0.35)) {
+                activities.update(id: id, with: update, now: now)
+            }
+            if let alert = update.alert {
+                deliver(activity.notification(for: alert, now: now))
+            }
+
+        case let .end(id, update, ending):
+            let ended = withAnimation(.smooth(duration: 0.35)) {
+                activities.end(id: id, with: update, ending: ending, now: now)
+            }
+            guard let ended else { break }
+            // An alert on the end is the sender asking for the ending to be announced; otherwise it
+            // is filed quietly, replacing whatever alert the activity left in the Inbox before.
+            if let alert = update.alert {
+                deliver(ended.notification(for: alert, now: now))
+            } else if ending.leavesNotification {
+                deliver(ended.outcome(now: now))
+            }
+
+        case let .remove(id):
+            withAnimation(.smooth(duration: 0.35)) {
+                _ = activities.remove(id: id)
+            }
+            withdraw(id: ChannelActivity.notificationID(for: id))
+        }
+        scheduleSweep()
+    }
+
+    /// The activity's default action, as a click on it performs. One that has ended is done with.
+    func open(_ activity: ChannelActivity) {
+        if let target = activity.clickTarget {
+            perform(target)
+        }
+        if activity.isEnded {
+            dismissActivity(id: activity.id)
+        }
+    }
+
+    /// The user put it away. A sender that updates it again brings it back.
+    func dismissActivity(id: String) {
+        withAnimation(.smooth(duration: 0.35)) {
+            _ = activities.remove(id: id)
+        }
+        scheduleSweep()
+    }
+
+    private func scheduleSweep() {
+        sweepTask?.cancel()
+        guard let deadline = activities.nextDeadline else {
+            sweepTask = nil
+            return
+        }
+        sweepTask = Task { [weak self] in
+            let wait = max(0, deadline.timeIntervalSinceNow)
+            try? await Task.sleep(for: .seconds(wait))
+            guard !Task.isCancelled, let self else { return }
+            withAnimation(.smooth(duration: 0.35)) {
+                _ = self.activities.sweep(now: Date())
+            }
+            self.scheduleSweep()
+        }
     }
 
     // MARK: - The banner

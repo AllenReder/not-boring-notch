@@ -125,6 +125,19 @@ struct IntegrationsSettings: View {
                 } header: {
                     Text("Inbox")
                 }
+
+                Section {
+                    Defaults.Toggle(key: .musicAheadOfActivities) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Keep the music ahead of activities")
+                            Text("The closed notch shows two things at once. By default an activity takes the larger place and the music shrinks to its spectrum; this keeps the album art instead.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } header: {
+                    Text("Activities")
+                }
             }
         }
         .formStyle(.grouped)
