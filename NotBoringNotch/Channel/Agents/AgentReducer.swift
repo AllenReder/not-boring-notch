@@ -35,12 +35,9 @@ enum AgentReducer {
         var effects: [AgentEffect] = []
 
         if case .sessionEnded = envelope.event, envelope.subagentID == nil {
-            // A T3 thread that has moved on to a newer agent session is not ended by the old one.
-            if let session, session.sessionID != envelope.sessionID { return (session, []) }
             return (nil, [.calmed(s.key)])
         }
 
-        let newAgentSession = session.map { $0.sessionID != envelope.sessionID } ?? false
         s.observe(envelope, now: now)
 
         // A sub-agent's own events say it is alive and nothing about its parent, except that a
@@ -75,10 +72,7 @@ enum AgentReducer {
         }
 
         switch envelope.event {
-        case .sessionStarted:
-            if newAgentSession { goIdle(&s) }
-
-        case .subagentStarted, .subagentStopped:
+        case .sessionStarted, .subagentStarted, .subagentStopped:
             break
 
         case .promptSubmitted:
@@ -158,12 +152,6 @@ private extension AgentSession {
         if let cwd = envelope.cwd { self.cwd = cwd }
         if let pid = envelope.pid, pid != process?.pid {
             process = AgentProcess(pid: pid, startedAt: nil)
-        }
-        if sessionID != envelope.sessionID {
-            // The thread has begun a new agent session.
-            sessionID = envelope.sessionID
-            agent = envelope.agent
-            subagents = []
         }
     }
 }

@@ -93,7 +93,7 @@ struct AgentsRig {
     }
 
     func phase(_ session: String = "s1") -> String {
-        let key = AgentSessionKey(agent: agent, sessionID: session, host: AgentAdapter.host(from: headers))
+        let key = AgentSessionKey(agent: agent, sessionID: session)
         return store.sessions[key].map { agentsDescribe($0.phase) } ?? "gone"
     }
 }
@@ -129,7 +129,7 @@ struct AgentReducerTestsRunner {
         testASubagentsRequestNeedsTheUserAndItsAnswerEndsTheWait()
         testTheTurnIsNotOverWhileASubagentRuns()
         testInterruptAndSessionEnd()
-        testAT3ThreadIsOneSessionWhateverTheAgentCallsIt()
+        testAgentsSharingAT3ThreadAreTwoSessions()
         testTurnDurationIsMeasured()
         testTheSummaryCountsWhatIsActive()
         testSweepRemovesWhatHasExited()
@@ -238,7 +238,7 @@ struct AgentReducerTestsRunner {
         checkAgents(envelope.key.raw, "claude-code:s1", "outside T3 the key is the agent and its session id")
         let t3 = try! AgentAdapter.envelope(agent: .codex, payload: AgentsRig.payload("Stop", "s9", [:]),
                                             headers: ["X-Agent-T3-Thread": "th-7"])!
-        checkAgents(t3.key.raw, "t3:th-7", "inside T3 the key is the thread")
+        checkAgents(t3.key.raw, "codex:s9", "inside T3 too: the thread is where it runs, not who it is")
 
         func summary(_ fields: [String: Any]) -> String? {
             let e = try! AgentAdapter.envelope(agent: .claudeCode, payload: AgentsRig.payload("Stop", "s1", fields), headers: [:])!
@@ -489,32 +489,24 @@ struct AgentReducerTestsRunner {
         checkAgents(again.send("UserPromptSubmit"), ["calmed"], "a prompt withdraws any request left over from before a restart")
     }
 
-    static func testAT3ThreadIsOneSessionWhateverTheAgentCallsIt() {
+    static func testAgentsSharingAT3ThreadAreTwoSessions() {
+        // A Claude session in a thread runs `codex exec`: Codex inherits the thread's environment.
         var rig = agentsRig(.claudeCode, headers: ["X-Agent-T3-Thread": "th-1", "X-Agent-T3-Environment": "env-1"])
-        rig.send("SessionStart", session: "first")
-        rig.send("UserPromptSubmit", session: "first")
-        checkAgents(rig.store.sessions.count, 1)
-
-        // The thread starts a new agent session, as it does after /clear or a resume.
-        rig.send("SessionStart", session: "second")
-        checkAgents(rig.store.sessions.count, 1, "the new agent session is the same thread")
-        checkAgents(rig.phase(), "idle", "and a fresh session begins idle")
-
-        rig.send("UserPromptSubmit", session: "second")
-        checkAgents(rig.send("SessionEnd", session: "first"), [],
-                    "the old session ending late does not end the thread's new one")
-        checkAgents(rig.phase(), "working")
-
+        rig.send("UserPromptSubmit", session: "claude-1")
+        rig.send("PreToolUse", session: "claude-1", ["tool_name": "Bash"])
         rig.agent = .codex
         rig.send("UserPromptSubmit", session: "codex-1")
-        let session = rig.store.sessions.values.first!
-        checkAgents(session.agent, .codex, "the thread now runs Codex")
-        checkAgents(session.key.raw, "t3:th-1")
-        checkAgents(session.host, .t3Code(threadID: "th-1", environmentID: "env-1"))
-        checkAgents(rig.store.sessions.count, 1)
+        checkAgents(rig.store.sessions.count, 2, "two agents, two sessions")
+        checkAgents(rig.store.summary.working, 2, "both working")
 
-        checkAgents(rig.send("SessionEnd", session: "codex-1"), ["calmed"], "the current session ending ends the thread's")
-        checkAgents(rig.store.sessions.count, 0)
+        checkAgents(rig.send("Stop", session: "codex-1").count, 1, "Codex finishing is its own turn")
+        checkAgents(rig.store.summary.working, 1, "and leaves Claude working")
+        let claude = rig.store.sessions[AgentSessionKey(raw: "claude-code:claude-1")]
+        checkAgents(claude?.agent, .claudeCode, "Claude's session is untouched")
+        checkAgents(claude?.host, .t3Code(threadID: "th-1", environmentID: "env-1"), "and still jumps to its thread")
+
+        rig.send("SessionEnd", session: "codex-1")
+        checkAgents(rig.store.sessions.count, 1, "Codex ending ends only Codex")
     }
 
     static func testTurnDurationIsMeasured() {

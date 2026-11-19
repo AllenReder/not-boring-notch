@@ -39,6 +39,6 @@ struct AgentEnvelope: Equatable {
     let pid: Int32?
 
     var key: AgentSessionKey {
-        AgentSessionKey(agent: agent, sessionID: sessionID, host: host)
+        AgentSessionKey(agent: agent, sessionID: sessionID)
     }
 }

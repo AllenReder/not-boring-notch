@@ -26,22 +26,19 @@ enum AgentHost: Equatable {
     case app(bundleID: String?, termProgram: String?, tmuxPane: String?)
 }
 
-/// A T3 thread may run several agent sessions one after another, so a thread is one session as far
-/// as the notch goes; everything else is told apart by the agent's own session id.
+/// The agent and its own session id. Not the T3 thread: an agent started from inside a thread (a
+/// Claude session that runs `codex exec`, say) inherits the thread's environment, and keyed by the
+/// thread it would take over the thread's own session. A thread that moves on to a new agent
+/// session leaves the old one to its SessionEnd, or to its process exiting.
 struct AgentSessionKey: Hashable {
-    let raw: String   // "t3:<thread>" | "claude-code:<session_id>"
+    let raw: String   // "claude-code:<session_id>"
 
     init(raw: String) {
         self.raw = raw
     }
 
-    init(agent: AgentKind, sessionID: String, host: AgentHost) {
-        switch host {
-        case let .t3Code(threadID, _):
-            raw = "t3:\(threadID)"
-        case .app:
-            raw = "\(agent.rawValue):\(sessionID)"
-        }
+    init(agent: AgentKind, sessionID: String) {
+        raw = "\(agent.rawValue):\(sessionID)"
     }
 }
 
@@ -78,9 +75,9 @@ struct AgentProcess: Equatable {
 
 struct AgentSession: Equatable {
     let key: AgentSessionKey
-    var agent: AgentKind
+    let agent: AgentKind
     /// The agent's own id. For a T3 thread it changes when the thread starts a new agent session.
-    var sessionID: String
+    let sessionID: String
     var host: AgentHost
     var cwd: String?
     var process: AgentProcess?

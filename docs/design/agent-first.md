@@ -63,8 +63,8 @@ enum AgentHost: Equatable {
     case app(bundleID: String?, termProgram: String?, tmuxPane: String?)
 }
 
-/// T3 线程可能先后换过几个 agent 会话，按线程算一个；其余按 agent 的 session_id。
-struct AgentSessionKey: Hashable { let raw: String }   // "t3:<thread>" | "claude-code:<session_id>"
+/// 按 agent + session_id。实测：在 T3 线程里启动的子 agent（如 Claude 跑 `codex exec`）继承线程环境，按线程作 key 会互相顶掉（2026-11-19 修订）。
+struct AgentSessionKey: Hashable { let raw: String }   // "claude-code:<session_id>"
 
 enum AgentWait: Equatable { case approval(tool: String?), question }
 
