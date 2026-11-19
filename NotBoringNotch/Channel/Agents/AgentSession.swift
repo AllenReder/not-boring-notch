@@ -25,6 +25,12 @@ enum AgentKind: String, Codable, CaseIterable {
     }
 }
 
+/// How a session's last turn ended, when it ran to the end.
+enum AgentTurnOutcome: Equatable {
+    case finished
+    case failed
+}
+
 /// How a session's turn came out, as the dot on its mark in a banner or the Inbox.
 enum AgentBadge: String, Codable {
     case finished
@@ -109,6 +115,9 @@ struct AgentSession: Equatable {
     var waitingSubagent: String?
     /// The title of the T3 thread it runs in, once T3 Code has said.
     var threadTitle: String?
+    /// How the last turn ended, while the session is idle after it. Nil after an interrupt, and
+    /// before the first turn.
+    var lastTurn: AgentTurnOutcome?
 
     /// The last segment of the working directory.
     var projectName: String {

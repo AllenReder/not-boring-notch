@@ -133,6 +133,7 @@ struct AgentReducerTestsRunner {
         testASubagentsRequestNeedsTheUserAndItsAnswerEndsTheWait()
         testTheTurnIsNotOverWhileASubagentRuns()
         testInterruptAndSessionEnd()
+        testAnIdleSessionRemembersHowItsLastTurnEnded()
         testAgentsSharingAT3ThreadAreTwoSessions()
         testAT3SessionIsCalledByItsThreadsTitle()
         testThreadTitlesAreAskedForOnceAndAgainOnlyWhileInATurn()
@@ -525,6 +526,31 @@ struct AgentReducerTestsRunner {
         checkAgents(failed.send("StopFailure", ["error": "server_error"]), ["finished(server_error,failed,2s)"],
                     "a turn that failed is over, whatever else is running")
         checkAgents(failed.phase(), "idle")
+    }
+
+    static func testAnIdleSessionRemembersHowItsLastTurnEnded() {
+        var rig = agentsRig()
+        var lastTurn: AgentTurnOutcome? { rig.store.sessions.values.first?.lastTurn }
+        rig.send("SessionStart")
+        checkAgents(lastTurn, nil, "no turn yet")
+        rig.send("UserPromptSubmit")
+        rig.send("Stop")
+        checkAgents(lastTurn, .finished, "a turn that finished")
+        rig.send("Stop")
+        checkAgents(lastTurn, .finished, "a stray Stop changes nothing")
+        rig.send("UserPromptSubmit")
+        checkAgents(lastTurn, nil, "a new turn forgets the old one")
+        rig.send("StopFailure", ["error": "rate_limit"])
+        checkAgents(lastTurn, .failed, "a turn that failed")
+        rig.send("UserPromptSubmit")
+        rig.send("PermissionRequest", ["tool_name": "Bash"])
+        rig.send("Stop")
+        checkAgents(lastTurn, .finished, "a turn that ended while waiting still ended")
+
+        var codex = agentsRig(.codex)
+        codex.send("UserPromptSubmit")
+        codex.send("Interrupt")
+        checkAgents(codex.store.sessions.values.first?.lastTurn, nil, "an interrupted turn did not end")
     }
 
     static func testInterruptAndSessionEnd() {

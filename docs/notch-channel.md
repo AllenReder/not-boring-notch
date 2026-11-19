@@ -231,8 +231,10 @@ are left out.
 - **It needs you.** A permission request or a question raises a time-sensitive banner, which stays
   until seen and is taken back as soon as the session carries on, ends, or is interrupted.
 - **The Inbox.** An *Agents* section at the top lists every session with its name, what it is
-  doing, and how long. Clicking a row, or a notification about it, goes to its T3 thread or its
-  app.
+  doing, and how long. Its mark breathes while it works, as in the closed notch. Otherwise a dot
+  on the mark says how it stands: amber while it waits for you, then green or red once idle, for
+  how its last turn ended. A session that was interrupted, or has had no turn yet, has no dot.
+  Clicking a row, or a notification about it, goes to its T3 thread or its app.
 - **Names.** A session is named after the last folder of its working directory. A session in a T3
   Code thread is named after the thread, with the folder after it in grey: `Agent通知功能 ·
   notch-channel-v2`. The helper reads the title with T3 Code's own CLI, `~/.t3/bin/t3 thread show

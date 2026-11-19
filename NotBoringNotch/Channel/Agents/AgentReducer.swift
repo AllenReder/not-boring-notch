@@ -31,7 +31,7 @@ enum AgentReducer {
         var s = session ?? AgentSession(key: envelope.key, agent: envelope.agent, sessionID: envelope.sessionID,
                                         host: envelope.host, cwd: envelope.cwd, process: nil, phase: .idle,
                                         turnStartedAt: nil, updatedAt: now, subagents: [], waitingSubagent: nil,
-                                        threadTitle: nil)
+                                        threadTitle: nil, lastTurn: nil)
         let before = s.phase
         var effects: [AgentEffect] = []
 
@@ -114,7 +114,10 @@ enum AgentReducer {
             // while a sub-agent is still going.
             guard failed || s.subagents.isEmpty else { break }
             let duration = s.turnStartedAt.map { now.timeIntervalSince($0) } ?? 0
+            // A stray end, from an idle session, leaves the last turn as it was.
+            let lastTurn = before == .idle ? s.lastTurn : (failed ? .failed : .finished)
             goIdle(&s)
+            s.lastTurn = lastTurn
             if before.isWorking {
                 effects.append(.turnFinished(s, summary: summary, failed: failed, duration: duration))
             }
@@ -135,9 +138,11 @@ enum AgentReducer {
     /// A session that is about to be working, or waiting, is in a turn from now on.
     private static func enterTurn(_ s: inout AgentSession, now: Date) {
         if s.turnStartedAt == nil { s.turnStartedAt = now }
+        s.lastTurn = nil
     }
 
     private static func goIdle(_ s: inout AgentSession) {
+        s.lastTurn = nil
         s.phase = .idle
         s.turnStartedAt = nil
         s.subagents = []

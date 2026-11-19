@@ -99,15 +99,37 @@ struct AgentBadgeDot: View {
     }
 }
 
+/// Dims and shrinks its content a little and back, slowly, while `isActive`. Every breathing mark
+/// keeps the same time, so the closed notch and the Inbox breathe together.
+struct AgentBreathing: ViewModifier {
+    let isActive: Bool
+
+    /// Seconds for one breath, dim and back.
+    private static let breath: TimeInterval = 2.4
+
+    func body(content: Content) -> some View {
+        // The timeline stops asking for frames while nothing breathes.
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !isActive)) { context in
+            let depth = isActive ? Self.depth(at: context.date) : 0
+            content
+                .opacity(1 - 0.55 * depth)
+                .scaleEffect(1 - 0.1 * depth)
+        }
+    }
+
+    /// 0 at full breath, 1 at the dimmest, easing in and out.
+    private static func depth(at date: Date) -> Double {
+        let phase = date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: breath) / breath
+        return (1 - cos(phase * 2 * .pi)) / 2
+    }
+}
+
 /// One mark per kind of agent at work, each overlapping the one before it. The stack breathes
 /// while something works; while somebody waits it holds still, with an amber dot.
 struct AgentMarkStack: View {
     let kinds: [AgentKind]
     let isBreathing: Bool
     let isWaiting: Bool
-
-    /// Seconds for one breath, dim and back.
-    private static let breath: TimeInterval = 2.4
 
     static let markSize: CGFloat = 16
     private static let step: CGFloat = 14
@@ -117,25 +139,12 @@ struct AgentMarkStack: View {
     }
 
     var body: some View {
-        // The timeline stops asking for frames when the stack is not breathing.
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !breathes)) { context in
-            let depth = breathes ? Self.depth(at: context.date) : 0
-            marks
-                .opacity(1 - 0.55 * depth)
-                .scaleEffect(1 - 0.1 * depth)
-        }
-        .overlay(alignment: .bottomTrailing) {
-            if isWaiting { AgentBadgeDot(color: agentAttentionColor) }
-        }
-        .frame(width: Self.width(for: kinds.count), height: Self.markSize, alignment: .leading)
-    }
-
-    private var breathes: Bool { isBreathing && !isWaiting }
-
-    /// 0 at full breath, 1 at the dimmest, easing in and out.
-    private static func depth(at date: Date) -> Double {
-        let phase = date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: breath) / breath
-        return (1 - cos(phase * 2 * .pi)) / 2
+        marks
+            .modifier(AgentBreathing(isActive: isBreathing && !isWaiting))
+            .overlay(alignment: .bottomTrailing) {
+                if isWaiting { AgentBadgeDot(color: agentAttentionColor) }
+            }
+            .frame(width: Self.width(for: kinds.count), height: Self.markSize, alignment: .leading)
     }
 
     private var marks: some View {
@@ -257,14 +266,12 @@ struct AgentRow: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            Group {
-                if case .waiting = session.phase {
-                    AgentBadgedMark(kind: session.agent, badge: .waiting)
-                } else {
-                    AgentMark(kind: session.agent)
+            AgentMark(kind: session.agent)
+                .modifier(AgentBreathing(isActive: session.phase.isWorking))
+                .overlay(alignment: .bottomTrailing) {
+                    if let badge { AgentBadgeDot(color: badge.color) }
                 }
-            }
-            .padding(5)
+                .padding(5)
             .frame(width: 28, height: 28)
 
             VStack(alignment: .leading, spacing: 3) {
@@ -304,6 +311,21 @@ struct AgentRow: View {
         .onTapGesture(perform: onClick)
         .onHover { hovering in
             withAnimation(.smooth(duration: 0.15)) { isHovering = hovering }
+        }
+    }
+
+    /// Amber while it waits for the user; once idle, how its last turn ended. A working mark
+    /// breathes instead.
+    private var badge: AgentBadge? {
+        switch session.phase {
+        case .waiting: return .waiting
+        case .working: return nil
+        case .idle:
+            switch session.lastTurn {
+            case .finished: return .finished
+            case .failed: return .failed
+            case nil: return nil
+            }
         }
     }
 
