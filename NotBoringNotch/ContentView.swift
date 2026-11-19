@@ -95,28 +95,44 @@ struct ContentView: View {
         return banner
     }
 
+    /// Everything the closed notch's content depends on, for the arbiter to decide from.
+    private var closedSituation: ClosedNotchSituation {
+        var s = ClosedNotchSituation()
+        s.helloRunning = coordinator.helloAnimationRunning
+        s.batteryNotice = coordinator.expandingView.show && coordinator.expandingView.type == .battery
+            && Defaults[.showPowerStatusNotifications]
+        s.inlineHUD = coordinator.sneakPeek.show && Defaults[.inlineHUD]
+            && coordinator.sneakPeek.type != .music && coordinator.sneakPeek.type != .battery
+        s.banner = closedBanner
+        s.otherExpansion = coordinator.expandingView.show && coordinator.expandingView.type != .music
+        s.musicExpansion = coordinator.expandingView.show && coordinator.expandingView.type == .music
+        s.musicPresent = (musicManager.isPlaying || !musicManager.isPlayerIdle)
+            && coordinator.musicLiveActivityEnabled
+        s.playerIdle = !musicManager.isPlaying && musicManager.isPlayerIdle
+        s.faceEnabled = Defaults[.showNotHumanFace]
+        s.hideOnClosed = vm.hideOnClosed
+        return s
+    }
+
+    /// What the closed notch shows, or nil while it is open.
+    private var closedContent: ClosedNotchContent? {
+        vm.notchState == .closed ? ClosedNotchArbiter.resolve(closedSituation) : nil
+    }
+
     private var computedChinWidth: CGFloat {
-        var chinWidth: CGFloat = vm.closedNotchSize.width
+        let base = vm.closedNotchSize.width
+        let squareWings = 2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20
 
-        if coordinator.expandingView.type == .battery && coordinator.expandingView.show
-            && vm.notchState == .closed && Defaults[.showPowerStatusNotifications]
-        {
-            chinWidth = 640
-        } else if let banner = closedBanner {
-            chinWidth += (2 * BannerView.wingWidth(for: banner) - 20)
-        } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music)
-            && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle)
-            && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed
-        {
-            chinWidth += (2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20)
-        } else if !coordinator.expandingView.show && vm.notchState == .closed
-            && (!musicManager.isPlaying && musicManager.isPlayerIdle) && Defaults[.showNotHumanFace]
-            && !vm.hideOnClosed
-        {
-            chinWidth += (2 * max(0, vm.effectiveClosedNotchHeight - 12) + 20)
+        switch closedContent {
+        case .batteryNotice:
+            return 640
+        case .banner(let banner):
+            return base + 2 * BannerView.wingWidth(for: banner) - 20
+        case .residents, .face:
+            return base + squareWings
+        default:
+            return base
         }
-
-        return chinWidth
     }
 
     var body: some View {
@@ -325,53 +341,54 @@ struct ContentView: View {
                     .padding(.top, 40)
                     Spacer()
                 } else {
-                    if coordinator.expandingView.type == .battery && coordinator.expandingView.show
-                        && vm.notchState == .closed && Defaults[.showPowerStatusNotifications]
-                    {
-                        HStack(spacing: 0) {
-                            HStack {
-                                Text(batteryModel.statusText)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.white)
-                            }
+                    if vm.notchState == .open {
+                        NotchHeader()
+                            .frame(height: vm.notchHeaderHeight)
+                            .opacity(gestureProgress != 0 ? 1.0 - min(abs(gestureProgress) * 0.1, 0.3) : 1.0)
+                    } else {
+                        switch closedContent ?? .nothing {
+                        case .batteryNotice:
+                            HStack(spacing: 0) {
+                                HStack {
+                                    Text(batteryModel.statusText)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.white)
+                                }
 
-                            Rectangle()
-                                .fill(.black)
-                                .frame(width: vm.closedNotchSize.width + 10)
+                                Rectangle()
+                                    .fill(.black)
+                                    .frame(width: vm.closedNotchSize.width + 10)
 
-                            HStack {
-                                NotchBatteryView(
-                                    batteryWidth: 30,
-                                    isCharging: batteryModel.isCharging,
-                                    isInLowPowerMode: batteryModel.isInLowPowerMode,
-                                    isPluggedIn: batteryModel.isPluggedIn,
-                                    levelBattery: batteryModel.levelBattery,
-                                    isForNotification: true
-                                )
+                                HStack {
+                                    NotchBatteryView(
+                                        batteryWidth: 30,
+                                        isCharging: batteryModel.isCharging,
+                                        isInLowPowerMode: batteryModel.isInLowPowerMode,
+                                        isPluggedIn: batteryModel.isPluggedIn,
+                                        levelBattery: batteryModel.levelBattery,
+                                        isForNotification: true
+                                    )
+                                }
+                                .frame(width: 76, alignment: .trailing)
                             }
-                            .frame(width: 76, alignment: .trailing)
+                            .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)
+                        case .inlineHUD:
+                            InlineHUD(type: $coordinator.sneakPeek.type, value: $coordinator.sneakPeek.value, icon: $coordinator.sneakPeek.icon, hoverAnimation: $isHovering, gestureProgress: $gestureProgress)
+                                .transition(.opacity)
+                        case .banner(let banner):
+                            BannerView(notification: banner)
+                                .id(banner.id)
+                                .frame(alignment: .center)
+                                .transition(.opacity)
+                        case .residents(.music, _):
+                            MusicLiveActivity()
+                                .frame(alignment: .center)
+                        case .face:
+                            NotchFaceAnimation()
+                        case .hello, .residents, .nothing:
+                            Rectangle().fill(.clear).frame(width: vm.closedNotchSize.width - 20, height: vm.effectiveClosedNotchHeight)
                         }
-                        .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)
-                      } else if coordinator.sneakPeek.show && Defaults[.inlineHUD] && (coordinator.sneakPeek.type != .music) && (coordinator.sneakPeek.type != .battery) && vm.notchState == .closed {
-                          InlineHUD(type: $coordinator.sneakPeek.type, value: $coordinator.sneakPeek.value, icon: $coordinator.sneakPeek.icon, hoverAnimation: $isHovering, gestureProgress: $gestureProgress)
-                              .transition(.opacity)
-                      } else if let banner = closedBanner {
-                          BannerView(notification: banner)
-                              .id(banner.id)
-                              .frame(alignment: .center)
-                              .transition(.opacity)
-                      } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music) && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle) && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed {
-                          MusicLiveActivity()
-                              .frame(alignment: .center)
-                      } else if !coordinator.expandingView.show && vm.notchState == .closed && (!musicManager.isPlaying && musicManager.isPlayerIdle) && Defaults[.showNotHumanFace] && !vm.hideOnClosed  {
-                          NotchFaceAnimation()
-                       } else if vm.notchState == .open {
-                           NotchHeader()
-                               .frame(height: vm.notchHeaderHeight)
-                               .opacity(gestureProgress != 0 ? 1.0 - min(abs(gestureProgress) * 0.1, 0.3) : 1.0)
-                       } else {
-                           Rectangle().fill(.clear).frame(width: vm.closedNotchSize.width - 20, height: vm.effectiveClosedNotchHeight)
-                       }
+                    }
 
                       if coordinator.sneakPeek.show {
                           if (coordinator.sneakPeek.type != .music) && (coordinator.sneakPeek.type != .battery) && !Defaults[.inlineHUD] && vm.notchState == .closed {
