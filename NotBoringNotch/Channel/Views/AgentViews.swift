@@ -38,13 +38,16 @@ extension AgentKind {
         switch self {
         case .claudeCode: return "AgentClaudeCode"
         case .codex: return "AgentCodex"
+        case .pi: return "AgentPi"
         }
     }
 
-    var markTint: Color {
+    /// The colour a one-colour mark is drawn in. Nil for a mark drawn in its own colours.
+    var markTint: Color? {
         switch self {
         case .claudeCode: return Color(red: 0xD9 / 255, green: 0x77 / 255, blue: 0x57 / 255)
         case .codex: return .white
+        case .pi: return nil
         }
     }
 }
@@ -65,10 +68,10 @@ struct AgentMark: View {
 
     var body: some View {
         Image(kind.markAsset)
+            .renderingMode(kind.markTint == nil ? .original : .template)
             .resizable()
-            .renderingMode(.template)
             .aspectRatio(contentMode: .fit)
-            .foregroundStyle(kind.markTint)
+            .foregroundStyle(kind.markTint ?? .primary)
     }
 }
 

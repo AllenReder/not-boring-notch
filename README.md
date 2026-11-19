@@ -155,3 +155,4 @@ This project is open-source under the [GNU General Public License v3.0](LICENSE)
 - **[SkyLightWindow](https://github.com/Lakr233/SkyLightWindow)** – macOS SkyLight window management.
 - **[CodeIsland](https://github.com/wxtsky/CodeIsland)** (MIT) – The agent attention rhythm and hook-installation approach the agent notifications follow.
 - **[LobeHub Icons](https://github.com/lobehub/lobe-icons)** (MIT) – The Claude Code and Codex marks. The marks themselves are trademarks of Anthropic and OpenAI.
+- **[pi](https://pi.dev)** – The pi mark, from pi.dev. It belongs to pi's authors.

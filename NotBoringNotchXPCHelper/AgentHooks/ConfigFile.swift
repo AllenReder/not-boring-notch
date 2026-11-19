@@ -27,6 +27,8 @@ enum AgentHookError: Error, Equatable, LocalizedError {
     case validationFailed(path: String, reason: String)
     case unsafeHome(path: String)
     case scriptHasNoVersion
+    /// A file at a path of ours that we did not write.
+    case notOurs(path: String)
 
     var errorDescription: String? {
         switch self {
@@ -41,6 +43,7 @@ enum AgentHookError: Error, Equatable, LocalizedError {
         case .validationFailed(let path, let reason): return "The edit to \(path) was undone: \(reason)."
         case .unsafeHome(let path): return "The hook path \(path) contains characters that hooks can't run."
         case .scriptHasNoVersion: return "The hook script has no version marker."
+        case .notOurs(let path): return "\(path) was not written by this app, so it was left alone."
         }
     }
 }

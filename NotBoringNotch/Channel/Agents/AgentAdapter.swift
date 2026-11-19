@@ -82,6 +82,7 @@ enum AgentAdapter {
         switch agent {
         case .claudeCode: return claudeCode
         case .codex: return codex
+        case .pi: return pi
         }
     }
 
@@ -124,6 +125,30 @@ enum AgentAdapter {
             "Stop": { .turnEnded(summary: $0.summary, failed: false) },
             "Interrupt": { _ in .interrupted },
             "SessionEnd": { _ in .sessionEnded },
+        ])
+
+    /// pi's own event names, as `PiExtension` forwards them. pi asks for approval through an
+    /// extension's confirm dialog (T3 Code's, in a T3 thread), and for an answer through a select
+    /// or an input; `ui_prompt_end` is the user having replied.
+    private static let pi = Dialect(
+        askUserTools: ["ask_user_question"],
+        events: [
+            "session_start": { _ in .sessionStarted },
+            "agent_start": { _ in .promptSubmitted },
+            "tool_execution_start": { .toolStarted(name: $0.toolName, asksUser: $0.asksUser) },
+            "tool_execution_end": { _ in .toolFinished },
+            "ui_prompt_start": { hook in
+                hook.string("prompt_kind") == "confirm"
+                    ? .permissionRequested(tool: hook.toolName, asksUser: hook.asksUser)
+                    : .needsAttention(.question)
+            },
+            "ui_prompt_end": { _ in .toolFinished },
+            "agent_settled": { hook in
+                if hook.json["aborted"] as? Bool == true { return .interrupted }
+                let failed = hook.string("stop_reason") == "error"
+                return .turnEnded(summary: failed ? hook.string("error") ?? hook.summary : hook.summary, failed: failed)
+            },
+            "session_shutdown": { _ in .sessionEnded },
         ])
 
     // MARK: - Reading a hook

@@ -5,7 +5,7 @@
 //  Standalone runner, discovered by scripts/run-tests.sh, which compiles it against the
 //  sources declared below.
 //
-// SOURCES: NotBoringNotchXPCHelper/AgentHooks/AgentHookInstaller.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookEntries.swift NotBoringNotchXPCHelper/AgentHooks/ConfigFile.swift NotBoringNotchXPCHelper/AgentHooks/JSONSurgeon.swift NotBoringNotchXPCHelper/AgentHooks/CodexHooksConfig.swift NotBoringNotchXPCHelper/AgentHooks/AgentHooksModels.swift NotBoringNotch/Agents/Hooks/AgentHookScript.swift
+// SOURCES: NotBoringNotchXPCHelper/AgentHooks/AgentHookInstaller.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookEntries.swift NotBoringNotchXPCHelper/AgentHooks/ConfigFile.swift NotBoringNotchXPCHelper/AgentHooks/JSONSurgeon.swift NotBoringNotchXPCHelper/AgentHooks/CodexHooksConfig.swift NotBoringNotchXPCHelper/AgentHooks/AgentHooksModels.swift NotBoringNotch/Agents/Hooks/AgentHookScript.swift NotBoringNotchXPCHelper/AgentHooks/PiExtension.swift
 //
 //  Every test runs against a temporary HOME. The files here belong to the user, so the claim
 //  that matters is about bytes: whatever the installer did not write, it did not change.
@@ -523,10 +523,60 @@ func testVersionMarkerParsing() {
     checkInstall(AgentHookInstaller.version(of: "#!/bin/sh\n# notch-agent-hook-version: x\n") == nil, "a garbled marker, no version")
 }
 
+// MARK: - pi
+
+func testPiExtensionIsOneFileOfOurs() {
+    let home = InstallHome()
+    defer { home.cleanUp() }
+    let file = home.path(".pi/agent/extensions/not-boring-notch.ts")
+    let neighbour = home.path(".pi/agent/extensions/bark-notify.ts")
+    home.write("export default function () {}\n", to: neighbour)
+
+    checkInstall(home.installer.status(of: .pi, bundledScript: script).state == .notInstalled, "nothing there yet")
+    let report = home.install([.pi])
+    checkInstall(report.status(of: .pi)?.state == .installed, "installed, got \(String(describing: report.status(of: .pi)))")
+    checkInstall(home.read(file) == PiExtension.source, "the extension is written as bundled")
+    checkInstall(PiExtension.version(of: PiExtension.source) == PiExtension.version, "and carries its version")
+    checkInstall(!FileManager.default.fileExists(atPath: home.installer.scriptURL.path), "pi needs no hook script")
+    checkInstall(!FileManager.default.fileExists(atPath: home.path(".claude").path), "Claude Code was not touched")
+
+    home.write(PiExtension.source + "// mine\n", to: file)
+    checkInstall(home.installer.status(of: .pi, bundledScript: script).state == .modified, "an edit is seen")
+    home.write(PiExtension.source.replacingOccurrences(of: "version: \(PiExtension.version)\n",
+                                                       with: "version: \(PiExtension.version - 1)\n"), to: file)
+    let stale = home.installer.report(bundledScript: script)
+    checkInstall(stale.status(of: .pi)?.state == .outdated, "an older version is seen")
+    checkInstall(stale.needingRepair == [.pi], "and a launch repairs it")
+    _ = home.install([.pi])
+    checkInstall(home.read(file) == PiExtension.source, "repaired")
+
+    let removed = home.installer.uninstall([.pi], bundledScript: script)
+    checkInstall(removed.status(of: .pi)?.state == .notInstalled, "removed")
+    checkInstall(!FileManager.default.fileExists(atPath: file.path), "the file is gone")
+    checkInstall(home.read(neighbour) == "export default function () {}\n", "the user's own extension stays")
+}
+
+func testPiExtensionLeavesAFileThatIsNotOurs() {
+    let home = InstallHome()
+    defer { home.cleanUp() }
+    let file = home.path(".pi/agent/extensions/not-boring-notch.ts")
+    let theirs = "// my own notch bridge\nexport default function () {}\n"
+    home.write(theirs, to: file)
+
+    let status = home.installer.status(of: .pi, bundledScript: script)
+    checkInstall(status.state == .notInstalled && status.problem != nil, "not ours, and says so: \(status)")
+    let report = home.install([.pi])
+    checkInstall(report.status(of: .pi)?.problem != nil, "install refuses")
+    _ = home.installer.uninstall([.pi], bundledScript: script)
+    checkInstall(home.read(file) == theirs, "neither install nor uninstall touched it")
+}
+
 @main
 enum AgentHookInstallerTests {
     static func main() {
         testVersionMarkerParsing()
+        testPiExtensionIsOneFileOfOurs()
+        testPiExtensionLeavesAFileThatIsNotOurs()
         testInstallChangesOnlyOurEntriesAndUninstallRestoresTheBytes()
         testUninstallRestoresTheMeaningWhereBytesCannotBeKept()
         testCodexInstallAndUninstall()

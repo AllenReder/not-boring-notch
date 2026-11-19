@@ -112,6 +112,10 @@ struct AgentReducerTestsRunner {
     static func main() {
         testReplayingAClaudeTurn()
         testReplayingACodexTurn()
+        testReplayingAPiTurn()
+        testReplayingAPiTurnThatWaitsForApproval()
+        testHowAPiTurnEnds()
+        testAPiPromptThatIsNotAConfirmIsAQuestion()
         testHooksTheTableDoesNotKnowAreIgnored()
         testPayloadsThatAreNotHooksAreRefused()
         testHeadersSayWhereTheSessionRuns()
@@ -166,6 +170,55 @@ struct AgentReducerTestsRunner {
     static func testReplayingAClaudeTurn() { replay(.claudeCode, "claude-turn.jsonl", tool: "Bash") }
 
     static func testReplayingACodexTurn() { replay(.codex, "codex-turn.jsonl", tool: "Bash") }
+
+    static func testReplayingAPiTurn() { replay(.pi, "pi-turn.jsonl", tool: "bash") }
+
+    /// Recorded with T3 Code's own pi extension asking for approval. pi starts the tool, then
+    /// asks, so the wait sits inside the tool.
+    static func testReplayingAPiTurnThatWaitsForApproval() {
+        var rig = agentsRig(.pi)
+        var phases: [String] = []
+        var effects: [[String]] = []
+        for line in fixture("pi-approval-turn.jsonl") {
+            rig.now.addTimeInterval(2)
+            let envelope = try! AgentAdapter.envelope(agent: .pi, payload: line, headers: [:])!
+            effects.append(agentsDescribe(rig.store.apply(envelope, now: rig.now)))
+            phases.append(rig.phase(envelope.sessionID))
+        }
+        checkAgents(phases, ["idle", "working", "working:bash", "waiting:approval:bash", "working", "working", "idle", "gone"],
+                    "the phase after each event")
+        checkAgents(effects, [[], ["calmed"], [], ["needs(approval:bash)"], ["calmed"], [], ["finished(done,ok,10s)"], ["calmed"]],
+                    "the wait is announced and taken back once answered")
+    }
+
+    static func testHowAPiTurnEnds() {
+        var aborted = agentsRig(.pi)
+        aborted.send("agent_start")
+        checkAgents(aborted.send("agent_settled", ["aborted": true, "stop_reason": "aborted"]), ["calmed"],
+                    "Escape is not a turn finishing")
+        checkAgents(aborted.phase(), "idle")
+
+        var failed = agentsRig(.pi)
+        failed.send("agent_start")
+        checkAgents(failed.send("agent_settled", after: 5, ["aborted": false, "stop_reason": "error",
+                                                            "error": "429 rate limited", "last_assistant_message": ""]),
+                    ["finished(429 rate limited,failed,5s)"], "an error is a failed turn, and says why")
+
+        var done = agentsRig(.pi)
+        done.send("agent_start")
+        checkAgents(done.send("agent_settled", after: 3, ["aborted": false, "stop_reason": "stop",
+                                                          "last_assistant_message": "Fixed it.\n\nDetails follow."]),
+                    ["finished(Fixed it.,ok,3s)"], "the first line of the reply is the banner's body")
+    }
+
+    static func testAPiPromptThatIsNotAConfirmIsAQuestion() {
+        var rig = agentsRig(.pi)
+        rig.send("agent_start")
+        checkAgents(rig.send("ui_prompt_start", ["prompt_kind": "select"]), ["needs(question)"], "a choice to make")
+        checkAgents(rig.send("ui_prompt_end", ["prompt_kind": "select"]), ["calmed"], "answered")
+        checkAgents(rig.phase(), "working")
+        checkAgents(rig.send("UserPromptSubmit"), ["ignored"], "pi does not speak Claude's names")
+    }
 
     // MARK: The adapter
 

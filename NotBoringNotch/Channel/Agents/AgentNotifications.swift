@@ -117,6 +117,7 @@ extension AgentKind {
         switch self {
         case .claudeCode: return "Claude Code"
         case .codex: return "Codex"
+        case .pi: return "Pi"
         }
     }
 }

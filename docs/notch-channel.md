@@ -167,7 +167,7 @@ terminal separately, which the sandbox does not allow.
 
 ## Agents
 
-The channel also knows what Claude Code and Codex sessions are doing. A hook in the agent posts
+The channel also knows what Claude Code, Codex and pi sessions are doing. A hook in the agent posts
 each event it fires, as the agent wrote it, and the notch works out the rest: how many sessions are
 working or waiting for you, when a turn has ended, and where a click should take you.
 
@@ -184,6 +184,7 @@ curl -X POST http://127.0.0.1:45999/v2/agents/claude-code/events \
 | --- | --- | --- |
 | `POST /v2/agents/claude-code/events` | `202 {"status":"accepted"}` | A Claude Code hook event. |
 | `POST /v2/agents/codex/events` | `202 {"status":"accepted"}` | A Codex hook event. |
+| `POST /v2/agents/pi/events` | `202 {"status":"accepted"}` | A pi extension event. |
 
 The body is the hook's JSON, untouched: the notch reads `hook_event_name`, `session_id`, `cwd`,
 `tool_name`, `notification_type` and `last_assistant_message` from it, and nothing else. A hook it
@@ -192,6 +193,15 @@ hooks does not break an older notch. A body that is not a JSON object gets `400 
 one without a `session_id` gets `400 missing_session_id`. The same token, origin and content-type
 rules apply as for notifications. This route takes bodies up to 4 MiB, because a hook carries the
 tool call it reports; every other route stays at 64 KiB.
+
+pi has no command hooks, so the notch installs an extension instead,
+`~/.pi/agent/extensions/not-boring-notch.ts`. It posts pi's own event names (`session_start`,
+`agent_start`, `tool_execution_start`, `tool_execution_end`, `ui_prompt_start`, `ui_prompt_end`,
+`agent_settled`, `session_shutdown`) with `session_id`, `cwd`, `tool_name`, `prompt_kind`,
+`aborted`, `stop_reason`, `error` and `last_assistant_message`, and sends the same headers as the
+hook script. A `confirm` prompt is an approval, any other prompt a question. It reports pi in a
+terminal and pi in T3 Code (`--mode rpc`), and leaves out `pi -p`, `--mode json` and pi's
+sub-agents, so a sub-agent is never counted as a session of its own.
 
 Everything the notch cannot read from the body, the hook script reports in headers. Empty values
 are left out.

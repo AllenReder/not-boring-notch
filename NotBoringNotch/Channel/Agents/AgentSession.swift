@@ -2,7 +2,7 @@
 //  AgentSession.swift
 //  NotBoringNotch
 //
-//  What the notch knows about one Claude Code or Codex session: where it runs, what it is doing,
+//  What the notch knows about one Claude Code, Codex or pi session: where it runs, what it is doing,
 //  and since when. Plain values; the rules that change them live in `AgentReducer`.
 //
 //  The shape follows Lookout's `AgentSession` (MIT, LookoutCore/AgentSession.swift), narrowed to
@@ -14,6 +14,7 @@ import Foundation
 enum AgentKind: String, Codable, CaseIterable {
     case claudeCode = "claude-code"
     case codex
+    case pi
 }
 
 /// How a session's turn came out, as the dot on its mark in a banner or the Inbox.
