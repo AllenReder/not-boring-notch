@@ -274,7 +274,9 @@ func testStatusFollowsWhatHappensToOurEntries() throws {
     checkInstall(modified.state == .modified && modified.problem != nil, "an edited entry is modified, got \(modified)")
     _ = home.install([.claudeCode], script: newer)
     checkInstall(home.status(.claudeCode, script: newer) == .installed, "repair puts it back")
-    checkInstall(!home.read(home.settings)!.contains("99"), "without the edit")
+    // The path in each entry holds a random UUID, so look for the timeout, not the digits.
+    let repaired = home.read(home.settings)!
+    checkInstall(!repaired.contains("\"timeout\": 99") && !repaired.contains("\"timeout\":99"), "without the edit")
 
     // A release that registers more events than the installed one.
     let spec = AgentHookSpec.of(.claudeCode)
