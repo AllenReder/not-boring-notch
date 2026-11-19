@@ -28,7 +28,7 @@ struct ContentView: View {
 
     @ObservedObject var coordinator = NotchViewCoordinator.shared
     @ObservedObject var musicManager = MusicManager.shared
-    @ObservedObject var reminderChannel = ReminderChannel.shared
+    @ObservedObject var channel = NotchChannel.shared
     @ObservedObject var batteryModel = BatteryStatusViewModel.shared
     @ObservedObject var brightnessManager = BrightnessManager.shared
     @ObservedObject var volumeManager = VolumeManager.shared
@@ -56,7 +56,9 @@ struct ContentView: View {
     /// Read by the gesture's handler rather than by the modifier that installs it: a modifier that
     /// comes and goes with the tab gives the surface a new identity on every switch, and a surface
     /// with a new identity does not animate its size — it only fades.
-    private var swipeUpBelongsToTheList: Bool { coordinator.currentView == .launcher }
+    private var swipeUpBelongsToTheList: Bool {
+        coordinator.currentView == .launcher || coordinator.currentView == .inbox
+    }
 
     private var topCornerRadius: CGFloat {
        ((vm.notchState == .open) && Defaults[.cornerRadiusScaling])
@@ -77,18 +79,20 @@ struct ContentView: View {
         )
     }
 
-    /// A Reminder follows the notch's display rule, so it appears wherever the notch's content does.
-    private var screenReminder: Reminder? {
-        guard let reminder = reminderChannel.visible,
-              coordinator.showsReminder(on: vm.screenUUID) else { return nil }
-        return reminder
+    /// A banner follows the notch's display rule, so it appears wherever the notch's content does.
+    private var screenBanner: ChannelNotification? {
+        guard let banner = channel.visibleBanner,
+              coordinator.showsBanner(on: vm.screenUUID) else { return nil }
+        return banner
     }
 
-    /// The Reminder the closed notch would draw. One that arrives while the notch is hidden stays
-    /// queued and unlit — its clock only starts when it is actually on screen.
-    private var closedReminder: Reminder? {
-        guard vm.notchState == .closed, !vm.hideOnClosed else { return nil }
-        return screenReminder
+    /// The banner the closed notch would draw. One that arrives while fullscreen hides the notch
+    /// stays queued and unlit — its clock only starts when it is actually on screen — unless it is
+    /// time-sensitive, which is what time-sensitive is for.
+    private var closedBanner: ChannelNotification? {
+        guard vm.notchState == .closed, let banner = screenBanner else { return nil }
+        guard !vm.hideOnClosed || banner.level == .timeSensitive else { return nil }
+        return banner
     }
 
     private var computedChinWidth: CGFloat {
@@ -98,9 +102,8 @@ struct ContentView: View {
             && vm.notchState == .closed && Defaults[.showPowerStatusNotifications]
         {
             chinWidth = 640
-        } else if let reminder = closedReminder {
-            let wing = ReminderLiveActivity.calculatedWingWidth(for: reminder)
-            chinWidth += (2 * wing - 20)
+        } else if let banner = closedBanner {
+            chinWidth += (2 * BannerView.wingWidth(for: banner) - 20)
         } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music)
             && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle)
             && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed
@@ -217,6 +220,7 @@ struct ContentView: View {
                                 isHovering = false
                             }
                         }
+                        followBanner(into: newState)
                     }
                     .onChange(of: vm.isBatteryPopoverActive) {
                         if !vm.isBatteryPopoverActive && !isHovering && vm.notchState == .open && !SharingStateManager.shared.preventNotchClose && !Defaults[.preventAutoClose] {
@@ -351,9 +355,9 @@ struct ContentView: View {
                       } else if coordinator.sneakPeek.show && Defaults[.inlineHUD] && (coordinator.sneakPeek.type != .music) && (coordinator.sneakPeek.type != .battery) && vm.notchState == .closed {
                           InlineHUD(type: $coordinator.sneakPeek.type, value: $coordinator.sneakPeek.value, icon: $coordinator.sneakPeek.icon, hoverAnimation: $isHovering, gestureProgress: $gestureProgress)
                               .transition(.opacity)
-                      } else if let reminder = closedReminder {
-                          ReminderLiveActivity(reminder: reminder)
-                              .id(reminder.id)
+                      } else if let banner = closedBanner {
+                          BannerView(notification: banner)
+                              .id(banner.id)
                               .frame(alignment: .center)
                               .transition(.opacity)
                       } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music) && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle) && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed {
@@ -413,30 +417,21 @@ struct ContentView: View {
               .zIndex(2)
             if vm.notchState == .open {
                 VStack {
-                    if let reminder = screenReminder {
-                        ReminderDetailView(reminder: reminder)
-                            .id(reminder.id)
-                            .transition(
-                                .asymmetric(
-                                    insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .top)),
-                                    removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .top))
-                                )
-                            )
-                    } else {
-                        Group {
-                            switch coordinator.currentView {
-                            case .home:
-                                NotchHomeView(albumArtNamespace: albumArtNamespace)
-                            case .shelf:
-                                ShelfView()
-                            case .launcher:
-                                LauncherView()
-                            case .performance:
-                                PerformanceView()
-                            }
+                    Group {
+                        switch coordinator.currentView {
+                        case .home:
+                            NotchHomeView(albumArtNamespace: albumArtNamespace)
+                        case .shelf:
+                            ShelfView()
+                        case .launcher:
+                            LauncherView()
+                        case .performance:
+                            PerformanceView()
+                        case .inbox:
+                            InboxView()
                         }
-                        .transition(.opacity)
                     }
+                    .transition(.opacity)
                 }
                 .transition(
                     .scale(scale: 0.8, anchor: .top)
@@ -595,6 +590,22 @@ struct ContentView: View {
     private func doOpen() {
         withAnimation(animationSpring) {
             vm.open()
+        }
+    }
+
+    /// Opening the notch over a banner is reaching for it, as pulling down a banner is on iOS: the
+    /// notch opens on the Inbox with that notification in view, and the banner has been seen once
+    /// the notch closes again. An opening that already chose its tab — the launcher's key, a file
+    /// dragged toward the shelf — keeps it.
+    private func followBanner(into state: NotchState) {
+        switch state {
+        case .open:
+            guard channel.notchOpened(showingBanner: screenBanner),
+                  coordinator.currentView != .launcher,
+                  !vm.anyDropZoneTargeting else { return }
+            coordinator.currentView = .inbox
+        case .closed:
+            channel.notchClosed()
         }
     }
 

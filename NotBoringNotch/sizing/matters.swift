@@ -17,6 +17,9 @@ let openNotchSize: CGSize = .init(width: 640, height: 190)
 /// surface has no room for. It reports the height it actually needs as the list changes; this is
 /// the ceiling the window is sized for.
 let launcherNotchSize: CGSize = .init(width: openNotchSize.width, height: 440)
+/// The most the Inbox ever asks for. Like the launcher, it reports the height its notifications
+/// need, and scrolls past this.
+let inboxNotchSize: CGSize = .init(width: openNotchSize.width, height: 340)
 /// The tallest surface any tab asks for, read from the tabs themselves so a new tab cannot be
 /// forgotten here. The window is sized to it, so a tab growing taller never clips.
 let maxOpenNotchSize: CGSize = NotchViews.allCases
@@ -30,13 +33,15 @@ let cornerRadiusInsets: (opened: (top: CGFloat, bottom: CGFloat), closed: (top: 
 
 extension NotchViews {
     /// The surface the notch grows to while this tab is open. Every tab shares the width for
-    /// now; the launcher is the first that asks for a different height.
+    /// now; the launcher and the Inbox ask for a different height.
     var expandedSize: CGSize {
         switch self {
         case .home, .shelf, .performance:
             return openNotchSize
         case .launcher:
             return launcherNotchSize
+        case .inbox:
+            return inboxNotchSize
         }
     }
 }

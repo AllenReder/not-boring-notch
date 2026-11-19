@@ -1,12 +1,12 @@
 //
-//  ReminderChannelServerTests.swift
+//  ChannelServerTests.swift
 //  Tests
 //
 //  Standalone runner, discovered by scripts/run-tests.sh, which compiles it against the
 //  sources declared below. The Tests folder is not part of an Xcode target, so each
 //  runner is compiled on its own.
 //
-// SOURCES: NotBoringNotch/managers/ReminderChannelServer.swift NotBoringNotch/models/Reminder.swift
+// SOURCES: NotBoringNotch/Channel/Server/ChannelServer.swift NotBoringNotch/Channel/Protocol/ChannelNotification.swift
 //
 //  Helper names are prefixed (`checkServer*`) so they stay distinguishable from the
 //  helpers in the other standalone runners in this folder.
@@ -85,12 +85,13 @@ func checkServerFreePort() -> UInt16? {
 }
 
 @main
-struct ReminderChannelServerTestsRunner {
+struct ChannelServerTestsRunner {
     static func main() {
         testStartingTwiceOnTheSamePortKeepsListening()
         testANewTokenDoesNotDropTheSocket()
         testAChangedPortIsRebound()
-        print("✅ ReminderChannelServerTests: all passed")
+        testTheRoutes()
+        print("✅ ChannelServerTests: all passed")
     }
 
     /// Starting the channel twice with the same settings must leave it listening.
@@ -106,7 +107,7 @@ struct ReminderChannelServerTestsRunner {
             return
         }
 
-        let server = ReminderChannelServer()
+        let server = ChannelServer()
         let recorder = ServerStateRecorder()
         server.onStateChange = { recorder.record(String(describing: $0)) }
 
@@ -133,7 +134,7 @@ struct ReminderChannelServerTestsRunner {
             return
         }
 
-        let server = ReminderChannelServer()
+        let server = ChannelServer()
         let recorder = ServerStateRecorder()
         server.onStateChange = { recorder.record(String(describing: $0)) }
 
@@ -158,7 +159,7 @@ struct ReminderChannelServerTestsRunner {
             return
         }
 
-        let server = ReminderChannelServer()
+        let server = ChannelServer()
         let recorder = ServerStateRecorder()
         server.onStateChange = { recorder.record(String(describing: $0)) }
 
@@ -175,6 +176,86 @@ struct ReminderChannelServerTestsRunner {
         checkServer(states.contains { $0.contains("\(otherPort)") && $0.hasPrefix("ready") },
                     "a changed port must be bound, got \(states)")
         checkServer(recorder.failures.isEmpty, "a changed port must not fail, got \(states)")
+        server.stop()
+    }
+
+    // MARK: - Routes
+
+    /// One request, answered: the status and the decoded JSON body.
+    static func request(_ method: String, _ path: String, port: UInt16, token: String? = "token",
+                        body: String? = nil, headers: [String: String] = [:]) -> (Int, [String: String]) {
+        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(port)\(path)")!)
+        request.httpMethod = method
+        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
+        if let body {
+            request.httpBody = Data(body.utf8)
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+        headers.forEach { request.setValue($1, forHTTPHeaderField: $0) }
+
+        let done = DispatchSemaphore(value: 0)
+        var result: (Int, [String: String]) = (0, [:])
+        URLSession.shared.dataTask(with: request) { data, response, _ in
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            let json = data.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: String] } ?? [:]
+            result = (status, json)
+            done.signal()
+        }.resume()
+        _ = done.wait(timeout: .now() + 5)
+        return result
+    }
+
+    static func testTheRoutes() {
+        guard let port = checkServerFreePort() else {
+            print("⚠️  could not find a free port, skipping")
+            return
+        }
+
+        let server = ChannelServer()
+        let recorder = ServerStateRecorder()
+        let delivered = ServerStateRecorder()
+        server.onStateChange = { recorder.record(String(describing: $0)) }
+        server.onNotification = { delivered.record("deliver \($0.id) \($0.level.rawValue) \($0.banner.rawValue)") }
+        server.onWithdraw = { delivered.record("withdraw \($0)") }
+
+        server.start(port: port, token: "token")
+        checkServer(recorder.wait(until: { $0.contains { $0.hasPrefix("ready") } })
+                        .contains { $0.hasPrefix("ready") }, "listening")
+
+        var (status, json) = request("POST", "/v2/notifications", port: port,
+                                     body: #"{"id":"n1","title":"t","level":"passive"}"#)
+        checkServer(status == 202 && json["id"] == "n1", "v2 delivers, got \(status) \(json)")
+
+        (status, json) = request("POST", "/reminder", port: port, body: #"{"id":"r1","title":"t","sticky":true}"#)
+        checkServer(status == 202 && json["id"] == "r1", "v1 still delivers, got \(status) \(json)")
+
+        (status, json) = request("DELETE", "/v2/notifications/claude%3A42", port: port)
+        checkServer(status == 200 && json["id"] == "claude:42", "an id is percent-decoded, got \(status) \(json)")
+
+        (status, json) = request("DELETE", "/v2/notifications/never-sent", port: port)
+        checkServer(status == 200, "withdrawing an unknown id is not an error, got \(status)")
+
+        (status, json) = request("POST", "/v2/notifications", port: port, body: #"{"title":"t","level":"loud"}"#)
+        checkServer(status == 400 && json["error"] == "unknown_level" && json["level"] == "loud",
+                    "a bad level names itself, got \(status) \(json)")
+
+        (status, _) = request("GET", "/v2/notifications", port: port)
+        checkServer(status == 405, "a known path with the wrong method, got \(status)")
+        (status, _) = request("POST", "/v2/notifications/x", port: port, body: "{}")
+        checkServer(status == 405, "a notification's path only takes DELETE, got \(status)")
+        (status, _) = request("POST", "/v2/activities", port: port, body: "{}")
+        checkServer(status == 404, "an unknown path, got \(status)")
+
+        (status, _) = request("DELETE", "/v2/notifications/n1", port: port, token: "wrong")
+        checkServer(status == 401, "a wrong token cannot withdraw either, got \(status)")
+        (status, _) = request("DELETE", "/v2/notifications/n1", port: port,
+                              headers: ["Origin": "https://evil.example"])
+        checkServer(status == 403, "nor can a browser, got \(status)")
+
+        let events = delivered.wait(until: { $0.count >= 4 })
+        checkServer(events == ["deliver n1 passive temporary", "deliver r1 active untilSeen",
+                               "withdraw claude:42", "withdraw never-sent"],
+                    "exactly the authorised, well-formed requests reach the notch, got \(events)")
         server.stop()
     }
 }

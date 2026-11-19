@@ -239,10 +239,13 @@ extension Defaults.Keys {
     // Option key modifier behaviour for media keys
     static let optionKeyAction = Key<OptionKeyAction>("optionKeyAction", default: OptionKeyAction.openSettings)
     
-    // MARK: Reminder Channel
-    static let reminderChannelEnabled = Key<Bool>("reminderChannelEnabled", default: true)
-    static let reminderChannelPort = Key<Int>("reminderChannelPort", default: 45999)
-    static let reminderChannelToken = Key<String>("reminderChannelToken", default: "")
+    // MARK: Notch Channel
+    // Stored under the names the channel shipped with as the Reminder Channel, so an upgrade keeps
+    // its port and, more to the point, its token: every client already configured holds that one.
+    static let notchChannelEnabled = Key<Bool>("reminderChannelEnabled", default: true)
+    static let notchChannelPort = Key<Int>("reminderChannelPort", default: 45999)
+    static let notchChannelToken = Key<String>("reminderChannelToken", default: "")
+    static let notchChannelKeepsHistory = Key<Bool>("notchChannelKeepsHistory", default: true)
 
     // MARK: Shelf
     static let notchShelf = Key<Bool>("boringShelf", default: true)

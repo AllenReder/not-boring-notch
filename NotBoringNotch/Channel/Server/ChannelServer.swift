@@ -1,20 +1,24 @@
 //
-//  ReminderChannelServer.swift
+//  ChannelServer.swift
 //  NotBoringNotch
 //
-//  The HTTP surface an external process delivers a Reminder through: loopback only, token in
-//  hand, JSON in the body.
+//  The HTTP surface an external process reaches the Notch Channel through: loopback only, token
+//  in hand, JSON in the body.
 //
 
 import Foundation
 import Network
 
-/// Listens on `127.0.0.1` for Reminders.
+/// Listens on `127.0.0.1` for notifications.
 ///
-/// It is deliberately narrow: one route, one method, one content type, a bearer token, and no
-/// answer beyond "accepted" — a sender is never told what the user did about its Reminder, and
-/// there is nowhere for it to ask.
-final class ReminderChannelServer {
+/// It is deliberately narrow: a handful of routes, one content type, a bearer token, and no answer
+/// beyond "accepted" — a sender is never told what the user did about its notification, and there
+/// is nowhere for it to ask.
+///
+///     POST   /reminder                  v1, kept for the senders written against it
+///     POST   /v2/notifications          deliver
+///     DELETE /v2/notifications/{id}     withdraw, from the banner and the Inbox alike
+final class ChannelServer {
     enum State {
         case ready(port: UInt16)
         /// A human-readable reason the channel is not listening, for the Settings pane.
@@ -24,10 +28,13 @@ final class ReminderChannelServer {
     /// The state the listener settles into. Called on the listener's own queue.
     var onStateChange: ((State) -> Void)?
 
-    /// Every Reminder that parsed and authenticated. Called on the listener's own queue.
-    var onReminder: ((Reminder) -> Void)?
+    /// Every notification that parsed and authenticated. Called on the listener's own queue.
+    var onNotification: ((ChannelNotification) -> Void)?
 
-    private let queue = DispatchQueue(label: "com.allenreder.notboringnotch.reminder-channel")
+    /// The id of every notification its sender withdrew. Called on the listener's own queue.
+    var onWithdraw: ((String) -> Void)?
+
+    private let queue = DispatchQueue(label: "com.allenreder.notboringnotch.notch-channel")
     private var listener: NWListener?
     private var token = ""
     private var requestedPort: UInt16 = 0
@@ -138,7 +145,7 @@ final class ReminderChannelServer {
             var buffer = buffer
             if let chunk { buffer.append(chunk) }
 
-            guard buffer.count <= Reminder.maximumPayloadBytes + Self.maximumHeaderBytes else {
+            guard buffer.count <= ChannelNotification.maximumPayloadBytes + Self.maximumHeaderBytes else {
                 send(status: 413, reason: "Payload Too Large", json: ["error": "too_large"], on: connection)
                 return
             }
@@ -187,11 +194,11 @@ final class ReminderChannelServer {
             return .needMore
         }
 
-        guard request.method == "POST" else {
-            return Self.failure(405, "Method Not Allowed", "method_not_allowed")
-        }
-        guard request.path == "/reminder" else {
+        guard let route = Route(method: request.method, path: request.path) else {
             return Self.failure(404, "Not Found", "not_found")
+        }
+        if route == .wrongMethod {
+            return Self.failure(405, "Method Not Allowed", "method_not_allowed")
         }
         // A web page in the user's browser can POST to 127.0.0.1 without a preflight, so refuse
         // anything that admits to coming from one.
@@ -201,24 +208,71 @@ final class ReminderChannelServer {
         guard request.headers["authorization"] == "Bearer \(token)", !token.isEmpty else {
             return Self.failure(401, "Unauthorized", "unauthorized")
         }
-        // Requiring JSON is not decoration: a browser sending it must preflight first, and the
-        // channel does not answer preflights.
-        guard Self.isJSON(request.headers["content-type"]) else {
-            return Self.failure(415, "Unsupported Media Type", "unsupported_media_type")
-        }
-        guard request.contentLength != nil else {
-            return Self.failure(411, "Length Required", "length_required")
-        }
 
-        do {
-            let reminder = try Reminder.decode(request.body)
-            onReminder?(reminder)
-            return .respond(Self.response(status: 202, reason: "Accepted",
-                                         json: ["status": "queued", "id": reminder.id]))
-        } catch let error as ReminderPayloadError {
-            return .respond(Self.describe(error))
-        } catch {
-            return Self.failure(400, "Bad Request", "malformed")
+        switch route {
+        case let .withdraw(id):
+            // Idempotent, as DELETE should be: withdrawing what is already gone is not an error,
+            // and the sender cannot know what the user has already cleared.
+            onWithdraw?(id)
+            return .respond(Self.response(status: 200, reason: "OK",
+                                         json: ["status": "withdrawn", "id": id]))
+        case .deliverV1, .deliver:
+            // Requiring JSON is not decoration: a browser sending it must preflight first, and
+            // the channel does not answer preflights.
+            guard Self.isJSON(request.headers["content-type"]) else {
+                return Self.failure(415, "Unsupported Media Type", "unsupported_media_type")
+            }
+            guard request.contentLength != nil else {
+                return Self.failure(411, "Length Required", "length_required")
+            }
+
+            do {
+                let notification = route == .deliverV1
+                    ? try ChannelNotification.decodeV1(request.body)
+                    : try ChannelNotification.decode(request.body)
+                onNotification?(notification)
+                return .respond(Self.response(status: 202, reason: "Accepted",
+                                             json: ["status": "queued", "id": notification.id]))
+            } catch let error as ChannelPayloadError {
+                return .respond(Self.describe(error))
+            } catch {
+                return Self.failure(400, "Bad Request", "malformed")
+            }
+        case .wrongMethod:
+            return Self.failure(405, "Method Not Allowed", "method_not_allowed")
+        }
+    }
+
+    /// What a request asks for, read from its method and path alone.
+    private enum Route: Equatable {
+        case deliverV1
+        case deliver
+        case withdraw(id: String)
+        /// A path the channel serves, with a method it does not take there.
+        case wrongMethod
+
+        static let notificationsPath = "/v2/notifications"
+
+        /// Nil for a path the channel does not serve at all.
+        init?(method: String, path rawPath: String) {
+            // A query string means nothing here, but should not turn a known path into a 404.
+            let path = String(rawPath.split(separator: "?", maxSplits: 1,
+                                             omittingEmptySubsequences: false)[0])
+
+            if path == "/reminder" {
+                self = method == "POST" ? .deliverV1 : .wrongMethod
+            } else if path == Self.notificationsPath {
+                self = method == "POST" ? .deliver : .wrongMethod
+            } else if path.hasPrefix(Self.notificationsPath + "/") {
+                let encoded = String(path.dropFirst(Self.notificationsPath.count + 1))
+                guard !encoded.isEmpty, !encoded.contains("/"),
+                      let id = encoded.removingPercentEncoding, !id.isEmpty else {
+                    return nil
+                }
+                self = method == "DELETE" ? .withdraw(id: id) : .wrongMethod
+            } else {
+                return nil
+            }
         }
     }
 
@@ -239,13 +293,15 @@ final class ReminderChannelServer {
 
     /// The refusal a payload problem earns: a code for the sender, naming the offending value
     /// when there is one to name. Only one of these is about size rather than content.
-    private static func describe(_ error: ReminderPayloadError) -> Data {
-        var json = ["error": code(for: error)]
+    private static func describe(_ error: ChannelPayloadError) -> Data {
+        var json = ["error": error.code]
         switch error {
         case let .unknownIconKind(kind):
             json["kind"] = kind
         case let .unknownSound(sound):
             json["sound"] = sound
+        case let .unknownLevel(level):
+            json["level"] = level
         default:
             break
         }
@@ -254,18 +310,6 @@ final class ReminderChannelServer {
             return response(status: 400, reason: "Bad Request", json: json)
         }
         return response(status: 413, reason: "Payload Too Large", json: json)
-    }
-
-    private static func code(for error: ReminderPayloadError) -> String {
-        switch error {
-        case .tooLarge: return "too_large"
-        case .malformed: return "malformed"
-        case .missingTitle: return "missing_title"
-        case .unknownIconKind: return "unknown_icon_kind"
-        case .invalidIconData: return "invalid_icon_data"
-        case .unknownSound: return "unknown_sound"
-        case .invalidAction: return "invalid_action"
-        }
     }
 
     /// Reads as much of a request as has arrived, or nil if it is still incomplete.

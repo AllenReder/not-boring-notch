@@ -1,9 +1,9 @@
 //
-//  ReminderLiveActivity.swift
+//  BannerView.swift
 //  NotBoringNotch
 //
-//  A Reminder in the closed notch: icon, title, subtitle, and a way out. Mirrors the music live
-//  activity's geometry so both occupy the same slot at the same width.
+//  A notification as a banner in the closed notch: icon and title on the left wing, subtitle on
+//  the right. Mirrors the music live activity's geometry so both occupy the same slot.
 //
 
 import AppKit
@@ -11,8 +11,8 @@ import SwiftUI
 
 /// Draws whatever a sender named as an icon, falling back to the notch's own bell rather than
 /// leaving a hole when the name means nothing to us.
-struct ReminderIconView: View {
-    let icon: ReminderIcon?
+struct ChannelIconView: View {
+    let icon: ChannelIcon?
 
     var body: some View {
         switch icon {
@@ -49,9 +49,8 @@ struct ReminderIconView: View {
     }
 }
 
-/// Smoothly renders text in the closed reminder slot: static text when it fits, or continuous
-/// marquee ticker when the text length exceeds the available frame width.
-struct ScrollableReminderText: View {
+/// Text in a banner's wing: static when it fits, a marquee when it does not.
+struct ScrollableBannerText: View {
     let text: String
     let font: Font
     var fontWeight: Font.Weight = .medium
@@ -67,11 +66,7 @@ struct ScrollableReminderText: View {
     }
 
     private var textWidth: CGFloat {
-        Self.measureWidth(
-            text,
-            size: 11.5,
-            weight: fontWeight == .medium ? .medium : .regular
-        )
+        Self.measureWidth(text, size: 11.5, weight: fontWeight == .medium ? .medium : .regular)
     }
 
     var body: some View {
@@ -95,87 +90,76 @@ struct ScrollableReminderText: View {
     }
 }
 
-struct ReminderLiveActivity: View {
+struct BannerView: View {
     @EnvironmentObject var vm: NotchViewModel
-    let reminder: Reminder
+    let notification: ChannelNotification
 
-    static func measureTextWidth(_ text: String, size: CGFloat = 11.5, weight: NSFont.Weight = .medium) -> CGFloat {
-        ScrollableReminderText.measureWidth(text, size: size, weight: weight)
-    }
-
-    /// Determines the secondary text shown on the right wing:
-    /// - Explicit `subtitle` if given;
-    /// - Otherwise, the first non-empty line of `body` as an automatic preview;
-    /// - Otherwise `nil`.
-    static func previewText(for reminder: Reminder) -> String? {
-        if let subtitle = reminder.subtitle, !subtitle.isEmpty {
+    /// The secondary text on the right wing: the subtitle if given, otherwise the first non-empty
+    /// line of the body as a preview, otherwise nothing.
+    static func previewText(for notification: ChannelNotification) -> String? {
+        if let subtitle = notification.subtitle, !subtitle.isEmpty {
             return subtitle
         }
-        if let body = reminder.body {
-            let lines = body.components(separatedBy: .newlines)
-            if let first = lines.first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
-                return first.trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-        }
-        return nil
+        guard let body = notification.body else { return nil }
+        return body.components(separatedBy: .newlines)
+            .lazy
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty }
     }
 
-    /// Adapts the wing width dynamically to fit the content without any arbitrary minimum width.
-    /// Left wing holds icon + title; right wing holds subtitle (or body preview).
-    /// Both wings are kept strictly symmetrical to maintain physical camera alignment.
-    static func calculatedWingWidth(for reminder: Reminder) -> CGFloat {
+    private static func showsPin(_ notification: ChannelNotification) -> Bool {
+        notification.banner == .untilSeen
+    }
+
+    /// Fits the wings to the content, with no arbitrary minimum. Both wings are the same width so
+    /// the content stays centred on the camera housing.
+    static func wingWidth(for notification: ChannelNotification) -> CGFloat {
         let maxWidth: CGFloat = 210
         let minPhysicalWidth: CGFloat = 28
+        let pin: CGFloat = showsPin(notification) ? 16 : 0
 
-        // Left wing has: padding(8) + icon(18) + spacing(6) + title + padding(6) = 38 + titleWidth
-        let titleWidth = measureTextWidth(reminder.title, size: 11.5, weight: .medium)
-        let leftNeeded = 38 + titleWidth
+        // padding(8) + icon(18) + spacing(6) + title + padding(6)
+        let leftNeeded = 38 + ScrollableBannerText.measureWidth(notification.title, weight: .medium)
 
-        // Right wing has: preview text or status
         let rightNeeded: CGFloat
-        if let preview = previewText(for: reminder) {
-            let previewWidth = measureTextWidth(preview, size: 11.5, weight: .regular)
-            rightNeeded = 16 + previewWidth + (reminder.isSticky ? 16 : 0)
+        if let preview = previewText(for: notification) {
+            rightNeeded = 16 + ScrollableBannerText.measureWidth(preview, weight: .regular) + pin
         } else {
-            rightNeeded = reminder.isSticky ? 26 : minPhysicalWidth
+            rightNeeded = showsPin(notification) ? 26 : minPhysicalWidth
         }
 
-        let needed = max(leftNeeded, rightNeeded)
-        return min(maxWidth, max(minPhysicalWidth, needed))
+        return min(maxWidth, max(minPhysicalWidth, leftNeeded, rightNeeded))
     }
 
-    var wingWidth: CGFloat {
-        Self.calculatedWingWidth(for: reminder)
-    }
+    private var wingWidth: CGFloat { Self.wingWidth(for: notification) }
 
     var body: some View {
         HStack(spacing: 0) {
-            // Left wing: Icon + Title
             leftWing
                 .frame(width: wingWidth, alignment: .leading)
 
-            // Center: Black spacer matching the flat base of the physical camera notch
+            // The flat base of the physical camera housing.
             Rectangle()
                 .fill(.black)
                 .frame(width: vm.closedNotchSize.width - 20)
 
-            // Right wing: Subtitle / preview / indicator
             rightWing
                 .frame(width: wingWidth, alignment: .trailing)
         }
         .fixedSize(horizontal: true, vertical: false)
-        .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)
-        .reminderClock(reminder)
+        // The closed notch's own height, not the effective one: a time-sensitive banner is drawn
+        // even while fullscreen has collapsed the notch to nothing.
+        .frame(height: vm.closedNotchSize.height, alignment: .center)
+        .bannerClock(notification)
     }
 
-    @ViewBuilder
     private var leftWing: some View {
         HStack(spacing: 6) {
-            ReminderIconView(icon: reminder.icon)
+            ChannelIconView(icon: notification.icon)
                 .frame(width: 18, height: 18)
 
-            ScrollableReminderText(
-                text: reminder.title,
+            ScrollableBannerText(
+                text: notification.title,
                 font: .subheadline,
                 fontWeight: .medium,
                 nsFont: .subheadline,
@@ -187,27 +171,28 @@ struct ReminderLiveActivity: View {
         .padding(.trailing, 6)
     }
 
-    @ViewBuilder
     private var rightWing: some View {
-        HStack(spacing: 6) {
-            if let preview = Self.previewText(for: reminder) {
-                ScrollableReminderText(
+        let preview = Self.previewText(for: notification)
+        let pin = Self.showsPin(notification)
+        return HStack(spacing: 6) {
+            if let preview {
+                ScrollableBannerText(
                     text: preview,
                     font: .subheadline,
                     fontWeight: .regular,
                     nsFont: .subheadline,
                     textColor: .gray,
-                    frameWidth: max(20, wingWidth - 16 - (reminder.isSticky ? 16 : 0))
+                    frameWidth: max(20, wingWidth - 16 - (pin ? 16 : 0))
                 )
             } else {
                 Spacer(minLength: 0)
             }
 
-            if reminder.isSticky {
+            if pin {
                 Image(systemName: "pin.fill")
                     .font(.system(size: 10))
                     .foregroundStyle(.gray.opacity(0.7))
-            } else if Self.previewText(for: reminder) == nil {
+            } else if preview == nil {
                 Image(systemName: "chevron.compact.down")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.gray.opacity(0.35))
@@ -217,22 +202,22 @@ struct ReminderLiveActivity: View {
     }
 }
 
-/// Starts a Reminder's clock when the Reminder is drawn — the closed notch and the open detail
-/// both use this, so which one is on screen can never change how long a Reminder is given.
-private struct ReminderClock: ViewModifier {
-    let reminder: Reminder
+/// Starts a banner's clock when it is drawn, so a banner that arrives while the notch cannot show
+/// it keeps its whole duration for when it can.
+private struct BannerClock: ViewModifier {
+    let notification: ChannelNotification
 
     func body(content: Content) -> some View {
         content
-            .onAppear { ReminderChannel.shared.startShowing(reminder) }
-            .onChange(of: reminder) { _, replacement in
-                ReminderChannel.shared.startShowing(replacement)
+            .onAppear { NotchChannel.shared.startShowing(notification) }
+            .onChange(of: notification) { _, replacement in
+                NotchChannel.shared.startShowing(replacement)
             }
     }
 }
 
 extension View {
-    func reminderClock(_ reminder: Reminder) -> some View {
-        modifier(ReminderClock(reminder: reminder))
+    func bannerClock(_ notification: ChannelNotification) -> some View {
+        modifier(BannerClock(notification: notification))
     }
 }

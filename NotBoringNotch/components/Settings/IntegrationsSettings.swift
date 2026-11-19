@@ -2,8 +2,8 @@
 //  IntegrationsSettings.swift
 //  NotBoringNotch
 //
-//  Settings for the Reminder Channel: the port and token a client needs, where they are
-//  published, and the one curl command that proves it works.
+//  Settings for the Notch Channel: the port and token a client needs, where they are published,
+//  the one curl command that proves it works, and what the Inbox keeps.
 //
 
 import AppKit
@@ -11,24 +11,24 @@ import Defaults
 import SwiftUI
 
 struct IntegrationsSettings: View {
-    @ObservedObject var channel = ReminderChannel.shared
-    @Default(.reminderChannelEnabled) private var isEnabled
-    @Default(.reminderChannelPort) private var port
+    @ObservedObject var channel = NotchChannel.shared
+    @Default(.notchChannelEnabled) private var isEnabled
+    @Default(.notchChannelPort) private var port
 
     var body: some View {
         Form {
             Section {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Reminder Channel")
+                        Text("Notch Channel")
                             .font(.headline)
-                        Text("Let another app or a script raise a reminder in the notch. The channel listens on 127.0.0.1, so nothing on your network can reach it, and it needs the token below.")
+                        Text("Let another app or a script send a notification to the notch. The channel listens on 127.0.0.1, so nothing on your network can reach it, and it needs the token below.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 40)
-                    Defaults.Toggle("", key: .reminderChannelEnabled)
+                    Defaults.Toggle("", key: .notchChannelEnabled)
                         .labelsHidden()
                         .toggleStyle(.switch)
                         .controlSize(.large)
@@ -99,10 +99,31 @@ struct IntegrationsSettings: View {
 
                     HStack {
                         Button("Copy example") { copy(example) }
-                        Button("Send test reminder") { channel.enqueue(testReminder) }
+                        Button("Send test notification") { channel.deliver(testNotification) }
                     }
                 } header: {
                     Text("Try it")
+                }
+
+                Section {
+                    Defaults.Toggle(key: .notchChannelKeepsHistory) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Keep notifications across restarts")
+                            Text("The Inbox keeps the 50 most recent notifications you have not cleared.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    HStack {
+                        Text("\(channel.inbox.items.count) in the Inbox")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Clear Inbox") { channel.clearInbox() }
+                            .disabled(channel.inbox.isEmpty)
+                    }
+                } header: {
+                    Text("Inbox")
                 }
             }
         }
@@ -131,28 +152,33 @@ struct IntegrationsSettings: View {
         curl -X POST \(channel.endpoint) \\
           -H "Authorization: Bearer \(channel.token)" \\
           -H "Content-Type: application/json" \\
-          -d '{"icon":{"kind":"sf_symbol","value":"hammer"},
+          -d '{"source":"make",
+               "icon":{"kind":"sf_symbol","value":"hammer"},
                "title":"Build finished",
-               "subtitle":"awen · session-42",
-               "body":"12 files typechecked, 0 errors.",
-               "duration":6}'
+               "subtitle":"12s · main",
+               "body":"12 files typechecked, `0` errors.",
+               "open":{"app":"com.apple.Terminal"}}'
         """
     }
 
-    /// A fixture rather than a feature: the pane's own Reminder, so the shape can be seen
+    /// A fixture rather than a feature: the pane's own notification, so the shape can be seen
     /// without wiring up a client first.
-    private var testReminder: Reminder {
-        Reminder(
+    private var testNotification: ChannelNotification {
+        ChannelNotification(
             id: UUID().uuidString,
+            source: "settings",
+            thread: nil,
+            level: .active,
             icon: .symbol("bell.badge"),
-            title: "Test reminder",
-            subtitle: "From the Integrations settings",
-            body: "This is what a Reminder looks like. Hover the notch to read the whole thing, "
-                + "or click Dismiss to close it.",
+            title: String(localized: "Test notification"),
+            subtitle: String(localized: "From the Integrations settings"),
+            body: String(localized: "This is what a notification looks like. Hover the notch to find it in the Inbox, where it stays until you clear it."),
             duration: 8,
-            isSticky: false,
+            banner: .temporary,
             sound: .none,
-            action: nil
+            open: nil,
+            actions: [],
+            deliveredAt: Date()
         )
     }
 

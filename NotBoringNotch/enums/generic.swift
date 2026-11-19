@@ -22,6 +22,7 @@ public enum NotchViews: Hashable, CaseIterable {
     case shelf
     case launcher
     case performance
+    case inbox
 }
 
 enum MirrorShapeEnum: String, Defaults.Serializable {
