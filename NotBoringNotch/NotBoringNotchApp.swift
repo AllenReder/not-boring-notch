@@ -403,6 +403,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // The Notch Channel listens from launch: a client should not have to wait for somebody to
         // open Settings before its first notification can land.
+        // The sandbox cannot see other processes; the helper says which agent processes still exist.
+        NotchChannel.shared.agentLiveness = { pids in
+            await XPCHelperClient.shared.agentProcessStartTimes(pids)
+        }
         NotchChannel.shared.start()
 
         AgentHooksController.shared.repairInstalledAgents()

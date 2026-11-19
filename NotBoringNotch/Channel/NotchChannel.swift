@@ -83,7 +83,7 @@ final class NotchChannel: ObservableObject {
     ///
     /// This is the hook point for the XPC helper, which can look at processes the sandbox cannot.
     /// Until something sets it, liveness is unknown and no session is removed on its account.
-    var agentLiveness: (([Int32]) async -> [Int32: Date])?
+    var agentLiveness: (([Int32]) async -> [Int32: Date]?)?
 
     /// How often the sessions are checked against the processes behind them.
     static let agentSweepInterval: Duration = .seconds(10)
@@ -348,7 +348,7 @@ final class NotchChannel: ObservableObject {
 
     /// Checks the sessions against their processes once, and settles the ones that have gone.
     func sweepAgents(now: Date = Date()) async {
-        let alive = await agentLiveness?(agents.pids)
+        let alive = await agentLiveness?(agents.pids) ?? nil
         let effects = withAnimation(.smooth(duration: 0.35)) {
             agents.sweep(alive: alive, now: now)
         }

@@ -208,7 +208,9 @@ final class XPCHelperClient: NSObject {
 extension XPCHelperClient {
     /// Start time of each process among `pids` that is still running. A pid that is not running,
     /// or that the helper could not be asked about, is left out.
-    nonisolated func agentProcessStartTimes(_ pids: [Int32]) async -> [Int32: Date] {
+    /// nil when the helper could not be reached: that says nothing about the processes, and must
+    /// not read as "all of them exited".
+    nonisolated func agentProcessStartTimes(_ pids: [Int32]) async -> [Int32: Date]? {
         guard !pids.isEmpty else { return [:] }
         // A helper that was just restarted fails the first call; asking again reaches the new one.
         for _ in 0..<2 {
@@ -226,7 +228,7 @@ extension XPCHelperClient {
                 continue
             }
         }
-        return [:]
+        return nil
     }
 
     /// nil when the helper could not be reached.

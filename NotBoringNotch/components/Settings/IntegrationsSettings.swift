@@ -45,6 +45,8 @@ struct IntegrationsSettings: View {
             }
 
             if isEnabled {
+                AgentHooksSection()
+                agentsOnTheNotchSection
                 connectionSection
                 tryItSection
                 inboxSection
@@ -138,6 +140,19 @@ struct IntegrationsSettings: View {
             Text("The full protocol is in docs/notch-channel.md.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    private var agentsOnTheNotchSection: some View {
+        Section {
+            Defaults.Toggle(key: .musicAheadOfAgents) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Keep the music ahead of working agents")
+                    Text("While agents work, the closed notch gives the larger place to the music. An agent waiting for you always comes first.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
     }
 
