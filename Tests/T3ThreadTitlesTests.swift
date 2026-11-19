@@ -42,7 +42,9 @@ func testReadsTheTitleFromWhatTheCLIPrints() {
 func testOnlyThreadIDsReachTheCommandLine() {
     checkTitles(T3ThreadTitles.isThreadID("642a6259-dbb6-4069-988d-7dcc740ac212"), true, "a uuid")
     checkTitles(T3ThreadTitles.isThreadID(""), false, "empty")
-    checkTitles(T3ThreadTitles.isThreadID("--help"), true, "dashes alone are allowed")
+    checkTitles(T3ThreadTitles.isThreadID("--help"), false, "an option, not an id")
+    checkTitles(T3ThreadTitles.isThreadID("-x"), false, "nor anything else that starts with a dash")
+    checkTitles(T3ThreadTitles.isThreadID("a-b_c"), true, "dashes and underscores inside are fine")
     checkTitles(T3ThreadTitles.isThreadID("a b"), false, "a space")
     checkTitles(T3ThreadTitles.isThreadID("a;rm -rf ~"), false, "shell characters")
     checkTitles(T3ThreadTitles.isThreadID(String(repeating: "a", count: 129)), false, "too long")

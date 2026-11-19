@@ -40,9 +40,10 @@ enum T3ThreadTitles {
     }
 
     /// Ids come from a header any local process could send; only an id's own characters reach
-    /// the command line.
+    /// the command line, and never as an option: an id starts with a letter or a digit.
     static func isThreadID(_ id: String) -> Bool {
-        !id.isEmpty && id.count <= 128
+        guard let first = id.unicodeScalars.first, CharacterSet.alphanumerics.contains(first) else { return false }
+        return id.count <= 128
             && id.unicodeScalars.allSatisfy { CharacterSet.alphanumerics.contains($0) || $0 == "-" || $0 == "_" }
     }
 
