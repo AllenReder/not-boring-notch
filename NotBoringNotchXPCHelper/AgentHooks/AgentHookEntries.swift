@@ -84,18 +84,39 @@ struct AgentHookEntries {
 
     // MARK: - Ownership
 
-    /// Whether an element of an event's array was written by us: one of its commands runs our
-    /// script, decided by resolving paths, never by substring, so a user hook whose command only
-    /// mentions our name is left alone.
-    func isOurEntry(_ elementText: String) -> Bool {
-        guard let element = try? JSONSurgeon(elementText),
-              let hooks = element.arrayElements(atPath: ["hooks"]) else { return false }
-        return hooks.contains { hookText in
-            guard let hook = try? JSONSurgeon(hookText), let command = hook.string(atPath: ["command"]) else {
-                return false
-            }
-            return Self.runs(command, scriptURL)
+    /// Whether one command of a group runs our script, decided by resolving paths, never by
+    /// substring, so a user hook whose command only mentions our name is left alone.
+    func isOurHook(_ hookText: String) -> Bool {
+        guard let hook = try? JSONSurgeon(hookText), let command = hook.string(atPath: ["command"]) else {
+            return false
         }
+        return Self.runs(command, scriptURL)
+    }
+
+    /// Whether an element of an event's array is ours: every command in it runs our script.
+    func isOurEntry(_ elementText: String) -> Bool {
+        guard let counts = hookCounts(elementText) else { return false }
+        return counts.ours > 0 && counts.ours == counts.all
+    }
+
+    /// A group of the user's that also holds a command of ours (one the user added to our group,
+    /// say), without ours. Nil for any other element.
+    func userEntryWithoutOurs(_ elementText: String) -> String? {
+        guard let counts = hookCounts(elementText), counts.ours > 0, counts.ours < counts.all,
+              var element = try? JSONSurgeon(elementText),
+              (try? element.removeFromArray(atPath: ["hooks"], where: isOurHook)) != nil else { return nil }
+        return element.text
+    }
+
+    private func hookCounts(_ elementText: String) -> (ours: Int, all: Int)? {
+        guard let element = try? JSONSurgeon(elementText),
+              let hooks = element.arrayElements(atPath: ["hooks"]) else { return nil }
+        return (hooks.filter(isOurHook).count, hooks.count)
+    }
+
+    /// Every command of ours under `event`, whole entries and shared groups alike.
+    private func ourHookCount(_ surgeon: JSONSurgeon, _ event: String) -> Int {
+        (surgeon.arrayElements(atPath: ["hooks", event]) ?? []).reduce(0) { $0 + (hookCounts($1)?.ours ?? 0) }
     }
 
     /// The program a command line starts: a quoted path up to its closing quote, otherwise the
@@ -150,12 +171,13 @@ struct AgentHookEntries {
         var result = AgentHookInspection()
         for event in spec.events {
             let ours = (surgeon.arrayElements(atPath: ["hooks", event]) ?? []).filter(isOurEntry)
-            if ours.isEmpty {
+            let shared = ourHookCount(surgeon, event) > ours.count
+            if ours.isEmpty && !shared {
                 result.missing.append(event)
                 continue
             }
             result.present.append(event)
-            if ours.count != 1 || Self.canonical(ours[0]) != Self.canonical(entryJSON(for: event)) {
+            if shared || ours.count != 1 || Self.canonical(ours[0]) != Self.canonical(entryJSON(for: event)) {
                 result.edited.append(event)
             }
         }
@@ -178,13 +200,15 @@ struct AgentHookEntries {
     /// An event that already has exactly that is left untouched, so installing twice changes
     /// nothing, and the user's hooks that come after ours do not get reordered. Any other state
     /// of ours (an old entry, a duplicate, an edited one) is removed and one fresh entry is
-    /// appended.
+    /// appended. A command of ours in a group that also holds the user's leaves that group, and
+    /// the user's commands stay where they were.
     func planInstall(_ original: String?) throws -> String {
         var surgeon = try parse(original)
         for event in spec.events {
             let expected = Self.canonical(entryJSON(for: event))
             let ours = (surgeon.arrayElements(atPath: ["hooks", event]) ?? []).filter(isOurEntry)
-            if ours.count == 1, Self.canonical(ours[0]) == expected { continue }
+            if ours.count == 1, ourHookCount(surgeon, event) == 1, Self.canonical(ours[0]) == expected { continue }
+            _ = try edit { try surgeon.replaceInArray(atPath: ["hooks", event], with: userEntryWithoutOurs) }
             _ = try edit { try surgeon.removeFromArray(atPath: ["hooks", event], where: isOurEntry) }
             try edit { try surgeon.appendToArray(atPath: ["hooks", event], element: entryJSON(for: event)) }
         }
@@ -201,7 +225,8 @@ struct AgentHookEntries {
         var removedAny = false
         for event in spec.events {
             // A `hooks` of the wrong shape cannot hold anything of ours.
-            let removed = (try? surgeon.removeFromArray(atPath: ["hooks", event], where: isOurEntry)) ?? 0
+            let separated = (try? surgeon.replaceInArray(atPath: ["hooks", event], with: userEntryWithoutOurs)) ?? 0
+            let removed = separated + ((try? surgeon.removeFromArray(atPath: ["hooks", event], where: isOurEntry)) ?? 0)
             guard removed > 0 else { continue }
             removedAny = true
             if surgeon.isEmptyContainer(atPath: ["hooks", event]) {
@@ -221,7 +246,7 @@ struct AgentHookEntries {
         }
         guard let surgeon = try? JSONSurgeon(text) else { return "the result can't be read back" }
         for event in spec.events {
-            let count = (surgeon.arrayElements(atPath: ["hooks", event]) ?? []).filter(isOurEntry).count
+            let count = ourHookCount(surgeon, event)
             if expectingOurs, count != 1 { return "\(event) has \(count) entries of this app, expected 1" }
             if !expectingOurs, count != 0 { return "\(event) still has \(count) entries of this app" }
         }

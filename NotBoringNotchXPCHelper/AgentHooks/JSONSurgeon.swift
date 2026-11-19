@@ -184,6 +184,29 @@ struct JSONSurgeon: Sendable {
         }
     }
 
+    /// Replaces every element of the array at `path` for which `replacement`
+    /// returns new text, as a pure text splice, and returns how many it
+    /// replaced. The new text goes in as given, so it should be the element's
+    /// own text, edited. A missing path is not an error.
+    @discardableResult
+    mutating func replaceInArray(
+        atPath path: [String],
+        with replacement: (String) -> String?
+    ) throws -> Int {
+        guard let array = node(atPath: path) else { return 0 }
+        guard case .array(let elements) = array.kind else {
+            throw Failure.notAnArray(path: path.joined(separator: "."))
+        }
+        var replaced = 0
+        // From the last, so the ranges still to come stay where they were.
+        for element in elements.reversed() {
+            guard let new = replacement(text(of: element.range)) else { continue }
+            try splice(element.range, with: new)
+            replaced += 1
+        }
+        return replaced
+    }
+
     /// Removes the key at `path` from its parent object. Returns false when it
     /// was already absent.
     ///

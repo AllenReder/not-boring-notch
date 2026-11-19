@@ -458,6 +458,36 @@ func testOnlyOurOwnEntriesAreTouched() {
     checkInstall(hooks["PreToolUse"]!.count == 1, "no duplicate of ours after a repair")
 }
 
+func testAUserCommandInOurGroupIsKept() {
+    let home = InstallHome()
+    defer { home.cleanUp() }
+    _ = home.install([.claudeCode])
+    // The user files a command of their own under our Stop group.
+    let ours = "{\"type\":\"command\",\"command\":\(JSONSurgeon.quoted(home.installer.scriptURL.path + " claude-code")),\"timeout\":3}"
+    let mine = "{ \"type\": \"command\", \"command\": \"say done\" }"
+    var text = home.read(home.settings)!
+    var surgeon = try! JSONSurgeon(text)
+    _ = try! surgeon.removeKey(atPath: ["hooks", "Stop"])
+    text = surgeon.text
+    surgeon = try! JSONSurgeon(text)
+    try! surgeon.appendToArray(atPath: ["hooks", "Stop"], element: "{\"hooks\":[\(ours),\(mine)]}")
+    home.write(surgeon.text, to: home.settings)
+    checkInstall(home.status(.claudeCode) == .modified, "a group shared with the user's is not ours as written")
+
+    let report = home.installer.report(bundledScript: script)
+    _ = home.install(report.needingRepair)
+    var stop = (jsonObject(home.read(home.settings)!)["hooks"] as! [String: [[String: Any]]])["Stop"]!
+    let commands = stop.flatMap { ($0["hooks"] as! [[String: Any]]).map { $0["command"] as! String } }
+    checkInstall(commands.filter { $0 == "say done" }.count == 1, "the repair keeps the user's command, got \(commands)")
+    checkInstall(commands.filter { $0.hasSuffix(" claude-code") }.count == 1, "and ours, once, got \(commands)")
+    checkInstall(home.status(.claudeCode) == .installed, "and settles")
+
+    _ = home.uninstall([.claudeCode])
+    stop = (jsonObject(home.read(home.settings)!)["hooks"] as! [String: [[String: Any]]])["Stop"]!
+    let left = stop.flatMap { ($0["hooks"] as! [[String: Any]]).map { $0["command"] as! String } }
+    checkInstall(left == ["say done"], "remove takes ours and leaves the user's, got \(left)")
+}
+
 // MARK: - Writing safely
 
 func testFollowsASymlinkAndKeepsItsTargetsMode() {
@@ -592,6 +622,7 @@ enum AgentHookInstallerTests {
         testRefusesAHomeThatHooksCannotRun()
         testRefusesAScriptWithoutAVersion()
         testOnlyOurOwnEntriesAreTouched()
+        testAUserCommandInOurGroupIsKept()
         testFollowsASymlinkAndKeepsItsTargetsMode()
         do { try testRefusesToWriteOverAFileThatMovedAndUndoesABadWrite() } catch { print("❌ \(error)"); exit(1) }
         print("✅ AgentHookInstallerTests passed")
