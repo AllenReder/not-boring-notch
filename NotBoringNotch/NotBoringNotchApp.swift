@@ -45,7 +45,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let vm: NotchViewModel = .init()
     @ObservedObject var coordinator = NotchViewCoordinator.shared
     var quickShareService = QuickShareService.shared
-    var whatsNewWindow: NSWindow?
     var timer: Timer?
     var closeNotchTask: Task<Void, Never>?
     private var previousScreens: [NSScreen]?
