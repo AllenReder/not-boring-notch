@@ -46,6 +46,8 @@ final class NotchChannel: ObservableObject {
 
     @Published private var banners = BannerQueue()
     @Published private(set) var inbox = NotificationInbox()
+    /// The Claude Code and Codex sessions the hooks have told the notch about.
+    @Published private(set) var agents = AgentStore()
     @Published private(set) var status: Status = .off
     /// Where the port and token are published for clients to read, once the channel is up.
     @Published private(set) var discoveryPath: String?
@@ -73,6 +75,18 @@ final class NotchChannel: ObservableObject {
     private var seenBannerID: String?
     private var cancellables = Set<AnyCancellable>()
     private var started = false
+    /// Runs while there are sessions to watch.
+    private var agentSweepTask: Task<Void, Never>?
+
+    /// How the notch learns which agent processes still exist: given their pids, the start time of
+    /// each one that does. A pid left out has exited.
+    ///
+    /// This is the hook point for the XPC helper, which can look at processes the sandbox cannot.
+    /// Until something sets it, liveness is unknown and no session is removed on its account.
+    var agentLiveness: (([Int32]) async -> [Int32: Date])?
+
+    /// How often the sessions are checked against the processes behind them.
+    static let agentSweepInterval: Duration = .seconds(10)
 
     private init() {}
 
@@ -93,6 +107,16 @@ final class NotchChannel: ObservableObject {
             Task { @MainActor in
                 guard let self, self.isEnabled else { return }
                 self.withdraw(id: id)
+            }
+        }
+        server.onAgentEvent = { [weak self] envelope in
+            // Queued on the main queue itself rather than through a Task: the hooks of one session
+            // are a state machine's input, and their order is the point.
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    guard let self, self.isEnabled else { return }
+                    self.handle(envelope)
+                }
             }
         }
         server.onStateChange = { [weak self] state in
@@ -163,8 +187,11 @@ final class NotchChannel: ObservableObject {
             dismissTask?.cancel()
             clocked = nil
             seenBannerID = nil
+            agentSweepTask?.cancel()
+            agentSweepTask = nil
             withAnimation(.smooth(duration: 0.35)) {
                 banners.removeAll()
+                agents = AgentStore()
             }
             status = .off
             removeDiscoveryFiles()
@@ -305,6 +332,63 @@ final class NotchChannel: ObservableObject {
             inbox.remove(id: id)
         }
         saveInbox()
+    }
+
+    // MARK: - Agents
+
+    /// A hook from an agent. What it changes about the session is `AgentReducer`'s business; what
+    /// the user should hear about it goes through the same pipeline as any notification.
+    func handle(_ envelope: AgentEnvelope, now: Date = Date()) {
+        let effects = withAnimation(.smooth(duration: 0.35)) {
+            agents.apply(envelope, now: now)
+        }
+        carryOut(effects, now: now)
+        scheduleAgentSweep()
+    }
+
+    /// Checks the sessions against their processes once, and settles the ones that have gone.
+    func sweepAgents(now: Date = Date()) async {
+        let alive = await agentLiveness?(agents.pids)
+        let effects = withAnimation(.smooth(duration: 0.35)) {
+            agents.sweep(alive: alive, now: now)
+        }
+        carryOut(effects, now: now)
+    }
+
+    private func carryOut(_ effects: [AgentEffect], now: Date) {
+        for effect in effects {
+            switch AgentNotifications.outcome(for: effect, now: now) {
+            case let .deliver(notification):
+                deliver(notification)
+            case let .withdraw(id):
+                // Most sessions never waited, so most withdrawals have nothing to take back.
+                let isShown = inbox.notification(id: id) != nil || banners.visible?.id == id
+                    || banners.waiting.contains { $0.id == id }
+                if isShown { withdraw(id: id) }
+            }
+        }
+    }
+
+    /// Sessions are watched only while there are some.
+    private func scheduleAgentSweep() {
+        guard agentSweepTask == nil, !agents.isEmpty else { return }
+        agentSweepTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: Self.agentSweepInterval)
+                guard !Task.isCancelled, let self else { return }
+                await self.sweepAgents()
+                if self.agents.isEmpty {
+                    self.agentSweepTask = nil
+                    return
+                }
+            }
+        }
+    }
+
+    /// Brings the user back to the session: its T3 thread, or the app it runs in.
+    func jump(to session: AgentSession) {
+        guard let target = session.jumpTarget else { return }
+        perform(target)
     }
 
     // MARK: - The banner

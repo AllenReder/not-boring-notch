@@ -18,6 +18,7 @@ import Network
 ///     POST   /reminder                  v1, kept for the senders written against it
 ///     POST   /v2/notifications          deliver
 ///     DELETE /v2/notifications/{id}     withdraw, from the banner and the Inbox alike
+///     POST   /v2/agents/{agent}/events  a Claude Code or Codex hook, as the agent posted it
 final class ChannelServer {
     enum State {
         case ready(port: UInt16)
@@ -33,6 +34,11 @@ final class ChannelServer {
 
     /// The id of every notification its sender withdrew. Called on the listener's own queue.
     var onWithdraw: ((String) -> Void)?
+
+    /// Every agent hook that parsed and authenticated, in the order it arrived. Called on the
+    /// listener's own queue, before the hook is answered, so a hook that waits for its answer
+    /// cannot be overtaken by the next one.
+    var onAgentEvent: ((AgentEnvelope) -> Void)?
 
     // Everything below is touched only on `queue`. `start` and `stop` hop onto it, so the token a
     // request is checked against can never be read halfway through being replaced.
@@ -52,9 +58,15 @@ final class ChannelServer {
 
     /// The body sits inside this, plus room for the request line and headers.
     private static let maximumHeaderBytes = 8 * 1024
+    /// An agent hook carries the tool call it reports, whose input can be a whole file being
+    /// written. Notifications are text for a person to read; this is not.
+    static let maximumAgentPayloadBytes = 4 * 1024 * 1024
+    /// Nothing the server accepts is longer than this.
+    private static let maximumRequestBytes =
+        max(ChannelNotification.maximumPayloadBytes, maximumAgentPayloadBytes) + maximumHeaderBytes
     /// A guard against a peer that dribbles bytes at us forever: past this many reads without a
     /// complete request, we stop listening to it.
-    private static let maximumReceives = 512
+    private static let maximumReceives = 4096
 
     func start(port: UInt16, token: String) {
         queue.sync { startOnQueue(port: port, token: token) }
@@ -192,7 +204,7 @@ final class ChannelServer {
             var buffer = buffer
             if let chunk { buffer.append(chunk) }
 
-            guard buffer.count <= ChannelNotification.maximumPayloadBytes + Self.maximumHeaderBytes else {
+            guard buffer.count <= Self.maximumRequestBytes else {
                 send(status: 413, reason: "Payload Too Large", json: ["error": "too_large"], on: connection)
                 return
             }
@@ -275,6 +287,22 @@ final class ChannelServer {
             onWithdraw?(id)
             return .respond(Self.response(status: 200, reason: "OK",
                                          json: ["status": "withdrawn", "id": id]))
+        case let .agentEvent(agent):
+            if let refusal = Self.refusingBody(of: request) { return refusal }
+
+            do {
+                guard let envelope = try AgentAdapter.envelope(agent: agent, payload: request.body,
+                                                               headers: request.headers) else {
+                    // A hook this version does not know is not the sender's mistake.
+                    return .respond(Self.response(status: 202, reason: "Accepted", json: ["status": "ignored"]))
+                }
+                onAgentEvent?(envelope)
+                return .respond(Self.response(status: 202, reason: "Accepted", json: ["status": "accepted"]))
+            } catch AgentAdapterError.missingSessionID {
+                return Self.failure(400, "Bad Request", "missing_session_id")
+            } catch {
+                return Self.failure(400, "Bad Request", "malformed")
+            }
         case .deliverV1, .deliver:
             if let refusal = Self.refusingBody(of: request) { return refusal }
 
@@ -313,10 +341,18 @@ final class ChannelServer {
         case deliverV1
         case deliver
         case withdraw(id: String)
+        case agentEvent(AgentKind)
         /// A path the channel serves, with a method it does not take there.
         case wrongMethod
 
         static let notificationsPath = "/v2/notifications"
+        static let agentsPath = "/v2/agents"
+
+        /// The largest body the route accepts.
+        var maximumBodyBytes: Int {
+            if case .agentEvent = self { return ChannelServer.maximumAgentPayloadBytes }
+            return ChannelNotification.maximumPayloadBytes
+        }
 
         /// Nil for a path the channel does not serve at all.
         init?(method: String, path rawPath: String) {
@@ -333,6 +369,13 @@ final class ChannelServer {
                     return nil
                 }
                 self = method == "DELETE" ? .withdraw(id: id) : .wrongMethod
+            } else if path.hasPrefix(Self.agentsPath + "/") {
+                // /v2/agents/{agent}/events, and nothing else under /v2/agents.
+                let parts = path.dropFirst(Self.agentsPath.count + 1).split(separator: "/", omittingEmptySubsequences: false)
+                guard parts.count == 2, parts[1] == "events", let agent = AgentKind(rawValue: String(parts[0])) else {
+                    return nil
+                }
+                self = method == "POST" ? .agentEvent(agent) : .wrongMethod
             } else {
                 return nil
             }
@@ -398,7 +441,12 @@ final class ChannelServer {
     /// a length that cannot be a length, two lengths that disagree, or a transfer encoding we do
     /// not speak is refused, and a body announced as too large is refused without reading it.
     private func parse(_ buffer: Data) -> Parsed {
-        guard let headerEnd = buffer.range(of: Data("\r\n\r\n".utf8)) else { return .incomplete }
+        guard let headerEnd = buffer.range(of: Data("\r\n\r\n".utf8)) else {
+            // Headers that go on past any sensible length are not going to end.
+            return buffer.count > Self.maximumHeaderBytes
+                ? .refused(Self.failure(413, "Payload Too Large", "too_large"))
+                : .incomplete
+        }
 
         let headerText = String(decoding: buffer[..<headerEnd.lowerBound], as: UTF8.self)
         var lines = headerText.components(separatedBy: "\r\n")
@@ -427,7 +475,8 @@ final class ChannelServer {
                   let length = Int(declared) else {
                 return .refused(Self.failure(400, "Bad Request", "malformed"))
             }
-            guard length <= ChannelNotification.maximumPayloadBytes else {
+            let route = Route(method: String(requestLine[0]), path: String(requestLine[1]))
+            guard length <= (route?.maximumBodyBytes ?? ChannelNotification.maximumPayloadBytes) else {
                 return .refused(Self.failure(413, "Payload Too Large", "too_large"))
             }
             contentLength = length

@@ -6,7 +6,7 @@
 //  sources declared below. The Tests folder is not part of an Xcode target, so each
 //  runner is compiled on its own.
 //
-// SOURCES: NotBoringNotch/Channel/Server/ChannelServer.swift NotBoringNotch/Channel/Protocol/ChannelNotification.swift
+// SOURCES: NotBoringNotch/Channel/Server/ChannelServer.swift NotBoringNotch/Channel/Protocol/ChannelNotification.swift NotBoringNotch/Channel/Agents/AgentSession.swift NotBoringNotch/Channel/Agents/AgentEvent.swift NotBoringNotch/Channel/Agents/AgentAdapter.swift
 //
 //  Helper names are prefixed (`checkServer*`) so they stay distinguishable from the
 //  helpers in the other standalone runners in this folder.
@@ -126,6 +126,8 @@ struct ChannelServerTestsRunner {
         testANewTokenDoesNotDropTheSocket()
         testAChangedPortIsRebound()
         testTheRoutes()
+        testTheAgentRoute()
+        testTheAgentRouteTakesBodiesTheOthersDoNot()
         testBadFramingIsRefusedBeforeTheBody()
         testStoppingEndsAcceptedConnections()
         print("✅ ChannelServerTests: all passed")
@@ -366,5 +368,114 @@ struct ChannelServerTestsRunner {
 
         checkServer(delivered.wait(until: { !$0.isEmpty }, timeout: 1).isEmpty,
                     "nothing is delivered after the stop")
+    }
+
+    // MARK: - Agent hooks
+
+    static func startedServer(_ onAgent: @escaping (AgentEnvelope) -> Void) -> (ChannelServer, UInt16)? {
+        guard let port = checkServerFreePort() else {
+            print("⚠️  could not find a free port, skipping")
+            return nil
+        }
+        let server = ChannelServer()
+        let recorder = ServerStateRecorder()
+        server.onStateChange = { recorder.record(String(describing: $0)) }
+        server.onAgentEvent = onAgent
+        server.start(port: port, token: "token")
+        checkServer(recorder.wait(until: { $0.contains { $0.hasPrefix("ready") } })
+                        .contains { $0.hasPrefix("ready") }, "listening")
+        return (server, port)
+    }
+
+    static func testTheAgentRoute() {
+        let received = ServerStateRecorder()
+        guard let (server, port) = startedServer({ envelope in
+            received.record("\(envelope.agent.rawValue) \(envelope.sessionID) \(envelope.event) \(envelope.host) pid=\(envelope.pid.map(String.init) ?? "-")")
+        }) else { return }
+        let path = "/v2/agents/claude-code/events"
+
+        var (status, json) = request("POST", path, port: port,
+                                     body: #"{"hook_event_name":"UserPromptSubmit","session_id":"s1","cwd":"/tmp/p"}"#,
+                                     headers: ["X-Agent-Pid": "321", "X-Agent-T3-Thread": "th-1", "X-Agent-T3-Environment": "env-1"])
+        checkServer(status == 202 && json["status"] == "accepted", "a hook is accepted, got \(status) \(json)")
+
+        (status, json) = request("POST", "/v2/agents/codex/events", port: port,
+                                 body: #"{"hook_event_name":"Stop","session_id":"c1","last_assistant_message":"done"}"#)
+        checkServer(status == 202, "so is Codex's, got \(status) \(json)")
+
+        (status, json) = request("POST", path, port: port, body: #"{"hook_event_name":"PreCompact","session_id":"s1"}"#)
+        checkServer(status == 202 && json["status"] == "ignored", "a hook the table does not know is not an error, got \(status) \(json)")
+
+        (status, json) = request("POST", path, port: port, body: #"{"hook_event_name":"Stop"}"#)
+        checkServer(status == 400 && json["error"] == "missing_session_id", "a hook with no session, got \(status) \(json)")
+        (status, json) = request("POST", path, port: port, body: "{ not json")
+        checkServer(status == 400 && json["error"] == "malformed", "a body that is not JSON, got \(status) \(json)")
+
+        (status, json) = request("POST", "/v2/agents/gemini/events", port: port, body: "{}")
+        checkServer(status == 404 && json["error"] == "not_found", "an agent the notch does not know, got \(status) \(json)")
+        (status, _) = request("POST", "/v2/agents/claude-code", port: port, body: "{}")
+        checkServer(status == 404, "the agent's own path serves nothing, got \(status)")
+        (status, _) = request("POST", "/v2/agents/claude-code/events/extra", port: port, body: "{}")
+        checkServer(status == 404, "nor does anything below events, got \(status)")
+        (status, _) = request("GET", path, port: port)
+        checkServer(status == 405, "events only take POST, got \(status)")
+
+        (status, _) = request("POST", path, port: port, token: nil, body: #"{"hook_event_name":"Stop","session_id":"s1"}"#)
+        checkServer(status == 401, "a hook without the token, got \(status)")
+        (status, _) = request("POST", path, port: port, token: "wrong", body: #"{"hook_event_name":"Stop","session_id":"s1"}"#)
+        checkServer(status == 401, "a hook with the wrong token, got \(status)")
+        (status, _) = request("POST", path, port: port, body: #"{"hook_event_name":"Stop","session_id":"s1"}"#,
+                              headers: ["Origin": "https://evil.example"])
+        checkServer(status == 403, "a hook from a browser, got \(status)")
+        let line = checkServerRaw("POST \(path) HTTP/1.1\r\nAuthorization: Bearer token\r\nContent-Type: text/plain\r\n" +
+                                  "Content-Length: 2\r\n\r\n{}", port: port)
+        checkServer(line.contains(" 415 "), "a hook that is not JSON, got \(line)")
+        let noLength = checkServerRaw("POST \(path) HTTP/1.1\r\nAuthorization: Bearer token\r\nContent-Type: application/json\r\n\r\n",
+                                      port: port)
+        checkServer(noLength.contains(" 411 "), "a hook with no length, got \(noLength)")
+
+        let events = received.wait(until: { $0.count >= 2 })
+        checkServer(events == [
+            "claude-code s1 promptSubmitted t3Code(threadID: \"th-1\", environmentID: Optional(\"env-1\")) pid=321",
+            "codex c1 turnEnded(summary: Optional(\"done\"), failed: false) app(bundleID: nil, termProgram: nil, tmuxPane: nil) pid=-",
+        ], "exactly the well-formed, authorised hooks reach the notch, got \(events)")
+        server.stop()
+    }
+
+    /// A hook can carry the file a tool is writing, so this route's body limit is 4 MiB; the
+    /// other routes keep 64 KiB.
+    static func testTheAgentRouteTakesBodiesTheOthersDoNot() {
+        let received = ServerStateRecorder()
+        guard let (server, port) = startedServer({ received.record($0.sessionID) }) else { return }
+
+        // A body of exactly the limit, padded inside a string field.
+        let limit = ChannelServer.maximumAgentPayloadBytes
+        let frame = #"{"hook_event_name":"PostToolUse","session_id":"big","tool_input":""}"#
+        let padding = String(repeating: "x", count: limit - frame.utf8.count)
+        let body = #"{"hook_event_name":"PostToolUse","session_id":"big","tool_input":""# + padding + #""}"#
+        checkServer(body.utf8.count == limit, "the body is exactly the limit, got \(body.utf8.count)")
+
+        var (status, json) = request("POST", "/v2/agents/claude-code/events", port: port, body: body)
+        checkServer(status == 202, "a body of exactly 4 MiB is accepted, got \(status) \(json)")
+
+        let beyondNotifications = #"{"hook_event_name":"PostToolUse","session_id":"big","tool_input":""#
+            + String(repeating: "x", count: 70 * 1024) + #""}"#
+        (status, json) = request("POST", "/v2/agents/claude-code/events", port: port, body: beyondNotifications)
+        checkServer(status == 202, "and one past the notifications' limit is accepted, too, got \(status) \(json)")
+
+        let head = "POST /v2/agents/claude-code/events HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\n"
+        var line = checkServerRaw(head + "Content-Length: \(limit + 1)\r\n\r\n", port: port)
+        checkServer(line.contains(" 413 "), "a body announced one byte over 4 MiB is refused unread, got \(line)")
+        line = checkServerRaw("POST /v2/notifications HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\n" +
+                              "Content-Length: \(ChannelNotification.maximumPayloadBytes + 1)\r\n\r\n", port: port)
+        checkServer(line.contains(" 413 "), "while a notification over 64 KiB still is refused, got \(line)")
+
+        (status, _) = request("POST", "/v2/agents/claude-code/events", port: port,
+                              body: #"{"hook_event_name":"PostToolUse","session_id":"after"}"#)
+        checkServer(status == 202, "and the server is still up, got \(status)")
+
+        let seen = received.wait(until: { $0.count >= 3 })
+        checkServer(seen == ["big", "big", "after"], "the big hooks arrived whole, got \(seen)")
+        server.stop()
     }
 }
