@@ -32,6 +32,9 @@ func checkTrue(_ condition: Bool, _ message: String = "",
 
 @main
 struct TintPipelineTestsRunner {
+    /// The playback app whose icon is the Artwork Fallback in these tests.
+    static let app = "com.apple.Music"
+
     static func main() {
         testLatestArtworkOwnsTheTint()
         testStaleDerivationIsDiscarded()
@@ -54,6 +57,10 @@ struct TintPipelineTestsRunner {
         testRefinementDuringDecodeDoesNotSwallowTheFailure()
         testOwnDecodedCoverSurvivesALaterFailure()
         testColorlessIsDeclaredOncePerTrack()
+        testDecodeSupersededByATrackChangeIsRedone()
+        testLateBundleRefreshesTheColorlessFallback()
+        testLateBundleRefreshesAnUndecodableTracksFallback()
+        testInheritedUndecodableBytesWaitForTheTracksOwnCover()
         print("✅ TintPipelineTests: all passed")
     }
 
@@ -83,7 +90,7 @@ struct TintPipelineTestsRunner {
         var pipeline = TintPipeline()
         let track = TrackIdentity(title: "Bubble", artist: "Samuel Kim")
         let generation = pipeline.artworkApplied(for: track)
-        checkEqual(pipeline.declareColorlessIfSettled(for: track), nil,
+        checkEqual(pipeline.declareColorlessIfSettled(for: track, bundleIdentifier: app), nil,
                    "a covered track never settles Colorless")
         checkTrue(pipeline.accepts(generation: generation),
                   "the cover's derivation survives the refinement")
@@ -99,7 +106,7 @@ struct TintPipelineTestsRunner {
         let second = TrackIdentity(title: "Track 2", artist: "Album Artist")
         let generation = pipeline.artworkApplied(for: first)
         pipeline.noteCoverApplied(for: second)
-        checkEqual(pipeline.declareColorlessIfSettled(for: second), nil,
+        checkEqual(pipeline.declareColorlessIfSettled(for: second, bundleIdentifier: app), nil,
                    "an unchanged cover still counts as this track's artwork")
         checkTrue(pipeline.accepts(generation: generation),
                   "recording ownership must not invalidate a derivation still in flight")
@@ -112,7 +119,7 @@ struct TintPipelineTestsRunner {
         let track = TrackIdentity(title: "Podcast", artist: "Someone")
         let abandoned = pipeline.artworkApplied(for: TrackIdentity(title: "Previous", artist: "Track"))
         checkTrue(pipeline.shouldArmSettleWindow(for: track), "a track without artwork arms the window")
-        let colorless = pipeline.declareColorlessIfSettled(for: track)
+        let colorless = pipeline.declareColorlessIfSettled(for: track, bundleIdentifier: app)
         checkTrue(colorless != nil, "the window expiring without artwork settles the track Colorless")
         checkTrue(!pipeline.accepts(generation: abandoned),
                   "a derivation from an older track must not publish over Colorless")
@@ -132,7 +139,7 @@ struct TintPipelineTestsRunner {
         var pipeline = TintPipeline()
         let coverless = TrackIdentity(title: "Podcast", artist: "Someone")
         checkTrue(pipeline.shouldArmSettleWindow(for: coverless), "first play arms the window")
-        _ = pipeline.declareColorlessIfSettled(for: coverless)
+        _ = pipeline.declareColorlessIfSettled(for: coverless, bundleIdentifier: app)
         _ = pipeline.artworkApplied(for: TrackIdentity(title: "Song", artist: "Someone Else"))
         checkTrue(pipeline.shouldArmSettleWindow(for: coverless), "a replay arms the window again")
     }
@@ -180,7 +187,7 @@ struct TintPipelineTestsRunner {
         pipeline.noteCurrentTrack(track)
         let pendingDecode = pipeline.artworkRequested()
         _ = pipeline.shouldArmSettleWindow(for: track)
-        checkTrue(pipeline.declareColorlessIfSettled(for: track) != nil, "the window expires")
+        checkTrue(pipeline.declareColorlessIfSettled(for: track, bundleIdentifier: app) != nil, "the window expires")
         checkTrue(pipeline.acceptsArtwork(order: pendingDecode),
                   "the late decode still applies over the Artwork Fallback")
     }
@@ -196,7 +203,7 @@ struct TintPipelineTestsRunner {
         let pendingDecode = pipeline.artworkRequested()
         pipeline.noteCurrentTrack(coverless)
         _ = pipeline.shouldArmSettleWindow(for: coverless)
-        _ = pipeline.declareColorlessIfSettled(for: coverless)
+        _ = pipeline.declareColorlessIfSettled(for: coverless, bundleIdentifier: app)
         checkTrue(!pipeline.acceptsArtwork(order: pendingDecode),
                   "the previous track's cover must not replace the Artwork Fallback")
     }
@@ -224,11 +231,12 @@ struct TintPipelineTestsRunner {
         let previousTint = pipeline.artworkApplied(for: previous)
         pipeline.noteCurrentTrack(track)
         let order = pipeline.artworkRequested()
-        let colorless = pipeline.artworkDecodeFailed(order: order, for: track)
+        let colorless = pipeline.artworkDecodeFailed(order: order, for: track, bundleIdentifier: app)
         checkTrue(colorless != nil, "a failed decode of the newest request settles the track Colorless")
         checkTrue(!pipeline.accepts(generation: previousTint),
                   "the previous track's tint must not publish over the Colorless track")
-        checkEqual(pipeline.heldArtwork, .undecodable, "the held bytes are remembered as undecodable")
+        checkEqual(pipeline.heldArtwork, .undecodable(track: track),
+                   "the held bytes are remembered as undecodable for this track")
     }
 
     /// A failure belonging to a superseded request must not arm anything: the newer request
@@ -241,34 +249,41 @@ struct TintPipelineTestsRunner {
         let staleOrder = pipeline.artworkRequested()
         let newestOrder = pipeline.artworkRequested()
         let generation = pipeline.generation
-        checkEqual(pipeline.artworkDecodeFailed(order: staleOrder, for: track), nil,
+        checkEqual(pipeline.artworkDecodeFailed(order: staleOrder, for: track, bundleIdentifier: app), nil,
                    "a stale failure declares nothing")
         checkEqual(pipeline.generation, generation, "a stale failure does not advance the generation")
-        checkEqual(pipeline.heldArtwork, .decoding, "a stale failure does not mark the held bytes")
+        checkEqual(pipeline.heldArtwork, .decoding(order: newestOrder),
+                   "a stale failure does not mark the held bytes")
         checkTrue(pipeline.acceptsArtwork(order: newestOrder), "the newer decode can still be applied")
 
         // The same holds for a decode superseded by a change of track.
         let previousTrackOrder = pipeline.artworkRequested()
         pipeline.noteCurrentTrack(next)
-        checkEqual(pipeline.artworkDecodeFailed(order: previousTrackOrder, for: track), nil,
+        checkEqual(pipeline.artworkDecodeFailed(order: previousTrackOrder, for: track, bundleIdentifier: app), nil,
                    "a failure for a track the notch has left declares nothing")
         checkEqual(pipeline.generation, generation, "nor advances the generation")
     }
 
     /// The bad bytes stay "seen", so they arrive again through the unchanged-artwork path. They
     /// must not be recorded as the next track's cover, or that track would keep the previous
-    /// rendering and never settle Colorless.
+    /// rendering and never settle Colorless. Bytes that failed for the previous track are no
+    /// artwork for this one, so it waits out a Tint Settle Window and then settles Colorless.
     static func testUndecodableArtworkArrivingAgainIsNotACover() {
         var pipeline = TintPipeline()
         let first = TrackIdentity(title: "Track 1", artist: "Album Artist")
         let second = TrackIdentity(title: "Track 2", artist: "Album Artist")
         pipeline.noteCurrentTrack(first)
         let order = pipeline.artworkRequested()
-        _ = pipeline.artworkDecodeFailed(order: order, for: first)
+        _ = pipeline.artworkDecodeFailed(order: order, for: first, bundleIdentifier: app)
         pipeline.noteCurrentTrack(second)
-        checkTrue(pipeline.heldArtworkArrived(for: second) != nil,
-                  "the same undecodable bytes leave the next track Colorless")
+        checkEqual(pipeline.heldArtworkArrived(for: second, bundleIdentifier: app), .armSettleWindow,
+                   "the previous track's undecodable bytes give the next track a settle window")
         checkTrue(pipeline.artworkTrack != second, "the track is not recorded as owning a cover")
+        checkTrue(pipeline.shouldArmSettleWindow(for: second), "the window arms")
+        checkTrue(pipeline.declareColorlessIfSettled(for: second, bundleIdentifier: app) != nil,
+                  "and the track settles Colorless when it expires without artwork")
+        checkEqual(pipeline.heldArtworkArrived(for: second, bundleIdentifier: app), .noAction,
+                   "once Colorless, the same bytes arriving again redo nothing")
     }
 
     /// New bytes start a fresh decode, and bytes that decode are a cover again, so the
@@ -279,14 +294,15 @@ struct TintPipelineTestsRunner {
         let next = TrackIdentity(title: "Track 2", artist: "Album Artist")
         pipeline.noteCurrentTrack(track)
         let order = pipeline.artworkRequested()
-        _ = pipeline.artworkDecodeFailed(order: order, for: track)
-        _ = pipeline.artworkRequested()
-        checkEqual(pipeline.heldArtwork, .decoding, "new bytes are not known to be undecodable")
+        _ = pipeline.artworkDecodeFailed(order: order, for: track, bundleIdentifier: app)
+        let newBytes = pipeline.artworkRequested()
+        checkEqual(pipeline.heldArtwork, .decoding(order: newBytes),
+                   "new bytes are not known to be undecodable")
         _ = pipeline.artworkApplied(for: track)
         pipeline.noteCurrentTrack(next)
-        checkEqual(pipeline.heldArtworkArrived(for: next), nil,
+        checkEqual(pipeline.heldArtworkArrived(for: next, bundleIdentifier: app), .noAction,
                    "a decoded cover shared by the next track is that track's cover")
-        checkEqual(pipeline.declareColorlessIfSettled(for: next), nil,
+        checkEqual(pipeline.declareColorlessIfSettled(for: next, bundleIdentifier: app), nil,
                    "so it never settles Colorless")
     }
 
@@ -304,12 +320,13 @@ struct TintPipelineTestsRunner {
 
         // `title=T2, artwork=A`: the bytes did not change.
         pipeline.noteCurrentTrack(second)
-        checkEqual(pipeline.heldArtworkArrived(for: second), nil, "the inherited cover is recorded")
+        checkEqual(pipeline.heldArtworkArrived(for: second, bundleIdentifier: app), .noAction,
+                   "the inherited cover is recorded")
         checkEqual(pipeline.artworkTrack, second, "T2 looks covered by the inherited bytes")
 
         // `artwork=B`: T2's own bytes, which do not decode.
         let order = pipeline.artworkRequested()
-        checkTrue(pipeline.artworkDecodeFailed(order: order, for: second) != nil,
+        checkTrue(pipeline.artworkDecodeFailed(order: order, for: second, bundleIdentifier: app) != nil,
                   "T2's own failure settles it Colorless despite the inherited cover")
         checkTrue(pipeline.artworkTrack != second, "the inherited cover no longer counts as T2's")
         checkTrue(!pipeline.accepts(generation: firstTint), "T1's tint must not publish over T2")
@@ -328,9 +345,10 @@ struct TintPipelineTestsRunner {
         pipeline.noteCurrentTrack(track)
         let order = pipeline.artworkRequested()
         pipeline.noteCurrentTrack(track)
-        checkEqual(pipeline.heldArtworkArrived(for: track), nil, "a decode in flight decides nothing yet")
+        checkEqual(pipeline.heldArtworkArrived(for: track, bundleIdentifier: app), .noAction,
+                   "a decode in flight decides nothing yet")
         checkTrue(pipeline.artworkTrack != track, "the undecided bytes are not recorded as a cover")
-        checkTrue(pipeline.artworkDecodeFailed(order: order, for: track) != nil,
+        checkTrue(pipeline.artworkDecodeFailed(order: order, for: track, bundleIdentifier: app) != nil,
                   "the failure still settles the track Colorless")
     }
 
@@ -343,7 +361,7 @@ struct TintPipelineTestsRunner {
         _ = pipeline.artworkRequested()
         let tint = pipeline.artworkApplied(for: track)
         let order = pipeline.artworkRequested()
-        checkEqual(pipeline.artworkDecodeFailed(order: order, for: track), nil,
+        checkEqual(pipeline.artworkDecodeFailed(order: order, for: track, bundleIdentifier: app), nil,
                    "the track keeps the cover decoded from its own bytes")
         checkTrue(pipeline.accepts(generation: tint), "and that cover's tint")
     }
@@ -355,16 +373,112 @@ struct TintPipelineTestsRunner {
         let track = TrackIdentity(title: "Broken Cover", artist: "Someone")
         pipeline.noteCurrentTrack(track)
         let order = pipeline.artworkRequested()
-        checkTrue(pipeline.artworkDecodeFailed(order: order, for: track) != nil, "the first failure settles")
+        checkTrue(pipeline.artworkDecodeFailed(order: order, for: track, bundleIdentifier: app) != nil, "the first failure settles")
         let generation = pipeline.generation
-        checkEqual(pipeline.heldArtworkArrived(for: track), nil, "the same bytes again do nothing")
-        checkEqual(pipeline.declareColorlessIfSettled(for: track), nil, "nor does a settle window")
+        checkEqual(pipeline.heldArtworkArrived(for: track, bundleIdentifier: app), .noAction,
+                   "the same bytes again do nothing")
+        checkEqual(pipeline.declareColorlessIfSettled(for: track, bundleIdentifier: app), nil, "nor does a settle window")
         checkEqual(pipeline.generation, generation, "the generation does not move")
 
         _ = pipeline.artworkRequested()
         _ = pipeline.artworkApplied(for: track)
         let next = TrackIdentity(title: "Podcast", artist: "Someone Else")
-        checkTrue(pipeline.declareColorlessIfSettled(for: next) != nil,
+        checkTrue(pipeline.declareColorlessIfSettled(for: next, bundleIdentifier: app) != nil,
                   "another track can still be declared Colorless")
+    }
+
+    /// A change of track supersedes the decode of the held bytes, and the new track inherits
+    /// those same bytes, so no decode is left to settle it. The pipeline asks for the bytes to be
+    /// decoded again for the new track; once that decode is in flight, nothing more is asked.
+    static func testDecodeSupersededByATrackChangeIsRedone() {
+        var pipeline = TintPipeline()
+        let first = TrackIdentity(title: "T1", artist: "X")
+        let second = TrackIdentity(title: "T2", artist: "Y")
+        let third = TrackIdentity(title: "T3", artist: "Y")
+        pipeline.noteCurrentTrack(first)
+        _ = pipeline.artworkRequested()
+        let firstTint = pipeline.artworkApplied(for: first)
+
+        pipeline.noteCurrentTrack(second)
+        let secondsDecode = pipeline.artworkRequested()
+        pipeline.noteCurrentTrack(third)
+        checkTrue(!pipeline.acceptsArtwork(order: secondsDecode), "T2's decode is superseded")
+        checkEqual(pipeline.heldArtworkArrived(for: third, bundleIdentifier: app), .redecode,
+                   "T3 inherits bytes nobody will settle, so they are decoded again for it")
+        checkTrue(pipeline.artworkTrack != third, "T3 is not recorded as covered meanwhile")
+
+        let thirdsDecode = pipeline.artworkRequested()
+        pipeline.noteCurrentTrack(third)
+        checkEqual(pipeline.heldArtworkArrived(for: third, bundleIdentifier: app), .noAction,
+                   "with T3's own decode in flight there is nothing more to do")
+        checkTrue(pipeline.artworkDecodeFailed(order: thirdsDecode, for: third, bundleIdentifier: app) != nil,
+                  "and that decode failing settles T3 Colorless")
+        checkTrue(!pipeline.accepts(generation: firstTint), "T1's tint does not stay on T3")
+    }
+
+    /// A coverless track settles before its bundle is known, so its fallback is the placeholder.
+    /// When the bundle arrives the track is declared again, so the fallback becomes the app icon.
+    static func testLateBundleRefreshesTheColorlessFallback() {
+        var pipeline = TintPipeline()
+        let track = TrackIdentity(title: "Podcast", artist: "Someone")
+        pipeline.noteCurrentTrack(track)
+        checkTrue(pipeline.shouldArmSettleWindow(for: track), "the window arms")
+        checkTrue(pipeline.declareColorlessIfSettled(for: track, bundleIdentifier: "") != nil,
+                  "it settles with no bundle known")
+        checkTrue(pipeline.shouldArmSettleWindow(for: track), "the bundle's event arms a new window")
+        checkTrue(pipeline.declareColorlessIfSettled(for: track, bundleIdentifier: "com.spotify.client") != nil,
+                  "a new bundle is declared again, so the fallback shows that app's icon")
+        checkEqual(pipeline.colorlessFallback,
+                   ColorlessFallback(track: track, bundleIdentifier: "com.spotify.client"),
+                   "the fallback on screen is the new app's")
+        checkEqual(pipeline.declareColorlessIfSettled(for: track, bundleIdentifier: "com.spotify.client"), nil,
+                   "the same bundle again redoes nothing")
+    }
+
+    /// The same, for a track that is Colorless because its own bytes did not decode: the bundle
+    /// arrives with the unchanged bytes.
+    static func testLateBundleRefreshesAnUndecodableTracksFallback() {
+        var pipeline = TintPipeline()
+        let track = TrackIdentity(title: "T2", artist: "Y")
+        pipeline.noteCurrentTrack(track)
+        let order = pipeline.artworkRequested()
+        checkTrue(pipeline.artworkDecodeFailed(order: order, for: track, bundleIdentifier: "") != nil,
+                  "it settles with no bundle known")
+        guard case .colorless = pipeline.heldArtworkArrived(for: track, bundleIdentifier: "com.spotify.client") else {
+            checkTrue(false, "a late bundle refreshes the fallback")
+            return
+        }
+        checkEqual(pipeline.heldArtworkArrived(for: track, bundleIdentifier: "com.spotify.client"), .noAction,
+                   "the same bundle again redoes nothing")
+    }
+
+    /// A track whose own cover decoded keeps it when a later piece of its artwork fails, which
+    /// leaves the held bytes undecodable. The next track inheriting them first is a track whose
+    /// artwork has not arrived yet: it waits out a settle window, and its own cover landing
+    /// inside it means it never flashes the fallback.
+    static func testInheritedUndecodableBytesWaitForTheTracksOwnCover() {
+        var pipeline = TintPipeline()
+        let first = TrackIdentity(title: "T1", artist: "X")
+        let second = TrackIdentity(title: "T2", artist: "X")
+        pipeline.noteCurrentTrack(first)
+        _ = pipeline.artworkRequested()
+        _ = pipeline.artworkApplied(for: first)
+        let laterBytes = pipeline.artworkRequested()
+        checkEqual(pipeline.artworkDecodeFailed(order: laterBytes, for: first, bundleIdentifier: app), nil,
+                   "T1 keeps its own cover")
+
+        pipeline.noteCurrentTrack(second)
+        checkEqual(pipeline.heldArtworkArrived(for: second, bundleIdentifier: app), .armSettleWindow,
+                   "T2 inherits T1's undecodable bytes and waits instead of settling at once")
+        checkTrue(pipeline.shouldArmSettleWindow(for: second), "the window arms")
+        checkEqual(pipeline.heldArtworkArrived(for: second, bundleIdentifier: app), .armSettleWindow,
+                   "a refinement asks again, and the window does not re-arm")
+        checkTrue(!pipeline.shouldArmSettleWindow(for: second), "one window per track")
+
+        let ownCover = pipeline.artworkRequested()
+        checkTrue(pipeline.acceptsArtwork(order: ownCover), "T2's own cover decodes")
+        _ = pipeline.artworkApplied(for: second)
+        checkEqual(pipeline.declareColorlessIfSettled(for: second, bundleIdentifier: app), nil,
+                   "a window that expires afterwards does not take the cover away")
     }
 }

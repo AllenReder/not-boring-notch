@@ -25,12 +25,34 @@ enum ArtworkProvenance {
 
 /// What is known about the artwork bytes the notch holds.
 enum HeldArtwork: Equatable {
-    /// A decode of the bytes is in flight, so they are neither a cover nor known to be absent.
-    case decoding
+    /// A decode of the bytes was requested with this order and has not resolved, so they are
+    /// neither a cover nor known to be absent.
+    case decoding(order: Int)
     /// The bytes decoded into a cover.
     case decoded
-    /// The bytes could not be decoded: they are absent artwork.
-    case undecodable
+    /// The bytes could not be decoded for this track: they are absent artwork.
+    case undecodable(track: TrackIdentity)
+}
+
+/// What the notch must do when the artwork bytes it already holds arrive again for a track.
+enum HeldArtworkOutcome: Equatable {
+    /// Nothing: the bytes are this track's cover now, or their decode is still on its way.
+    case noAction
+    /// The track is Colorless: show the Artwork Fallback and drop the tint.
+    case colorless(generation: Int)
+    /// The decode of these bytes was superseded by the change of track, so nothing will settle
+    /// this track: decode the same bytes again for it.
+    case redecode
+    /// The bytes failed to decode for the previous track. Treat this track as one that arrived
+    /// without artwork: its own may still come, so wait out the Tint Settle Window.
+    case armSettleWindow
+}
+
+/// The Artwork Fallback on screen for a Colorless track. The bundle is part of it because the
+/// fallback is the playback app's icon, which must follow a bundle that arrives late.
+struct ColorlessFallback: Equatable {
+    var track: TrackIdentity
+    var bundleIdentifier: String
 }
 
 /// Pure, synchronous state for the two timing defects this pipeline guards against:
@@ -47,10 +69,10 @@ struct TintPipeline {
     /// set by inheriting bytes, so it tells a track's own cover from the previous track's.
     private(set) var decodedTrack: TrackIdentity?
 
-    /// The track most recently declared Colorless, cleared once any artwork is applied. While it
-    /// is set the notch shows the Artwork Fallback with no tint, so declaring the same track
-    /// Colorless again has nothing to do.
-    private(set) var colorlessTrack: TrackIdentity?
+    /// The most recent Colorless declaration, cleared once any artwork is applied. While it is
+    /// set the notch shows this Artwork Fallback with no tint, so declaring the same track
+    /// Colorless again for the same bundle has nothing to do.
+    private(set) var colorlessFallback: ColorlessFallback?
 
     /// Ordering for the decoded image itself: claimed when the notch learns of a piece of
     /// artwork, before its decode is dispatched, and validated when the decode returns. It is
@@ -66,9 +88,10 @@ struct TintPipeline {
 
     /// What is known about the artwork bytes the notch holds. Undecodable bytes stay "seen", so
     /// the same bytes arriving again do not start another decode, but they never count as a
-    /// cover: a track that receives them is Colorless, not covered. Starts as `.decoding`, which
-    /// is never consulted before the first request because no bytes are held until then.
-    private(set) var heldArtwork: HeldArtwork = .decoding
+    /// cover: a track that receives them is Colorless, not covered. No bytes are held before the
+    /// first request, so the initial value is never consulted; it is the one whose worst case is
+    /// another decode.
+    private(set) var heldArtwork: HeldArtwork = .decoding(order: 0)
 
     /// A derivation may publish only if no newer artwork has been applied since it started.
     func accepts(generation: Int) -> Bool {
@@ -81,7 +104,7 @@ struct TintPipeline {
         generation &+= 1
         artworkTrack = track
         decodedTrack = track
-        colorlessTrack = nil
+        colorlessFallback = nil
         armedTrack = nil
         heldArtwork = .decoded
         return generation
@@ -92,7 +115,7 @@ struct TintPipeline {
     /// track it was requested for.
     mutating func artworkRequested() -> Int {
         artworkOrder &+= 1
-        heldArtwork = .decoding
+        heldArtwork = .decoding(order: artworkOrder)
         return artworkOrder
     }
 
@@ -108,32 +131,44 @@ struct TintPipeline {
     /// to do: the decode is stale (a newer request or a change of track superseded it, and a
     /// stale failure must not touch state that belongs to the newer one), the track already
     /// shows a cover decoded from its own bytes, or it is already Colorless.
-    mutating func artworkDecodeFailed(order: Int, for track: TrackIdentity) -> Int? {
+    mutating func artworkDecodeFailed(order: Int, for track: TrackIdentity,
+                                      bundleIdentifier: String) -> Int? {
         guard acceptsArtwork(order: order) else { return nil }
-        heldArtwork = .undecodable
+        heldArtwork = .undecodable(track: track)
         guard decodedTrack != track else { return nil }
         if artworkTrack == track {
             artworkTrack = nil
         }
-        return declareColorlessIfSettled(for: track)
+        return declareColorlessIfSettled(for: track, bundleIdentifier: bundleIdentifier)
     }
 
     /// The artwork bytes the notch already holds arrived for this track, so no decode starts.
-    /// Bytes that decoded become this track's cover (`noteCoverApplied`); bytes that failed to
-    /// decode leave the track Colorless, exactly as when they first failed. Bytes still decoding
-    /// are left to their decode, which settles the track either way — recording them as a cover
-    /// now would make a failed decode look like a covered track.
     ///
-    /// Returns the new generation when the track is Colorless, otherwise `nil`.
-    mutating func heldArtworkArrived(for track: TrackIdentity) -> Int? {
+    /// - Bytes that decoded become this track's cover (`noteCoverApplied`).
+    /// - Bytes still decoding are left to their decode, which settles the track either way —
+    ///   recording them as a cover now would make a failed decode look like a covered track.
+    ///   If a change of track superseded that decode, it will be dropped and settle nothing, so
+    ///   the bytes must be decoded again for this track.
+    /// - Bytes that failed to decode for this track leave it Colorless, exactly as when they
+    ///   first failed (a bundle that arrived since refreshes the fallback). Bytes that failed for
+    ///   the previous track only mean this track has no artwork yet, so it gets a Tint Settle
+    ///   Window like any track whose metadata arrives first.
+    mutating func heldArtworkArrived(for track: TrackIdentity,
+                                     bundleIdentifier: String) -> HeldArtworkOutcome {
         switch heldArtwork {
         case .decoded:
             noteCoverApplied(for: track)
-            return nil
-        case .decoding:
-            return nil
-        case .undecodable:
-            return declareColorlessIfSettled(for: track)
+            return .noAction
+        case .decoding(let order):
+            return acceptsArtwork(order: order) ? .noAction : .redecode
+        case .undecodable(let failedTrack):
+            guard failedTrack == track || colorlessFallback?.track == track else {
+                return .armSettleWindow
+            }
+            guard let generation = declareColorlessIfSettled(for: track,
+                                                             bundleIdentifier: bundleIdentifier)
+            else { return .noAction }
+            return .colorless(generation: generation)
         }
     }
 
@@ -173,12 +208,16 @@ struct TintPipeline {
     /// The Tint Settle Window expired. Returns the new generation when the track is
     /// Colorless, or `nil` when artwork is already known for it — the case where a
     /// metadata-only event must not take the tint away from a covered track — or when the
-    /// track is already Colorless, so repeated events do not redo the fallback.
-    mutating func declareColorlessIfSettled(for track: TrackIdentity) -> Int? {
-        guard artworkTrack != track, colorlessTrack != track else { return nil }
+    /// track already shows the Artwork Fallback for this bundle, so repeated events do not redo
+    /// it. A bundle that arrives after the track settled is declared again, so the fallback
+    /// can show that app's icon.
+    mutating func declareColorlessIfSettled(for track: TrackIdentity,
+                                            bundleIdentifier: String) -> Int? {
+        let fallback = ColorlessFallback(track: track, bundleIdentifier: bundleIdentifier)
+        guard artworkTrack != track, colorlessFallback != fallback else { return nil }
         generation &+= 1
         armedTrack = nil
-        colorlessTrack = track
+        colorlessFallback = fallback
         return generation
     }
 }
