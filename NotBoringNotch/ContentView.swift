@@ -45,6 +45,7 @@ struct ContentView: View {
     @Default(.useMusicVisualizer) var useMusicVisualizer
 
     @Default(.showNotHumanFace) var showNotHumanFace
+    @Default(.musicAheadOfAgents) var musicAheadOfAgents
     @Default(.preventAutoClose) var preventAutoClose
 
     // Shared interactive spring for movement/resizing to avoid conflicting animations
@@ -119,6 +120,8 @@ struct ContentView: View {
         s.playerIdle = !musicManager.isPlaying && musicManager.isPlayerIdle
         s.faceEnabled = Defaults[.showNotHumanFace]
         s.hideOnClosed = vm.hideOnClosed
+        s.agents = coordinator.showsBanner(on: vm.screenUUID) ? channel.agents.summary.presence : .none
+        s.musicFirst = musicAheadOfAgents
         return s
     }
 
@@ -145,6 +148,8 @@ struct ContentView: View {
             return 640
         case .banner(let banner):
             return base + 2 * BannerView.wingWidth(for: banner) - 20
+        case .residents(.agents, _):
+            return base + 2 * AgentCompactView.wingWidth(for: channel.agents.summary) - 20
         case .residents, .face:
             return base + squareWings
         default:
@@ -400,9 +405,12 @@ struct ContentView: View {
                                 .id(banner.id)
                                 .frame(alignment: .center)
                                 .transition(.opacity)
-                        case .residents(.music, _):
-                            MusicLiveActivity()
+                        case let .residents(.music, secondary):
+                            MusicLiveActivity(trailingAgents: secondary == .agents ? channel.agents.summary : nil)
                                 .frame(alignment: .center)
+                        case .residents(.agents, _):
+                            AgentCompactView(summary: channel.agents.summary)
+                                .transition(.opacity)
                         case .face:
                             NotchFaceAnimation()
                         case .hello, .nothing:
@@ -505,7 +513,9 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    func MusicLiveActivity() -> some View {
+    /// `trailingAgents` takes the right wing instead of the spectrum: the music holds compact, the
+    /// agents minimal.
+    func MusicLiveActivity(trailingAgents: AgentSummary? = nil) -> some View {
         HStack {
             Image(nsImage: musicManager.albumArt)
                 .resizable()
@@ -568,7 +578,9 @@ struct ContentView: View {
                 )
 
             HStack {
-                if useMusicVisualizer {
+                if let trailingAgents {
+                    AgentMinimalView(summary: trailingAgents)
+                } else if useMusicVisualizer {
                     Rectangle()
                         .fill(
                             Defaults[.coloredSpectrogram]

@@ -10,7 +10,14 @@
 //
 //  - **Interruptions** last seconds and take the whole notch: the hello animation, the battery
 //    notice, an inline HUD, a banner. The first one present wins, in that order.
-//  - **Residents** stay for as long as they last: the music.
+//  - **Residents** stay for as long as they last: the music, and the agents. Two can be seen at
+//    once — the first takes both wings (compact), the second shrinks to the right one (minimal).
+//
+//  Ranking the residents is one question: is anyone waiting on the user? If so, the agents go
+//  first, always — an agent that cannot go on is worth more of a glance than the music, which
+//  the user already knows is playing. If agents are only working, they go ahead of the music
+//  unless the user has put the music first for good. The music comes forward for the seconds a
+//  new track is announced.
 //
 //  Pure: no SwiftUI, no singletons, so it is tested on its own.
 //
@@ -20,6 +27,17 @@ import Foundation
 /// A claim that stays on the closed notch for as long as it lasts.
 enum NotchResident: Hashable {
     case music
+    /// How many Claude Code and Codex sessions are working or waiting on the user.
+    case agents
+}
+
+/// What the agents are up to, as far as the closed notch goes.
+enum AgentPresence: Equatable {
+    /// Nothing is working or waiting.
+    case none
+    case working
+    /// Somebody cannot go on without the user.
+    case waiting
 }
 
 /// What the closed notch shows.
@@ -67,6 +85,10 @@ struct ClosedNotchSituation {
     /// The notch hides its content while closed (fullscreen). Residents and the face go;
     /// interruptions have been filtered by their own rules already.
     var hideOnClosed = false
+
+    var agents = AgentPresence.none
+    /// The user has put the music ahead of agents that are only working.
+    var musicFirst = false
 }
 
 enum ClosedNotchArbiter {
@@ -91,6 +113,14 @@ enum ClosedNotchArbiter {
     static func rankedResidents(_ s: ClosedNotchSituation) -> [NotchResident] {
         guard !s.hideOnClosed, !s.otherExpansion else { return [] }
 
-        return s.musicPresent ? [.music] : []
+        let musicComesForward = s.musicFirst || s.musicExpansion || s.musicAnnounced
+
+        switch (s.agents, s.musicPresent) {
+        case (.none, false): return []
+        case (.none, true): return [.music]
+        case (.waiting, false), (.working, false): return [.agents]
+        case (.waiting, true): return [.agents, .music]
+        case (.working, true): return musicComesForward ? [.music, .agents] : [.agents, .music]
+        }
     }
 }

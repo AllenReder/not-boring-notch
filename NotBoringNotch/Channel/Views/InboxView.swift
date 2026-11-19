@@ -2,7 +2,7 @@
 //  InboxView.swift
 //  NotBoringNotch
 //
-//  The Inbox tab: every notification the user has not cleared,
+//  The Inbox tab: the agent sessions, then every notification the user has not cleared,
 //  newest first. Clicking one does what its sender said a click should do; a notification with
 //  nowhere to go opens up to show its body.
 //
@@ -23,7 +23,7 @@ struct InboxView: View {
     /// the tab does not jump in height as the first few arrive.
     private static let minimumHeight: CGFloat = 110
 
-    private var isEmpty: Bool { channel.inbox.isEmpty }
+    private var isEmpty: Bool { channel.inbox.isEmpty && channel.agents.isEmpty }
 
     var body: some View {
         Group {
@@ -87,6 +87,19 @@ struct InboxView: View {
                 // Not lazy: the Inbox holds at most fifty, and the surface is sized from the
                 // stack's real height, which a lazy stack only estimates.
                 VStack(alignment: .leading, spacing: 4) {
+                    if !channel.agents.isEmpty {
+                        sectionHeader("Agents")
+                            .frame(height: Self.headerHeight)
+                        ForEach(channel.agents.ordered, id: \.key.raw) { session in
+                            AgentRow(session: session) {
+                                channel.jump(to: session)
+                                if session.jumpTarget != nil { vm.close() }
+                            }
+                            .id("agent-row:" + session.key.raw)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                    }
+
                     notificationsHeader
                     if channel.inbox.isEmpty {
                         Text("No notifications")

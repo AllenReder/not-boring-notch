@@ -27,6 +27,10 @@ struct ClosedNotchArbiterTests {
         testTheMusicAndTheFaceAsBefore()
         testAnExpansionKeepsResidentsAway()
         testFullscreenHidesResidents()
+        testAgentsWorkingGoAheadOfTheMusic()
+        testAgentsWaitingAlwaysGoAheadOfTheMusic()
+        testTheMusicComesForwardOnlyForAgentsThatAreWorking()
+        testAgentsReplaceTheFaceAndFollowTheSameRulesAsTheMusic()
         print("✅ ClosedNotchArbiterTests: all passed")
     }
 
@@ -45,6 +49,7 @@ struct ClosedNotchArbiterTests {
     static func name(_ r: NotchResident) -> String {
         switch r {
         case .music: return "music"
+        case .agents: return "agents"
         }
     }
 
@@ -111,5 +116,67 @@ struct ClosedNotchArbiterTests {
         checkArbiter(resolve(s), "nothing", "residents hide in fullscreen")
         s.banner = banner("t")
         checkArbiter(resolve(s), "banner:t", "a banner that got through its own filter still shows")
+    }
+
+    // MARK: - Agents
+
+    static func testAgentsWorkingGoAheadOfTheMusic() {
+        var s = playing
+        s.agents = .working
+        checkArbiter(resolve(s), "residents:agents,music", "the agents take compact, the music minimal")
+
+        var silent = ClosedNotchSituation()
+        silent.faceEnabled = true
+        silent.agents = .working
+        checkArbiter(resolve(silent), "residents:agents", "agents instead of the face")
+    }
+
+    static func testAgentsWaitingAlwaysGoAheadOfTheMusic() {
+        var s = playing
+        s.agents = .waiting
+        checkArbiter(resolve(s), "residents:agents,music", "somebody is waiting for the user")
+
+        s.musicFirst = true
+        checkArbiter(resolve(s), "residents:agents,music", "even when the music is first for good")
+        s.musicFirst = false
+        s.musicExpansion = true
+        checkArbiter(resolve(s), "residents:agents,music", "even over a new track being announced")
+        s.musicExpansion = false
+        s.musicAnnounced = true
+        checkArbiter(resolve(s), "residents:agents,music", "in either style")
+    }
+
+    static func testTheMusicComesForwardOnlyForAgentsThatAreWorking() {
+        var s = playing
+        s.agents = .working
+        s.musicFirst = true
+        checkArbiter(resolve(s), "residents:music,agents", "the user put the music first")
+
+        s.musicFirst = false
+        s.musicExpansion = true
+        checkArbiter(resolve(s), "residents:music,agents", "a new track is announced in compact")
+        s.musicExpansion = false
+        s.musicAnnounced = true
+        checkArbiter(resolve(s), "residents:music,agents", "and so is one announced in the standard style")
+
+        var quiet = playing
+        quiet.musicFirst = true
+        checkArbiter(resolve(quiet), "residents:music", "with no agents at work it is the music alone")
+    }
+
+    static func testAgentsReplaceTheFaceAndFollowTheSameRulesAsTheMusic() {
+        var s = playing
+        s.agents = .waiting
+        s.hideOnClosed = true
+        checkArbiter(resolve(s), "nothing", "agents hide in fullscreen, as the music does")
+        s.banner = banner("t")
+        checkArbiter(resolve(s), "banner:t", "the banner announcing a wait still shows")
+
+        var expansion = playing
+        expansion.agents = .waiting
+        expansion.otherExpansion = true
+        checkArbiter(resolve(expansion), "nothing", "a download's expansion owns the notch while it lasts")
+        checkArbiter(ClosedNotchArbiter.rankedResidents(playing).map(name).joined(separator: ","), "music",
+                     "no agents, no agents resident")
     }
 }

@@ -165,6 +165,70 @@ target when the notification has no `open` of its own.
 A terminal is brought forward, not a particular tab in it: reaching a tab would take scripting each
 terminal separately, which the sandbox does not allow.
 
+## Agents
+
+The channel also knows what Claude Code and Codex sessions are doing. A hook in the agent posts
+each event it fires, as the agent wrote it, and the notch works out the rest: how many sessions are
+working or waiting for you, when a turn has ended, and where a click should take you.
+
+```bash
+curl -X POST http://127.0.0.1:45999/v2/agents/claude-code/events \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "X-Agent-Pid: $PPID" \
+  -H "X-Agent-Host-Bundle: $__CFBundleIdentifier" \
+  --data-binary @hook-event.json
+```
+
+| Route | Answer | Does |
+| --- | --- | --- |
+| `POST /v2/agents/claude-code/events` | `202 {"status":"accepted"}` | A Claude Code hook event. |
+| `POST /v2/agents/codex/events` | `202 {"status":"accepted"}` | A Codex hook event. |
+
+The body is the hook's JSON, untouched: the notch reads `hook_event_name`, `session_id`, `cwd`,
+`tool_name`, `notification_type` and `last_assistant_message` from it, and nothing else. A hook it
+does not know gets `202 {"status":"ignored"}`, not an error, so a newer agent version that adds
+hooks does not break an older notch. A body that is not a JSON object gets `400 malformed`, and
+one without a `session_id` gets `400 missing_session_id`. The same token, origin and content-type
+rules apply as for notifications. This route takes bodies up to 4 MiB, because a hook carries the
+tool call it reports; every other route stays at 64 KiB.
+
+Everything the notch cannot read from the body, the hook script reports in headers. Empty values
+are left out.
+
+| Header | Value |
+| --- | --- |
+| `X-Agent-Pid` | The agent's process id, so the notch can tell when it has gone. |
+| `X-Agent-Host-Bundle` | `$__CFBundleIdentifier`: the app the agent runs in. A click brings it forward. |
+| `X-Agent-Term-Program` | `$TERM_PROGRAM`. |
+| `X-Agent-Tmux-Pane` | `$TMUX_PANE`. |
+| `X-Agent-T3-Thread` | `$T3CODE_THREAD_ID`. A session inside a T3 Code thread is that thread: a new agent session in the same thread replaces the old one. |
+| `X-Agent-T3-Environment` | The T3 Code environment id, only with a thread. With it a click opens `t3code://threads/<environment>/<thread>`; without it, T3 Code is brought forward. |
+
+### On the notch
+
+- **Closed notch.** The agents are a resident, like the music. The left wing shows the agent's
+  mark and a spinner, and the right wing how many sessions are working. When one is waiting for
+  you, the right wing turns amber and reads `! 1 · 2` — one waiting, two working. Agents waiting
+  for you always go ahead of the music; agents that are only working go ahead of it too, unless
+  the music has been put first for good (the `musicAheadOfAgents` default). When the music holds
+  the wings, the agents shrink to the right one: the spinner with the count inside it.
+- **A turn ends.** A banner titled with the project's name (the last segment of `cwd`), with the
+  first line of the agent's last message as its body. A turn shorter than 10 seconds goes to the
+  Inbox without a banner. A turn that failed says so.
+- **It needs you.** A permission request or a question raises a time-sensitive banner, which stays
+  until seen and is taken back as soon as the session carries on, ends, or is interrupted.
+- **The Inbox.** An *Agents* section at the top lists every session with its project, what it is
+  doing, and how long. Clicking a row, or a notification about it, goes to its T3 thread or its
+  app.
+
+The notifications are ordinary ones: `agent-wait:<session>` for a wait and `agent-done:<session>`
+for a finished turn, with the session as their `thread`. A newer one replaces the older in place.
+
+Sessions are not kept across restarts; the next hook from a running session brings it back. A
+session whose process has gone is removed. One that is working but has sent nothing for 15 minutes,
+with no sign that its process is still there, is settled as idle without a notification.
+
 ## Responses
 
 | Status | Body | When |
@@ -177,7 +241,7 @@ terminal separately, which the sandbox does not allow.
 | `404` | `{"error":"not_found"}` | A path the channel does not serve. |
 | `405` | `{"error":"method_not_allowed"}` | A path it serves, with the wrong method. |
 | `411` | `{"error":"length_required"}` | A `POST` without `Content-Length`. |
-| `413` | `{"error":"too_large"}` | Body over 64 KiB. |
+| `413` | `{"error":"too_large"}` | Body over 64 KiB (4 MiB for agent events). |
 | `415` | `{"error":"unsupported_media_type"}` | A `POST` whose `Content-Type` was not `application/json`. |
 
 The `400` error codes are `malformed`, `missing_title`, `unknown_icon_kind`, `invalid_icon_data`,
