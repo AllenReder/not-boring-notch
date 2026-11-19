@@ -14,15 +14,49 @@ import Foundation
 
 struct AgentStore: Equatable {
     private(set) var sessions: [AgentSessionKey: AgentSession] = [:]
+    /// T3 thread id -> its title, as T3 Code last gave it.
+    private(set) var threadTitles: [String: String] = [:]
+    /// T3 thread id -> when its title was last asked for.
+    private var titlesAskedAt: [String: Date] = [:]
+
+    /// How often the title of a thread in a turn is asked for again: T3 Code names a thread after
+    /// its first message, and may rename it later.
+    static let titleRefresh: TimeInterval = 30
 
     var isEmpty: Bool { sessions.isEmpty }
 
     /// Applies what a hook said, and returns what the rest of the app should do about it.
     @discardableResult
     mutating func apply(_ envelope: AgentEnvelope, now: Date) -> [AgentEffect] {
-        let result = AgentReducer.reduce(sessions[envelope.key], envelope, now: now)
+        var result = AgentReducer.reduce(sessions[envelope.key], envelope, now: now)
+        if let thread = result.session?.t3ThreadID {
+            result.session?.threadTitle = threadTitles[thread]
+        }
         sessions[envelope.key] = result.session
         return result.effects
+    }
+
+    /// The T3 threads whose title should be asked for now: one never asked about, and one with a
+    /// session in a turn that was last asked about a while ago. They count as asked from now.
+    mutating func takeThreadsDueForTitles(now: Date) -> [String] {
+        var due: Set<String> = []
+        for session in sessions.values {
+            guard let thread = session.t3ThreadID else { continue }
+            if let asked = titlesAskedAt[thread] {
+                guard session.phase != .idle, now.timeIntervalSince(asked) >= Self.titleRefresh else { continue }
+            }
+            due.insert(thread)
+        }
+        for thread in due { titlesAskedAt[thread] = now }
+        return due.sorted()
+    }
+
+    mutating func setThreadTitles(_ titles: [String: String]) {
+        threadTitles.merge(titles) { _, new in new }
+        for (key, session) in sessions {
+            guard let thread = session.t3ThreadID, let title = titles[thread] else { continue }
+            sessions[key]?.threadTitle = title
+        }
     }
 
     /// Takes away sessions whose process has gone, and settles working ones that have gone quiet.

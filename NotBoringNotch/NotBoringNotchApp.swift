@@ -407,6 +407,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NotchChannel.shared.agentLiveness = { pids in
             await XPCHelperClient.shared.agentProcessStartTimes(pids)
         }
+        NotchChannel.shared.t3ThreadTitles = { threadIDs in
+            await XPCHelperClient.shared.t3ThreadTitles(threadIDs)
+        }
         NotchChannel.shared.start()
 
         AgentHooksController.shared.repairInstalledAgents()

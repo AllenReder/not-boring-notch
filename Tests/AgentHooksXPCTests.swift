@@ -4,7 +4,7 @@
 //
 //  Standalone runner, discovered by scripts/run-tests.sh.
 //
-// SOURCES: NotBoringNotchXPCHelper/NotBoringNotchXPCHelperProtocol.swift NotBoringNotchXPCHelper/NotBoringNotchXPCHelper.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookInstaller.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookEntries.swift NotBoringNotchXPCHelper/AgentHooks/ConfigFile.swift NotBoringNotchXPCHelper/AgentHooks/JSONSurgeon.swift NotBoringNotchXPCHelper/AgentHooks/CodexHooksConfig.swift NotBoringNotchXPCHelper/AgentHooks/AgentHooksModels.swift NotBoringNotchXPCHelper/AgentHooks/AgentProcess.swift NotBoringNotchXPCHelper/AgentHooks/CodexTrust.swift NotBoringNotch/Agents/Hooks/AgentHookScript.swift NotBoringNotchXPCHelper/AgentHooks/PiExtension.swift
+// SOURCES: NotBoringNotchXPCHelper/NotBoringNotchXPCHelperProtocol.swift NotBoringNotchXPCHelper/NotBoringNotchXPCHelper.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookInstaller.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookEntries.swift NotBoringNotchXPCHelper/AgentHooks/ConfigFile.swift NotBoringNotchXPCHelper/AgentHooks/JSONSurgeon.swift NotBoringNotchXPCHelper/AgentHooks/CodexHooksConfig.swift NotBoringNotchXPCHelper/AgentHooks/AgentHooksModels.swift NotBoringNotchXPCHelper/AgentHooks/AgentProcess.swift NotBoringNotchXPCHelper/AgentHooks/CodexTrust.swift NotBoringNotch/Agents/Hooks/AgentHookScript.swift NotBoringNotchXPCHelper/AgentHooks/PiExtension.swift NotBoringNotchXPCHelper/AgentHooks/T3ThreadTitles.swift
 //
 //  The helper's real class behind a real NSXPCConnection (an anonymous listener in this
 //  process), called through the protocol the app uses. What this proves is what a unit test of

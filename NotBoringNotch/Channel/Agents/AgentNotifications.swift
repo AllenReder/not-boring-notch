@@ -106,18 +106,8 @@ enum AgentNotifications {
         }
     }
 
-    /// The project's name; the agent's when the directory is not known.
+    /// What the session is called, with its folder after a thread's title.
     private static func title(of session: AgentSession) -> String {
-        session.projectName.isEmpty ? session.agent.displayName : session.projectName
-    }
-}
-
-extension AgentKind {
-    var displayName: String {
-        switch self {
-        case .claudeCode: return "Claude Code"
-        case .codex: return "Codex"
-        case .pi: return "Pi"
-        }
+        [session.title, session.titleDetail].compactMap { $0 }.joined(separator: " · ")
     }
 }

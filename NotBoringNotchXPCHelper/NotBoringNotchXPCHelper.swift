@@ -144,6 +144,10 @@ class NotBoringNotchXPCHelper: NSObject, NotBoringNotchXPCHelperProtocol {
         reply(Dictionary(uniqueKeysWithValues: times.map { (NSNumber(value: $0.key), NSNumber(value: $0.value)) }))
     }
 
+    @objc func t3ThreadTitles(_ threadIDs: [String], with reply: @escaping ([String: String]) -> Void) {
+        reply(T3ThreadTitles.titles(of: threadIDs, cli: T3ThreadTitles.cli(home: homeDirectory)))
+    }
+
     @objc func agentHooksStatus(hookScript: String, with reply: @escaping (Data) -> Void) {
         reply(Self.encode(AgentHookInstaller(home: homeDirectory).report(bundledScript: hookScript)))
     }

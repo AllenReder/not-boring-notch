@@ -134,6 +134,8 @@ struct AgentReducerTestsRunner {
         testTheTurnIsNotOverWhileASubagentRuns()
         testInterruptAndSessionEnd()
         testAgentsSharingAT3ThreadAreTwoSessions()
+        testAT3SessionIsCalledByItsThreadsTitle()
+        testThreadTitlesAreAskedForOnceAndAgainOnlyWhileInATurn()
         testTurnDurationIsMeasured()
         testTheSummaryCountsWhatIsActive()
         testSweepRemovesWhatHasExited()
@@ -540,6 +542,48 @@ struct AgentReducerTestsRunner {
         var again = agentsRig()
         again.send("UserPromptSubmit")
         checkAgents(again.send("UserPromptSubmit"), ["calmed"], "a prompt withdraws any request left over from before a restart")
+    }
+
+    static func testAT3SessionIsCalledByItsThreadsTitle() {
+        var rig = agentsRig(.claudeCode, headers: ["X-Agent-T3-Thread": "th-1"])
+        rig.send("UserPromptSubmit", ["cwd": "/Users/dev/notch-channel-v2"])
+        var session: AgentSession { rig.store.sessions[AgentSessionKey(agent: .claudeCode, sessionID: "s1")]! }
+        checkAgents(session.title, "notch-channel-v2", "before T3 Code has said, the folder")
+        checkAgents(session.titleDetail, nil, "with nothing after it")
+
+        rig.store.setThreadTitles(["th-1": "Agent通知功能", "th-other": "Elsewhere"])
+        checkAgents(session.title, "Agent通知功能", "then the thread's title")
+        checkAgents(session.titleDetail, "notch-channel-v2", "with the folder after it")
+
+        rig.agent = .codex
+        rig.send("UserPromptSubmit", session: "codex-1", ["cwd": "/Users/dev/notch-channel-v2"])
+        checkAgents(rig.store.sessions[AgentSessionKey(agent: .codex, sessionID: "codex-1")]?.title, "Agent通知功能",
+                    "a session that joins the thread later is named at once")
+
+        var plain = agentsRig()
+        plain.send("UserPromptSubmit", ["cwd": "/Users/dev/api"])
+        plain.store.setThreadTitles(["th-1": "Agent通知功能"])
+        let outside = plain.store.sessions.values.first!
+        checkAgents(outside.title, "api", "outside T3 the folder, as before")
+        checkAgents(outside.titleDetail, nil)
+    }
+
+    static func testThreadTitlesAreAskedForOnceAndAgainOnlyWhileInATurn() {
+        var rig = agentsRig(.claudeCode, headers: ["X-Agent-T3-Thread": "th-1"])
+        rig.send("SessionStart")
+        checkAgents(rig.store.takeThreadsDueForTitles(now: rig.now), ["th-1"], "a thread never asked about")
+        checkAgents(rig.store.takeThreadsDueForTitles(now: rig.now), [], "is not asked about twice")
+        rig.now.addTimeInterval(AgentStore.titleRefresh)
+        checkAgents(rig.store.takeThreadsDueForTitles(now: rig.now), [], "an idle thread is not asked again")
+
+        rig.send("UserPromptSubmit")
+        checkAgents(rig.store.takeThreadsDueForTitles(now: rig.now), ["th-1"], "one in a turn is, once the wait is up")
+        rig.now.addTimeInterval(AgentStore.titleRefresh - 1)
+        checkAgents(rig.store.takeThreadsDueForTitles(now: rig.now), [], "and not before")
+
+        var plain = agentsRig()
+        plain.send("UserPromptSubmit")
+        checkAgents(plain.store.takeThreadsDueForTitles(now: plain.now), [], "a session outside T3 has no thread to ask about")
     }
 
     static func testAgentsSharingAT3ThreadAreTwoSessions() {

@@ -230,9 +230,14 @@ are left out.
   Inbox without a banner. A turn that failed says so.
 - **It needs you.** A permission request or a question raises a time-sensitive banner, which stays
   until seen and is taken back as soon as the session carries on, ends, or is interrupted.
-- **The Inbox.** An *Agents* section at the top lists every session with its project, what it is
+- **The Inbox.** An *Agents* section at the top lists every session with its name, what it is
   doing, and how long. Clicking a row, or a notification about it, goes to its T3 thread or its
   app.
+- **Names.** A session is named after the last folder of its working directory. A session in a T3
+  Code thread is named after the thread, with the folder after it in grey: `Agent通知功能 ·
+  notch-channel-v2`. The helper reads the title with T3 Code's own CLI, `~/.t3/bin/t3 thread show
+  --json`. It reads it when the thread is first seen, and again at most every 30 seconds while a
+  session in the thread is in a turn. A banner keeps the name it was delivered with.
 
 The notifications are ordinary ones: `agent-wait:<session>` for a wait and `agent-done:<session>`
 for a finished turn, with the session as their `thread`. A newer one replaces the older in place.

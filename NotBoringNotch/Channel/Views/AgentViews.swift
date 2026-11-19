@@ -269,10 +269,18 @@ struct AgentRow: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
-                    Text(session.projectName.isEmpty ? session.agent.displayName : session.projectName)
+                    Text(session.title)
                         .font(.system(size: 12.5, weight: .semibold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
+                    if let detail = session.titleDetail {
+                        // The folder stays whole; a long title gives way first.
+                        Text(verbatim: "· \(detail)")
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(.gray)
+                            .lineLimit(1)
+                            .layoutPriority(1)
+                    }
                     if session.jumpTarget != nil {
                         Image(systemName: "arrow.up.forward")
                             .font(.system(size: 9, weight: .bold))

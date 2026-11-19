@@ -231,6 +231,19 @@ extension XPCHelperClient {
         return nil
     }
 
+    /// Each thread's title, for the threads T3 Code could name. Empty when nothing could be asked.
+    nonisolated func t3ThreadTitles(_ threadIDs: [String]) async -> [String: String] {
+        guard !threadIDs.isEmpty else { return [:] }
+        do {
+            let service = await MainActor.run { ensureRemoteService() }
+            return try await service.withContinuation { service, continuation in
+                service.t3ThreadTitles(threadIDs) { titles in continuation.resume(returning: titles) }
+            }
+        } catch {
+            return [:]
+        }
+    }
+
     /// nil when the helper could not be reached.
     nonisolated func agentHooksStatus(hookScript: String) async -> AgentHooksReport? {
         await decodedReply { service, reply in service.agentHooksStatus(hookScript: hookScript, with: reply) }

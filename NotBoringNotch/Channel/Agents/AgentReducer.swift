@@ -30,7 +30,8 @@ enum AgentReducer {
     {
         var s = session ?? AgentSession(key: envelope.key, agent: envelope.agent, sessionID: envelope.sessionID,
                                         host: envelope.host, cwd: envelope.cwd, process: nil, phase: .idle,
-                                        turnStartedAt: nil, updatedAt: now, subagents: [], waitingSubagent: nil)
+                                        turnStartedAt: nil, updatedAt: now, subagents: [], waitingSubagent: nil,
+                                        threadTitle: nil)
         let before = s.phase
         var effects: [AgentEffect] = []
 

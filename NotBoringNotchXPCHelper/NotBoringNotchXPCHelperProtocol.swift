@@ -26,6 +26,8 @@ import Foundation
     func installAgentHooks(_ agents: [String], hookScript: String, with reply: @escaping (Data) -> Void)
     func uninstallAgentHooks(_ agents: [String], hookScript: String, with reply: @escaping (Data) -> Void)
     func trustCodexHooks(with reply: @escaping (Data) -> Void)
+    /// T3 Code thread id -> its title, for each thread T3 Code could name.
+    func t3ThreadTitles(_ threadIDs: [String], with reply: @escaping ([String: String]) -> Void)
 }
 
 /*

@@ -15,6 +15,14 @@ enum AgentKind: String, Codable, CaseIterable {
     case claudeCode = "claude-code"
     case codex
     case pi
+
+    var displayName: String {
+        switch self {
+        case .claudeCode: return "Claude Code"
+        case .codex: return "Codex"
+        case .pi: return "Pi"
+        }
+    }
 }
 
 /// How a session's turn came out, as the dot on its mark in a banner or the Inbox.
@@ -99,11 +107,28 @@ struct AgentSession: Equatable {
     /// The sub-agent whose permission request or question the session is waiting on, so that its
     /// carrying on can end the wait.
     var waitingSubagent: String?
+    /// The title of the T3 thread it runs in, once T3 Code has said.
+    var threadTitle: String?
 
     /// The last segment of the working directory.
     var projectName: String {
         guard let cwd else { return "" }
         return cwd.split(separator: "/").last.map(String.init) ?? cwd
+    }
+
+    var t3ThreadID: String? {
+        if case let .t3Code(threadID, _) = host { return threadID }
+        return nil
+    }
+
+    /// What the session is called: its T3 thread's title, else its folder, else its agent.
+    var title: String {
+        threadTitle ?? (projectName.isEmpty ? agent.displayName : projectName)
+    }
+
+    /// The folder, after a thread's title. Nil when the title is the folder already.
+    var titleDetail: String? {
+        threadTitle != nil && !projectName.isEmpty ? projectName : nil
     }
 }
 

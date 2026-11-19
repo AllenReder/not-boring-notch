@@ -85,6 +85,10 @@ final class NotchChannel: ObservableObject {
     /// Until something sets it, liveness is unknown and no session is removed on its account.
     var agentLiveness: (([Int32]) async -> [Int32: Date]?)?
 
+    /// How the notch learns what T3 Code calls its threads: given thread ids, the title of each one
+    /// T3 Code could name. The hook point for the XPC helper, which can run T3 Code's CLI.
+    var t3ThreadTitles: (([String]) async -> [String: String])?
+
     /// How often the sessions are checked against the processes behind them.
     static let agentSweepInterval: Duration = .seconds(10)
 
@@ -344,6 +348,7 @@ final class NotchChannel: ObservableObject {
         }
         carryOut(effects, now: now)
         scheduleAgentSweep()
+        askThreadTitles(now: now)
     }
 
     /// Checks the sessions against their processes once, and settles the ones that have gone.
@@ -353,6 +358,20 @@ final class NotchChannel: ObservableObject {
             agents.sweep(alive: alive, now: now)
         }
         carryOut(effects, now: now)
+        askThreadTitles(now: now)
+    }
+
+    /// Asks T3 Code for the titles of the threads that are due. A notification already delivered
+    /// keeps the title it had.
+    private func askThreadTitles(now: Date) {
+        guard let lookup = t3ThreadTitles else { return }
+        let due = agents.takeThreadsDueForTitles(now: now)
+        guard !due.isEmpty else { return }
+        Task { [weak self] in
+            let titles = await lookup(due)
+            guard let self, !titles.isEmpty else { return }
+            withAnimation(.smooth(duration: 0.35)) { self.agents.setThreadTitles(titles) }
+        }
     }
 
     private func carryOut(_ effects: [AgentEffect], now: Date) {
