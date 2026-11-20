@@ -221,12 +221,25 @@ func testSendsHeadersAndBodyUnchanged() throws {
     try "env-42\n".write(to: t3Home.appendingPathComponent("userdata/environment-id"),
                          atomically: true, encoding: .utf8)
 
-    // A process named "claude" between the test and the script, as the agent would be.
+    // A process named "claude" between the test and the script, as the agent would be: a small
+    // program built here, which runs the script as its own child and waits for it. (A copy of
+    // /bin/sh would do on some macOS versions and crash on others.)
     let claude = sandbox.root.appendingPathComponent("claude")
-    try FileManager.default.copyItem(atPath: "/bin/sh", toPath: claude.path)
-    // A copy of a system binary is killed on launch until it is signed again.
-    let signing = sandbox.run("/usr/bin/codesign", ["--force", "-s", "-", claude.path])
-    checkHook(signing.status == 0, "the stand-in agent could be signed")
+    let standIn = sandbox.root.appendingPathComponent("claude.c")
+    try """
+    #include <spawn.h>
+    #include <sys/wait.h>
+    extern char **environ;
+    int main(int argc, char **argv) {
+        pid_t child;
+        int status;
+        if (argc < 2 || posix_spawn(&child, argv[1], 0, 0, argv + 1, environ) != 0) return 1;
+        waitpid(child, &status, 0);
+        return 0;
+    }
+    """.write(to: standIn, atomically: true, encoding: .utf8)
+    let build = sandbox.run("/usr/bin/cc", ["-o", claude.path, standIn.path])
+    checkHook(build.status == 0, "the stand-in agent builds")
     let environment = [
         "__CFBundleIdentifier": "com.t3tools.t3code",
         "TERM_PROGRAM": "ghostty",
@@ -234,11 +247,9 @@ func testSendsHeadersAndBodyUnchanged() throws {
         "T3CODE_THREAD_ID": "thread-abc",
         "T3CODE_HOME": t3Home.path,
     ]
-    // Not the last command, so the shell cannot exec it and take its parent's place.
-    let command = "\"$0\" \"$1\" codex; true"
     let process = Process()
     process.executableURL = claude
-    process.arguments = ["-c", command, sandbox.script.path, "codex"]
+    process.arguments = [sandbox.script.path, "codex"]
     var env = ["HOME": sandbox.home.path, "PATH": "/usr/bin:/bin", "TMPDIR": sandbox.tmp.path + "/"]
     for (key, value) in environment { env[key] = value }
     process.environment = env
