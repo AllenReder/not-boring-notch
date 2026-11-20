@@ -40,6 +40,7 @@ extension AgentKind {
         case .claudeCode: return "AgentClaudeCode"
         case .codex: return "AgentCodex"
         case .pi: return "AgentPi"
+        case .opencode: return "AgentOpenCode"
         }
     }
 
@@ -49,6 +50,7 @@ extension AgentKind {
         case .claudeCode: return Color(red: 0xD9 / 255, green: 0x77 / 255, blue: 0x57 / 255)
         case .codex: return .white
         case .pi: return nil
+        case .opencode: return .white
         }
     }
 }

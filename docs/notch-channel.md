@@ -167,7 +167,7 @@ terminal separately, which the sandbox does not allow.
 
 ## Agents
 
-The channel also knows what Claude Code, Codex and pi sessions are doing. A hook in the agent posts
+The channel also knows what Claude Code, Codex, pi and OpenCode sessions are doing. A hook in the agent posts
 each event it fires, as the agent wrote it, and the notch works out the rest: how many sessions are
 working or waiting for you, when a turn has ended, and where a click should take you.
 
@@ -185,6 +185,7 @@ curl -X POST http://127.0.0.1:45999/v2/agents/claude-code/events \
 | `POST /v2/agents/claude-code/events` | `202 {"status":"accepted"}` | A Claude Code hook event. |
 | `POST /v2/agents/codex/events` | `202 {"status":"accepted"}` | A Codex hook event. |
 | `POST /v2/agents/pi/events` | `202 {"status":"accepted"}` | A pi extension event. |
+| `POST /v2/agents/opencode/events` | `202 {"status":"accepted"}` | An OpenCode plugin event. |
 
 The body is the hook's JSON, untouched: the notch reads `hook_event_name`, `session_id`, `cwd`,
 `tool_name`, `notification_type` and `last_assistant_message` from it, and nothing else. A hook it
@@ -203,8 +204,21 @@ hook script. A `confirm` prompt is an approval, any other prompt a question. It 
 terminal and pi in T3 Code (`--mode rpc`), and leaves out `pi -p`, `--mode json` and pi's
 sub-agents, so a sub-agent is never counted as a session of its own.
 
+OpenCode has no command hooks either, so the notch installs a plugin,
+`~/.config/opencode/plugins/not-boring-notch.js`. It posts OpenCode's own event names
+(`session.created`, `session.execution.started`, `tool.execute.before`, `tool.execute.after`,
+`permission.asked`, `permission.replied`, `form.created`, `form.replied`, `form.cancelled`,
+`session.execution.succeeded`, `session.execution.failed`, `session.execution.interrupted`,
+`session.deleted`) with `session_id`, `cwd`, `tool_name`, `form_kind`, `error` and
+`last_assistant_message`. A sub-agent is a session of its own in OpenCode; its events go under
+its root's `session_id` with `agent_id` set to its own. The TUI and `opencode run` share one
+background `opencode serve --service`, so for those the plugin sends no pid and no environment
+headers, and the notch keeps whatever host it already has for the session. A session with no
+process that has been idle and silent for 15 minutes is dropped from the list.
+
 Everything the notch cannot read from the body, the hook script reports in headers. Empty values
-are left out.
+are left out. A post with none of the host headers (`X-Agent-Host-Bundle`, `X-Agent-Term-Program`,
+`X-Agent-Tmux-Pane`, `X-Agent-T3-Thread`) leaves the session's host as it was.
 
 | Header | Value |
 | --- | --- |

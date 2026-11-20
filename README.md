@@ -156,3 +156,4 @@ This project is open-source under the [GNU General Public License v3.0](LICENSE)
 - **[CodeIsland](https://github.com/wxtsky/CodeIsland)** (MIT) – The agent attention rhythm and hook-installation approach the agent notifications follow.
 - **[LobeHub Icons](https://github.com/lobehub/lobe-icons)** (MIT) – The Claude Code and Codex marks. The marks themselves are trademarks of Anthropic and OpenAI.
 - **[pi](https://pi.dev)** – The pi mark, from pi.dev. It belongs to pi's authors.
+- **[OpenCode](https://github.com/sst/opencode)** (MIT) – The OpenCode mark. It belongs to OpenCode's authors.
