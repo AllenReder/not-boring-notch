@@ -225,7 +225,7 @@ struct ContentView: View {
                         handleHover(hovering)
                     }
                     .onTapGesture {
-                        doOpen()
+                        openAtPointer()
                     }
                     .conditionalModifier(Defaults[.enableGestures]) { view in
                         view
@@ -643,6 +643,17 @@ struct ContentView: View {
         }
     }
 
+    /// Opening the notch where the pointer is — hovering, clicking, swiping down. While the closed
+    /// notch draws the music on the left and the agents on the right, the notch opens on whichever
+    /// the pointer is over.
+    private func openAtPointer() {
+        if case .residents(.music, .agents) = closedContent,
+           let screen = getScreenFrame(vm.screenUUID) {
+            coordinator.currentView = NSEvent.mouseLocation.x < screen.midX ? .home : .inbox
+        }
+        doOpen()
+    }
+
     /// Opening the notch over a banner is reaching for it, as pulling down a banner is on iOS: the
     /// notch opens on the Inbox with that notification in view, and the banner has been seen once
     /// the notch closes again. An opening that already chose its tab — the launcher's key, a file
@@ -691,7 +702,7 @@ struct ContentView: View {
                           self.isHovering,
                           !self.coordinator.sneakPeek.show else { return }
                     
-                    self.doOpen()
+                    self.openAtPointer()
                 }
             }
         } else {
@@ -735,7 +746,7 @@ struct ContentView: View {
             withAnimation(animationSpring) {
                 gestureProgress = .zero
             }
-            doOpen()
+            openAtPointer()
         }
     }
 
