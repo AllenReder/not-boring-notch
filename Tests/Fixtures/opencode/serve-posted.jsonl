@@ -1,0 +1,40 @@
+{"hook_event_name":"session.execution.started","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj"}
+{"hook_event_name":"tool.execute.before","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","tool_name":"read"}
+{"hook_event_name":"tool.execute.after","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","tool_name":"read"}
+{"hook_event_name":"session.execution.succeeded","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","last_assistant_message":"hello"}
+{"hook_event_name":"session.execution.started","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj"}
+{"hook_event_name":"tool.execute.before","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","tool_name":"shell"}
+{"hook_event_name":"permission.asked","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","tool_name":"shell"}
+{"hook_event_name":"permission.replied","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj"}
+{"hook_event_name":"tool.execute.after","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","tool_name":"shell"}
+{"hook_event_name":"session.execution.succeeded","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","last_assistant_message":"nbn-perm-test"}
+{"hook_event_name":"session.execution.started","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj"}
+{"hook_event_name":"tool.execute.before","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","tool_name":"question"}
+{"hook_event_name":"form.created","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","form_kind":"question"}
+{"hook_event_name":"tool.execute.after","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","tool_name":"question"}
+{"hook_event_name":"form.replied","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj"}
+{"hook_event_name":"session.execution.succeeded","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","last_assistant_message":"Option B"}
+{"hook_event_name":"session.execution.started","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj"}
+{"hook_event_name":"tool.execute.before","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","tool_name":"subagent"}
+{"hook_event_name":"tool.execute.after","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","tool_name":"subagent"}
+{"hook_event_name":"session.created","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","agent_id":"ses_e08b7bd74ffe9eFe2STvipkO3R","cwd":"/work/oc-proj"}
+{"hook_event_name":"session.execution.started","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","agent_id":"ses_e08b7bd74ffe9eFe2STvipkO3R","cwd":"/work/oc-proj"}
+{"hook_event_name":"tool.execute.before","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","agent_id":"ses_e08b7bd74ffe9eFe2STvipkO3R","cwd":"/work/oc-proj","tool_name":"read"}
+{"hook_event_name":"tool.execute.after","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","agent_id":"ses_e08b7bd74ffe9eFe2STvipkO3R","cwd":"/work/oc-proj","tool_name":"read"}
+{"hook_event_name":"session.execution.succeeded","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","last_assistant_message":"Launched the explore agent to read README.md; waiting for its report."}
+{"hook_event_name":"session.execution.succeeded","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","agent_id":"ses_e08b7bd74ffe9eFe2STvipkO3R","cwd":"/work/oc-proj","last_assistant_message":"The file `/work/oc-proj/README.md` contains exactly one line:\n\n```\nhello\n```\n\nThat is the entire content of the file (1 line)."}
+{"hook_event_name":"session.execution.started","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj"}
+{"hook_event_name":"session.execution.succeeded","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","last_assistant_message":"The explore agent reported that README.md contains one line: \"hello\"."}
+{"hook_event_name":"session.execution.started","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj"}
+{"hook_event_name":"tool.execute.before","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","tool_name":"shell"}
+{"hook_event_name":"permission.asked","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","tool_name":"shell"}
+{"hook_event_name":"tool.execute.after","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","tool_name":"shell"}
+{"hook_event_name":"session.execution.interrupted","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj"}
+{"hook_event_name":"session.created","session_id":"ses_e08b6e29bffedX0sio4gXIH5a1","cwd":"/work/oc-proj"}
+{"hook_event_name":"session.execution.started","session_id":"ses_e08b6e29bffedX0sio4gXIH5a1","cwd":"/work/oc-proj"}
+{"hook_event_name":"session.execution.failed","session_id":"ses_e08b6e29bffedX0sio4gXIH5a1","cwd":"/work/oc-proj","error":"Model unavailable: magpie/no-such-model-xyz"}
+{"hook_event_name":"session.execution.started","session_id":"ses_e08b613d4ffeY5T0KgwUDS5bHX","cwd":"/work/oc-proj2"}
+{"hook_event_name":"session.execution.started","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj"}
+{"hook_event_name":"session.execution.succeeded","session_id":"ses_e08b613d4ffeY5T0KgwUDS5bHX","cwd":"/work/oc-proj2","last_assistant_message":"two"}
+{"hook_event_name":"session.execution.succeeded","session_id":"ses_e08ba637cffetplGsUYMPqQFI7","cwd":"/work/oc-proj","last_assistant_message":"one"}
+{"hook_event_name":"session.deleted","session_id":"ses_e08b6e29bffedX0sio4gXIH5a1","cwd":"/work/oc-proj"}

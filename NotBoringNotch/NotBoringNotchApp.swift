@@ -69,6 +69,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             screenUnlockedObserver = nil
         }
         MusicManager.shared.destroy()
+        NotchChannel.shared.stop()
         cleanupDragDetectors()
         cleanupWindows()
         XPCHelperClient.shared.stopMonitoringAccessibilityAuthorization()
@@ -401,9 +402,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         setupDragDetectors()
 
-        // The Reminder Channel listens from launch: a client should not have to wait for
-        // somebody to open Settings before its first Reminder can land.
-        ReminderChannel.shared.start()
+        // The Notch Channel listens from launch: a client should not have to wait for somebody to
+        // open Settings before its first notification can land.
+        // The sandbox cannot see other processes; the helper says which agent processes still exist.
+        NotchChannel.shared.agentLiveness = { pids in
+            await XPCHelperClient.shared.agentProcessStartTimes(pids)
+        }
+        NotchChannel.shared.t3ThreadTitles = { threadIDs in
+            await XPCHelperClient.shared.t3ThreadTitles(threadIDs)
+        }
+        NotchChannel.shared.start()
+
+        AgentHooksController.shared.repairInstalledAgents()
 
         if coordinator.firstLaunch {
             DispatchQueue.main.async {

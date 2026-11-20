@@ -28,6 +28,9 @@ class ServiceDelegate: NSObject, NSXPCListenerDelegate {
     }
 }
 
+// Writing to a Codex process that has gone away must fail the write, not end this service.
+signal(SIGPIPE, SIG_IGN)
+
 // Create the delegate for the service.
 let delegate = ServiceDelegate()
 

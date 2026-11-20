@@ -97,14 +97,15 @@ class NotchViewCoordinator: ObservableObject {
 
     @Published var selectedScreenUUID: String = NSScreen.main?.displayUUID ?? ""
 
-    /// A Reminder follows the notch's display rule: every screen when Show on all displays is on,
+    /// A banner follows the notch's display rule: every screen when Show on all displays is on,
     /// otherwise only the chosen display.
-    func showsReminder(on screenUUID: String?) -> Bool {
+    func showsBanner(on screenUUID: String?) -> Bool {
         Defaults[.showOnAllDisplays] || screenUUID == selectedScreenUUID
     }
 
     private var hudReplacementCancellable: AnyCancellable?
     private var performanceTabCancellable: AnyCancellable?
+    private var notchChannelCancellable: AnyCancellable?
 
     private init() {
         // Perform migration from name-based to UUID-based storage
@@ -172,6 +173,16 @@ class NotchViewCoordinator: ObservableObject {
                 guard !change.newValue else { return }
                 Task { @MainActor in
                     guard let self, self.currentView == .performance else { return }
+                    self.currentView = .home
+                }
+            }
+
+        // And if the Notch Channel is turned off while the Inbox is open.
+        notchChannelCancellable = Defaults.publisher(.notchChannelEnabled)
+            .sink { [weak self] change in
+                guard !change.newValue else { return }
+                Task { @MainActor in
+                    guard let self, self.currentView == .inbox else { return }
                     self.currentView = .home
                 }
             }

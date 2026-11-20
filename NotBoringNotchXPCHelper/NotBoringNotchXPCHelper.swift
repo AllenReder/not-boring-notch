@@ -11,7 +11,16 @@ import IOKit
 import CoreGraphics
 
 class NotBoringNotchXPCHelper: NSObject, NotBoringNotchXPCHelperProtocol {
-    
+
+    /// Where the agents' config lives. The user's home, which this unsandboxed service can reach
+    /// and the app cannot; tests point it at a temporary one.
+    var homeDirectory: URL = {
+        guard let entry = getpwuid(getuid()), let path = entry.pointee.pw_dir else {
+            return URL(fileURLWithPath: NSHomeDirectory())
+        }
+        return URL(fileURLWithPath: String(cString: path))
+    }()
+
     @objc func isAccessibilityAuthorized(with reply: @escaping (Bool) -> Void) {
         reply(AXIsProcessTrusted())
     }
@@ -126,6 +135,45 @@ class NotBoringNotchXPCHelper: NSObject, NotBoringNotchXPCHelperProtocol {
             return
         }
         reply(false)
+    }
+
+    // MARK: - Agent hooks
+
+    @objc func agentProcessStartTimes(_ pids: [NSNumber], with reply: @escaping ([NSNumber: NSNumber]) -> Void) {
+        let times = AgentProcess.startTimes(of: pids.map(\.int32Value))
+        reply(Dictionary(uniqueKeysWithValues: times.map { (NSNumber(value: $0.key), NSNumber(value: $0.value)) }))
+    }
+
+    @objc func t3ThreadTitles(_ threadIDs: [String], with reply: @escaping ([String: String]) -> Void) {
+        reply(T3ThreadTitles.titles(of: threadIDs, cli: T3ThreadTitles.cli(home: homeDirectory)))
+    }
+
+    @objc func agentHooksStatus(hookScript: String, with reply: @escaping (Data) -> Void) {
+        reply(Self.encode(AgentHookInstaller(home: homeDirectory).report(bundledScript: hookScript)))
+    }
+
+    @objc func installAgentHooks(_ agents: [String], hookScript: String, with reply: @escaping (Data) -> Void) {
+        let targets = agents.compactMap(AgentHookTarget.init(rawValue:))
+        reply(Self.encode(AgentHookInstaller(home: homeDirectory).install(targets, script: hookScript)))
+    }
+
+    @objc func uninstallAgentHooks(_ agents: [String], hookScript: String, with reply: @escaping (Data) -> Void) {
+        let targets = agents.compactMap(AgentHookTarget.init(rawValue:))
+        reply(Self.encode(AgentHookInstaller(home: homeDirectory).uninstall(targets, bundledScript: hookScript)))
+    }
+
+    @objc func trustCodexHooks(with reply: @escaping (Data) -> Void) {
+        let report: CodexTrustReport
+        do {
+            report = CodexTrustReport(trusted: try CodexTrust.trustOurHooks(installer: AgentHookInstaller(home: homeDirectory)))
+        } catch {
+            report = CodexTrustReport(trusted: 0, problem: error.localizedDescription)
+        }
+        reply(Self.encode(report))
+    }
+
+    private static func encode<T: Encodable>(_ value: T) -> Data {
+        (try? JSONEncoder().encode(value)) ?? Data()
     }
 
     // MARK: - Private helpers for DisplayServices / IOKit access

@@ -37,7 +37,7 @@ https://github.com/user-attachments/assets/df591b2b-1527-474d-a16f-4bf9b10d9573
 - 💎 **Liquid Glass Surface**: Native CoreAnimation GPU ray-bending refraction, sub-pixel chromatic dispersion, and crystal-clear transparency with zero blur.
 - 🚀 **App Launcher**: Summon an app search with `⌥Space`, type a few letters, press Return to open. Five-way name matching, readings of non-Latin names, system recents, and a settings pane of its own.
 - 📊 **Stats Tab**: Optional live cards for CPU, GPU, memory, temperature, network, and disk, each with a sparkline of recent history. Sampled only while the tab is visible, inside the App Sandbox.
-- 🔔 **Custom Reminder Channel**: Let command-line scripts, automated hooks, and AI agents raise glanceable, dynamic notifications in the notch over a local HTTP port (`127.0.0.1:45999`). Supports auto-adaptive wings, smooth marquee scrolling, in-place status updates without spam, and interactive action buttons. See [docs/reminder-channel.md](docs/reminder-channel.md).
+- 🔔 **Notch Channel**: Let command-line scripts, automated hooks, and AI agents send notifications to the notch over a local HTTP port (`127.0.0.1:45999`). A banner slides out of the closed notch, then the notification waits in an Inbox tab until you clear it or click it to jump back to where it came from. Interruption levels, in-place updates by id, withdrawal, and up to three action buttons. See [docs/notch-channel.md](docs/notch-channel.md).
 - 🎵 **Media Powerhouse**: Deep integration with Apple Music, Spotify, and YouTube Music. Features real-time lyrics, high-frame-rate spectrogram visualizers, and album art ambient color tinting.
 - 📆 **Calendar & Reminders**: Full monthly calendar view, upcoming events, and checkable system Reminders built directly into the notch.
 - 📚 **File Shelf**: Drop files into the notch to stage them, quick-look previews, and drag them out anywhere or share via AirDrop.
@@ -70,22 +70,22 @@ The Stats tab is off by default. Enable it in **Settings → Performance**, and 
 
 ---
 
-### 🔔 Quick Start: Sending a Notch Reminder
+### 🔔 Quick Start: Sending a Notification
 
 With Not Boring Notch running, any script or tool can trigger a glanceable notification in your notch via a single `curl`:
 
 ```bash
 # Read the auto-generated local token
-TOKEN=$(cat "$HOME/Library/Containers/com.allenreder.notboringnotch/Data/Library/Application Support/NotBoringNotch/reminder-channel.json" | grep -o '"token" *: *"[^"]*"' | cut -d'"' -f4)
+TOKEN=$(cat "$HOME/Library/Containers/com.allenreder.notboringnotch/Data/Library/Application Support/NotBoringNotch/notch-channel.json" | grep -o '"token" *: *"[^"]*"' | cut -d'"' -f4)
 
-# Raise a reminder
-curl -X POST http://127.0.0.1:45999/reminder \
+# Send a notification
+curl -X POST http://127.0.0.1:45999/v2/notifications \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"icon":{"kind":"sf_symbol","value":"hammer.fill"},"title":"Build Finished","subtitle":"12s"}'
+  -d '{"icon":{"kind":"sf_symbol","value":"hammer.fill"},"title":"Build Finished","subtitle":"12s","open":{"app":"com.apple.Terminal"}}'
 ```
 
-For detailed API documentation, custom icon support, and queue behavior, check out the [Reminder Channel Guide](docs/reminder-channel.md).
+For the full payload, interruption levels, withdrawal, and the v1 `/reminder` route that still works, see the [Notch Channel Guide](docs/notch-channel.md).
 
 ---
 
@@ -153,3 +153,7 @@ This project is open-source under the [GNU General Public License v3.0](LICENSE)
 - **[MediaRemoteAdapter](https://github.com/ungive/mediaremote-adapter)** – High-performance Now Playing source for macOS.
 - **[NotchDrop](https://github.com/Lakr233/NotchDrop)** – Inspired the initial concept of the shelf drag-and-drop mechanics.
 - **[SkyLightWindow](https://github.com/Lakr233/SkyLightWindow)** – macOS SkyLight window management.
+- **[CodeIsland](https://github.com/wxtsky/CodeIsland)** (MIT) – The agent attention rhythm and hook-installation approach the agent notifications follow.
+- **[LobeHub Icons](https://github.com/lobehub/lobe-icons)** (MIT) – The Claude Code and Codex marks. The marks themselves are trademarks of Anthropic and OpenAI.
+- **[pi](https://pi.dev)** – The pi mark, from pi.dev. It belongs to pi's authors.
+- **[OpenCode](https://github.com/sst/opencode)** (MIT) – The OpenCode mark. It belongs to OpenCode's authors.

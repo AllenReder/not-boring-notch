@@ -176,6 +176,22 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
     }
     
     // MARK: - Setup Methods
+
+    /// Runs the adapter (`"$@"`) and stops it when the notch is gone. The adapter streams until it
+    /// is sent SIGTERM, and on its own it outlives a notch that quits or crashes: an orphan per
+    /// launch, idle until the music changes. The shell waits on the read end of a pipe only the
+    /// notch holds, so the read returns when the notch exits, and a SIGTERM from `terminate()`
+    /// reaches the adapter through the trap. The shell lets go of stdout once the adapter has it,
+    /// so the notch still sees the stream end if the adapter exits by itself.
+    private static let adapterLeash = """
+        "$@" </dev/null &
+        adapter=$!
+        trap 'kill "$adapter" 2>/dev/null; exit 0' TERM INT HUP
+        exec >/dev/null
+        read -r _
+        kill "$adapter" 2>/dev/null
+        """
+
     private func setupNowPlayingObserver() async {
         let process = Process()
         guard
@@ -186,12 +202,14 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
             return
         }
         
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
-        process.arguments = [scriptURL.path, frameworkPath, "stream"]
-        
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = ["-c", Self.adapterLeash, "sh", "/usr/bin/perl", scriptURL.path, frameworkPath, "stream"]
+        // Never written to: it closes when the notch exits, however it exits.
+        process.standardInput = Pipe()
+
         let pipeHandler = JSONLinesPipeHandler()
         process.standardOutput = await pipeHandler.getPipe()
-        
+
         self.process = process
         self.pipeHandler = pipeHandler
 

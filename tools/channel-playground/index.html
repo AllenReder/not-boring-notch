@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notch Channel Playground</title>
+<style>
+:root {
+  --bg: #0b0b0d; --panel: #151517; --panel-2: #1c1c1f; --line: #2a2a2e; --fg: #f2f2f4;
+  --muted: #8e8e95; --blue: #0a84ff; --green: #30d158; --red: #ff453a; --orange: #ff9f0a;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif; }
+header { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 14px; padding: 12px 20px; background: rgba(11,11,13,.86); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+header h1 { font-size: 15px; margin: 0; letter-spacing: -.01em; }
+.notch { width: 64px; height: 14px; background: #000; border: 1px solid #333; border-top: 0; border-radius: 0 0 8px 8px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 99px; background: var(--panel-2); color: var(--muted); font-size: 12px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.dot.ok { background: var(--green); } .dot.bad { background: var(--red); }
+main { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; padding: 16px 20px 40px; max-width: 1400px; margin: 0 auto; }
+@media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+section.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; min-width: 0; }
+.card h2 { font-size: 13px; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.card h2 .sub { color: var(--muted); font-weight: 400; font-size: 12px; }
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.tabs { display: flex; gap: 4px; margin-bottom: 12px; background: var(--panel-2); padding: 3px; border-radius: 9px; width: fit-content; max-width: 100%; flex-wrap: wrap; }
+.tabs button { background: none; border: 0; color: var(--muted); padding: 5px 12px; border-radius: 7px; font: inherit; cursor: pointer; }
+.tabs button.on { background: #2c2c30; color: var(--fg); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+label.f { display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 11.5px; min-width: 0; }
+label.f.wide { grid-column: 1 / -1; }
+input, select, textarea { background: var(--panel-2); border: 1px solid var(--line); color: var(--fg); border-radius: 8px; padding: 7px 9px; font: 13px/1.4 inherit; font-family: inherit; min-width: 0; width: 100%; }
+textarea { font-family: var(--mono); font-size: 12px; resize: vertical; }
+input:focus, select:focus, textarea:focus { outline: 2px solid rgba(10,132,255,.5); outline-offset: -1px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row > .grow { flex: 1; min-width: 120px; }
+.seg { display: inline-flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; width: fit-content; }
+.seg button { background: none; border: 0; color: var(--muted); padding: 6px 10px; font: inherit; cursor: pointer; }
+.seg button.on { background: #2c2c30; color: var(--fg); }
+.seg.small button { padding: 3px 9px; font-size: 12px; }
+button.btn { background: #2c2c30; color: var(--fg); border: 1px solid #3a3a3f; border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; white-space: nowrap; }
+button.btn:hover { background: #36363b; }
+button.btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 600; }
+button.btn.primary:hover { filter: brightness(1.1); }
+button.btn.small { padding: 3px 8px; font-size: 12px; }
+button.btn.danger { color: var(--red); }
+.hint { color: var(--muted); font-size: 12px; }
+pre.json { margin: 0; background: #0f0f11; border: 1px solid var(--line); border-radius: 10px; padding: 10px; font: 12px/1.5 var(--mono); white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow: auto; }
+.action-row { display: grid; grid-template-columns: 1fr 90px 1.3fr auto; gap: 6px; margin-bottom: 6px; }
+@media (max-width: 560px) { .action-row { grid-template-columns: 1fr 1fr; } }
+.scenarios { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.scn { text-align: left; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px; color: var(--fg); font: inherit; cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
+.scn:hover { border-color: #46464c; }
+.scn b { font-size: 12.5px; }
+.scn span { color: var(--muted); font-size: 11.5px; }
+.scn.running { border-color: var(--blue); }
+.log { display: flex; flex-direction: column; gap: 6px; max-height: 520px; overflow: auto; }
+.entry { background: var(--panel-2); border-radius: 9px; padding: 8px 10px; font-size: 12px; }
+.entry .top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.entry .meta { color: var(--muted); margin-left: auto; font-size: 11px; white-space: nowrap; }
+.entry pre { margin: 6px 0 0; font: 11.5px/1.45 var(--mono); color: #c9c9cf; white-space: pre-wrap; word-break: break-word; }
+.entry.note { background: transparent; border: 1px dashed var(--line); color: var(--muted); }
+.st { font: 600 11px var(--mono); padding: 1px 6px; border-radius: 5px; background: #333; }
+.st.s2 { background: rgba(48,209,88,.18); color: var(--green); }
+.st.s4 { background: rgba(255,159,10,.16); color: var(--orange); }
+.st.s5, .st.s0 { background: rgba(255,69,58,.18); color: var(--red); }
+.method { font: 600 11px var(--mono); color: var(--muted); }
+.sent { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow: auto; }
+.sent .it { display: flex; gap: 8px; align-items: center; background: var(--panel-2); border-radius: 8px; padding: 5px 8px; }
+.sent .it code { font: 11.5px var(--mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40%; }
+.sent .it .t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+table.checks { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.checks td { padding: 5px 6px; border-top: 1px solid var(--line); vertical-align: top; }
+table.checks td.r { text-align: right; white-space: nowrap; font-family: var(--mono); }
+.pass { color: var(--green); } .fail { color: var(--red); }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <div class="notch"></div>
+  <h1>Notch Channel Playground</h1>
+  <span class="pill" id="disc"><span class="dot"></span><span data-i18n="disc.looking"></span></span>
+  <span class="hint" id="discPath"></span>
+  <span style="flex:1"></span>
+  <div class="seg small" id="langSeg" role="group" aria-label="Language">
+    <button data-lang="en">EN</button><button data-lang="zh">中文</button>
+  </div>
+  <button class="btn small" onclick="loadDiscovery()" data-i18n="refresh"></button>
+</header>
+
+<main>
+  <div class="col">
+    <section class="card">
+      <div class="tabs" id="composerTabs">
+        <button class="on" data-tab="v2" data-i18n="tab.v2"></button>
+        <button data-tab="v1" data-i18n="tab.v1"></button>
+        <button data-tab="raw" data-i18n="tab.raw"></button>
+      </div>
+
+      <!-- v2 -->
+      <div id="tab-v2">
+        <div class="grid">
+          <label class="f"><span>id</span>
+            <div class="row"><input id="v2-id" class="grow" data-i18n-ph="ph.generated"><button class="btn small" onclick="$('v2-id').value='pg-'+Math.random().toString(36).slice(2,8);render()" data-i18n="random"></button></div>
+          </label>
+          <label class="f"><span>source</span><input id="v2-source" placeholder="claude-code" value="playground"></label>
+          <label class="f"><span>thread</span><input id="v2-thread" placeholder="session-42"></label>
+          <label class="f"><span>level</span>
+            <div class="seg" id="v2-level">
+              <button data-v="passive">passive</button><button data-v="active" class="on">active</button><button data-v="time-sensitive">time-sensitive</button>
+            </div>
+          </label>
+          <label class="f"><span data-i18n="f.iconKind"></span>
+            <select id="v2-iconKind"><option value="" data-i18n="opt.iconNone"></option><option value="sf_symbol" selected>sf_symbol</option><option value="app_bundle">app_bundle</option><option value="png_base64">png_base64</option></select>
+          </label>
+          <label class="f"><span data-i18n="f.iconValue"></span>
+            <input id="v2-iconValue" list="iconPresets" value="hammer.fill">
+            <input id="v2-iconFile" type="file" accept="image/png" class="hidden">
+          </label>
+          <label class="f wide"><span>title</span><input id="v2-title" data-default="d.v2.title"></label>
+          <label class="f wide"><span>subtitle</span><input id="v2-subtitle" data-default="d.v2.subtitle"></label>
+          <label class="f wide"><span><span>body</span> <span data-i18n="f.bodyHint"></span></span>
+            <textarea id="v2-body" rows="3" data-default="d.v2.body"></textarea></label>
+          <label class="f"><span data-i18n="f.duration"></span><input id="v2-duration" type="number" min="0" step="0.5" placeholder="4"></label>
+          <label class="f"><span>sound</span><select id="v2-sound"><option value="" data-i18n="opt.omitNone"></option><option>none</option><option>default</option></select></label>
+          <label class="f"><span>open</span>
+            <select id="v2-openKind"><option value="" data-i18n="opt.none"></option><option value="url">url</option><option value="app">app</option></select>
+          </label>
+          <label class="f"><span data-i18n="f.openValue"></span><input id="v2-openValue" list="openPresets" data-i18n-ph="ph.openValue"></label>
+        </div>
+
+        <div style="margin-top:12px">
+          <div class="row" style="margin-bottom:6px"><b style="font-size:12px">actions</b><span class="hint" data-i18n="actions.hint"></span><span style="flex:1"></span><button class="btn small" onclick="addAction()" data-i18n="actions.add"></button></div>
+          <div id="v2-actions"></div>
+        </div>
+
+        <div class="row" style="margin-top:12px">
+          <button class="btn primary" onclick="sendV2()" data-i18n="send"></button>
+          <button class="btn" onclick="sendV2(true)" data-i18n="sendThrice"></button>
+          <span class="hint" data-i18n="sendShortcut"></span>
+        </div>
+        <details style="margin-top:12px" open><summary class="hint" data-i18n="payload"></summary><pre class="json" id="v2-preview"></pre></details>
+      </div>
+
+      <!-- v1 -->
+      <div id="tab-v1" class="hidden">
+        <div class="grid">
+          <label class="f"><span>id</span><input id="v1-id" data-i18n-ph="ph.generated"></label>
+          <label class="f"><span>icon (sf_symbol)</span><input id="v1-icon" list="iconPresets" value="bell.badge"></label>
+          <label class="f wide"><span>title</span><input id="v1-title" data-default="d.v1.title"></label>
+          <label class="f wide"><span>subtitle</span><input id="v1-subtitle" data-default="d.v1.subtitle"></label>
+          <label class="f wide"><span>body</span><textarea id="v1-body" rows="2" data-default="d.v1.body"></textarea></label>
+          <label class="f"><span data-i18n="f.duration"></span><input id="v1-duration" type="number" min="0" step="0.5" placeholder="4"></label>
+          <label class="f"><span>sticky</span><select id="v1-sticky"><option value="" data-i18n="opt.omit"></option><option value="true">true</option><option value="false">false</option></select></label>
+          <label class="f"><span>sound</span><select id="v1-sound"><option value="" data-i18n="opt.omit"></option><option>none</option><option>default</option></select></label>
+          <label class="f"><span>action title</span><input id="v1-actionTitle" placeholder="Open"></label>
+          <label class="f wide"><span>action url</span><input id="v1-actionURL" placeholder="https://github.com"></label>
+        </div>
+        <div class="row" style="margin-top:12px"><button class="btn primary" onclick="sendV1()" data-i18n="sendV1"></button></div>
+        <details style="margin-top:12px" open><summary class="hint" data-i18n="payload"></summary><pre class="json" id="v1-preview"></pre></details>
+      </div>
+
+      <!-- raw -->
+      <div id="tab-raw" class="hidden">
+        <div class="grid">
+          <label class="f"><span>method</span><select id="raw-method"><option>POST</option><option>DELETE</option><option>GET</option><option>PUT</option></select></label>
+          <label class="f"><span>path</span><input id="raw-path" value="/v2/notifications"></label>
+          <label class="f"><span>token</span>
+            <select id="raw-token"><option value="auto" data-i18n="opt.tokenAuto"></option><option value="none" data-i18n="opt.tokenNone"></option><option value="wrong" data-i18n="opt.tokenWrong"></option></select>
+          </label>
+          <label class="f"><span>content-type</span><input id="raw-ctype" value="application/json"></label>
+          <label class="f wide"><span data-i18n="f.extraHeaders"></span><input id="raw-headers" placeholder='{"Origin": "https://example.com"}'></label>
+          <label class="f wide"><span data-i18n="f.rawBody"></span><textarea id="raw-body" rows="6">{"title": "Raw hello", "level": "active"}</textarea></label>
+        </div>
+        <div class="row" style="margin-top:12px"><button class="btn primary" onclick="sendRaw()" data-i18n="sendRaw"></button></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2><span data-i18n="scn.title"></span> <span class="sub" data-i18n="scn.sub"></span></h2>
+      <div class="scenarios" id="scenarios"></div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="card">
+      <h2><span data-i18n="chk.title"></span> <span class="sub" data-i18n="chk.sub"></span></h2>
+      <div class="row"><button class="btn" onclick="runChecks()" data-i18n="chk.run"></button><span class="hint" id="checkSummary" data-i18n="chk.hint"></span></div>
+      <table class="checks" id="checks" style="margin-top:8px"></table>
+    </section>
+
+    <section class="card">
+      <h2><span data-i18n="sent.title"></span> <span class="sub" data-i18n="sent.sub"></span><span style="flex:1"></span><button class="btn small danger" onclick="withdrawAll()" data-i18n="sent.withdrawAll"></button></h2>
+      <div class="sent" id="sent"></div>
+    </section>
+
+    <section class="card">
+      <h2><span data-i18n="log.title"></span><span style="flex:1"></span><button class="btn small" onclick="$('log').innerHTML=''" data-i18n="log.clear"></button></h2>
+      <div class="log" id="log"></div>
+    </section>
+  </div>
+</main>
+
+<datalist id="iconPresets">
+  <option value="hammer.fill"><option value="bell.badge"><option value="terminal"><option value="checkmark.circle.fill">
+  <option value="xmark.octagon.fill"><option value="sparkles"><option value="arrow.triangle.branch"><option value="not.a.real.symbol">
+  <option value="com.apple.Terminal"><option value="com.googlecode.iterm2"><option value="com.mitchellh.ghostty">
+  <option value="com.microsoft.VSCode"><option value="com.apple.Safari"><option value="com.apple.finder">
+</datalist>
+<datalist id="openPresets">
+  <option value="https://github.com"><option value="com.apple.Terminal"><option value="com.apple.Safari">
+  <option value="com.microsoft.VSCode"><option value="vscode://file/Users"><option value="x-apple.systempreferences:">
+</datalist>
+
+<script>
+// ================================================================ i18n
+// Field names that are also wire names (title, level, open…) stay in English in both languages:
+// they are what a sender types. Everything else, including what the scenarios send to the notch,
+// follows the chosen language.
+const STRINGS = {
+  en: {
+    'disc.looking': 'looking for the channel…',
+    'disc.missing': 'no discovery file — is the app running with the channel on?',
+    'refresh': 'Refresh',
+    'tab.v2': 'v2 notification', 'tab.v1': 'v1 reminder', 'tab.raw': 'Raw request',
+    'ph.generated': 'generated if empty', 'ph.openValue': 'https://… or bundle id',
+    'random': 'random',
+    'f.iconKind': 'icon kind', 'f.iconValue': 'icon value', 'f.duration': 'duration (s)', 'f.openValue': 'open value',
+    'f.bodyHint': '(inline Markdown: **bold**, `code`, [link](https://example.com))',
+    'f.extraHeaders': 'extra headers (JSON)', 'f.rawBody': 'body (sent as-is; empty for none)',
+    'opt.iconNone': 'none (bell)', 'opt.omitNone': 'omit (none)', 'opt.none': 'none', 'opt.omit': 'omit',
+    'opt.tokenAuto': 'discovery token', 'opt.tokenNone': 'none', 'opt.tokenWrong': 'wrong token',
+    'actions.hint': 'up to 3 (a 4th is allowed here, to see it refused)', 'actions.add': '+ action',
+    'action.ph.url': 'https://…', 'action.ph.copy': 'text to copy', 'action.ph.title': 'title',
+    'send': 'Send', 'sendThrice': 'Send ×3 (same id → in place)', 'sendShortcut': '⌘↩ to send',
+    'sendV1': 'Send v1', 'sendRaw': 'Send raw', 'payload': 'payload',
+    'scn.title': 'Scenarios', 'scn.sub': 'scripted sequences — watch the notch while they run',
+    'chk.title': 'Protocol checks', 'chk.sub': 'every route and refusal, against expected status codes',
+    'chk.run': 'Run checks', 'chk.hint': 'Accepted ones are sent as passive and withdrawn afterwards, so they do not pile up.',
+    'chk.summary': '{pass} / {total} passed', 'chk.want': 'want', 'chk.got': 'got',
+    'sent.title': 'Sent', 'sent.sub': 'ids the channel accepted this session', 'sent.withdrawAll': 'Withdraw all',
+    'sent.empty': 'Nothing yet.', 'sent.withdraw': 'Withdraw', 'sent.untitled': '(untitled)',
+    'log.title': 'Log', 'log.clear': 'Clear',
+    'log.badHeaders': 'extra headers are not valid JSON',
+    'label.update': 'update {n}', 'label.withdrawAll': 'withdraw all', 'label.cleanup': 'check cleanup', 'label.check': 'check: {name}',
+    'd.v2.title': 'Build finished', 'd.v2.subtitle': '12s · main', 'd.v2.body': '12 files typechecked, `0` errors.',
+    'd.v1.title': 'Legacy reminder', 'd.v1.subtitle': 'sent to POST /reminder', 'd.v1.body': 'v1 senders keep working unchanged.',
+    'd.action.title': 'Copy SHA',
+  },
+  zh: {
+    'disc.looking': '正在查找通道…',
+    'disc.missing': '没有找到发现文件 —— app 是否在运行，通道是否已开启？',
+    'refresh': '刷新',
+    'tab.v2': 'v2 通知', 'tab.v1': 'v1 提醒', 'tab.raw': '原始请求',
+    'ph.generated': '留空则自动生成', 'ph.openValue': 'https://… 或 bundle id',
+    'random': '随机',
+    'f.iconKind': '图标类型', 'f.iconValue': '图标值', 'f.duration': '时长（秒）', 'f.openValue': 'open 目标',
+    'f.bodyHint': '（行内 Markdown：**粗体**、`代码`、[链接](https://example.com)）',
+    'f.extraHeaders': '额外请求头（JSON）', 'f.rawBody': '请求体（原样发送，留空则不带）',
+    'opt.iconNone': '无（铃铛）', 'opt.omitNone': '不填（none）', 'opt.none': '无', 'opt.omit': '不填',
+    'opt.tokenAuto': '发现文件里的 token', 'opt.tokenNone': '不带', 'opt.tokenWrong': '错误的 token',
+    'actions.hint': '最多 3 个（这里允许加第 4 个，用来看它被拒绝）', 'actions.add': '+ 按钮',
+    'action.ph.url': 'https://…', 'action.ph.copy': '要复制的文本', 'action.ph.title': '标题',
+    'send': '发送', 'sendThrice': '连发 3 次（同 id → 原地更新）', 'sendShortcut': '⌘↩ 发送',
+    'sendV1': '发送 v1', 'sendRaw': '发送原始请求', 'payload': '请求内容',
+    'scn.title': '场景', 'scn.sub': '编排好的一组操作 —— 运行时盯着刘海看',
+    'chk.title': '协议检查', 'chk.sub': '每条路由和每种拒绝，对照期望的状态码',
+    'chk.run': '运行检查', 'chk.hint': '会被接受的用例以 passive 发送，跑完自动撤回，不会堆积。',
+    'chk.summary': '通过 {pass} / {total}', 'chk.want': '期望', 'chk.got': '实际',
+    'sent.title': '已发送', 'sent.sub': '本次会话中通道接受的 id', 'sent.withdrawAll': '全部撤回',
+    'sent.empty': '还没有。', 'sent.withdraw': '撤回', 'sent.untitled': '（无标题）',
+    'log.title': '日志', 'log.clear': '清空',
+    'log.badHeaders': '额外请求头不是合法的 JSON',
+    'label.update': '第 {n} 次更新', 'label.withdrawAll': '全部撤回', 'label.cleanup': '检查后清理', 'label.check': '检查：{name}',
+    'd.v2.title': '构建完成', 'd.v2.subtitle': '12 秒 · main', 'd.v2.body': '12 个文件类型检查通过，`0` 个错误。',
+    'd.v1.title': '旧版提醒', 'd.v1.subtitle': '发往 POST /reminder', 'd.v1.body': 'v1 发送方无需任何改动即可继续使用。',
+    'd.action.title': '复制 SHA',
+  },
+};
+
+const LANG_KEY = 'notch-channel-playground.lang';
+let lang = (() => {
+  try { const saved = localStorage.getItem(LANG_KEY); if (saved === 'en' || saved === 'zh') return saved; } catch {}
+  return (navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+})();
+
+function t(key, vars = {}) {
+  const s = STRINGS[lang][key] ?? STRINGS.en[key] ?? key;
+  return s.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+}
+/// Pick between two literal strings — for scenario content, where a key per line would be noise.
+const L = (en, zh) => (lang === 'zh' ? zh : en);
+
+function setLang(next) {
+  const prev = lang;
+  lang = next;
+  try { localStorage.setItem(LANG_KEY, next); } catch {}
+  document.documentElement.lang = next === 'zh' ? 'zh-CN' : 'en';
+  document.querySelectorAll('#langSeg button').forEach((b) => b.classList.toggle('on', b.dataset.lang === next));
+  document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+  // Example values follow the language only while they are still the untouched example.
+  document.querySelectorAll('[data-default]').forEach((el) => {
+    const key = el.dataset.default;
+    if (prev === null || el.value === (STRINGS[prev][key] ?? '')) el.value = t(key);
+  });
+  actions.forEach((a) => { if (a.title === STRINGS[prev]?.['d.action.title']) a.title = t('d.action.title'); });
+  renderActions();
+  renderScenarios();
+  renderSent();
+  render();
+  loadDiscovery();
+}
+document.querySelectorAll('#langSeg button').forEach((b) => b.onclick = () => setLang(b.dataset.lang));
+
+// ================================================================ plumbing
+const $ = (id) => document.getElementById(id);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const sent = new Map();
+let pngData = null;
+
+async function loadDiscovery() {
+  let d;
+  try { d = await (await fetch('/api/discovery')).json(); } catch { d = { found: false }; }
+  const pill = $('disc');
+  if (d.found) {
+    pill.innerHTML = `<span class="dot ok"></span><span>127.0.0.1:${d.port}</span>`;
+    $('discPath').textContent = d.path.replace(/^\/Users\/[^/]+/, '~');
+  } else {
+    pill.innerHTML = `<span class="dot bad"></span><span>${esc(t('disc.missing'))}</span>`;
+    $('discPath').textContent = '';
+  }
+}
+
+async function call(spec, label) {
+  let res;
+  try {
+    res = await (await fetch('/api/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(spec) })).json();
+  } catch (e) {
+    res = { ok: false, error: String(e) };
+  }
+  log(spec, res, label);
+  if (res.ok && res.status === 202 && res.body && res.body.id) {
+    const title = (spec.body && typeof spec.body === 'object' && spec.body.title) || sent.get(res.body.id)?.title || '';
+    sent.set(res.body.id, { id: res.body.id, title });
+    renderSent();
+  }
+  if (res.ok && res.status === 200 && res.body && res.body.status === 'withdrawn') {
+    sent.delete(res.body.id);
+    renderSent();
+  }
+  return res;
+}
+const post = (path, body, extra = {}) => call({ method: 'POST', path, body, ...extra }, extra.label);
+const notify = (body, label) => post('/v2/notifications', body, { label });
+const withdraw = (id, label) => call({ method: 'DELETE', path: '/v2/notifications/' + encodeURIComponent(id) }, label);
+
+function log(spec, res, label) {
+  const el = document.createElement('div');
+  el.className = 'entry';
+  if (!res.ok) {
+    el.innerHTML = `<div class="top"><span class="st s0">ERR</span><span>${esc(res.error)}</span></div>`;
+  } else {
+    const cls = 's' + String(res.status)[0];
+    el.innerHTML = `<div class="top"><span class="st ${cls}">${res.status}</span><span class="method">${spec.method}</span><span>${esc(spec.path)}</span>${label ? `<span class="hint">· ${esc(label)}</span>` : ''}<span class="meta">${res.ms} ms · ${new Date().toLocaleTimeString()}</span></div>` +
+      `<pre>${esc(JSON.stringify(res.body))}</pre>`;
+  }
+  $('log').prepend(el);
+}
+function note(text) {
+  const el = document.createElement('div');
+  el.className = 'entry note';
+  el.textContent = text;
+  $('log').prepend(el);
+}
+
+function renderSent() {
+  const box = $('sent');
+  if (!sent.size) { box.innerHTML = `<span class="hint">${esc(t('sent.empty'))}</span>`; return; }
+  box.innerHTML = '';
+  [...sent.values()].reverse().forEach(({ id, title }) => {
+    const it = document.createElement('div');
+    it.className = 'it';
+    it.innerHTML = `<span class="t">${esc(title || t('sent.untitled'))}</span><code title="${esc(id)}">${esc(id)}</code>`;
+    const b = document.createElement('button');
+    b.className = 'btn small danger';
+    b.textContent = t('sent.withdraw');
+    b.onclick = () => withdraw(id);
+    it.appendChild(b);
+    box.appendChild(it);
+  });
+}
+async function withdrawAll() {
+  for (const { id } of [...sent.values()]) await withdraw(id, t('label.withdrawAll'));
+}
+
+// ================================================================ composer: v2
+let actions = [];
+function addAction(a) {
+  actions.push(a ? { ...a } : { title: t('d.action.title'), kind: 'copy', value: '0ae0b60' });
+  renderActions();
+  render();
+}
+function renderActions() {
+  const box = $('v2-actions');
+  box.innerHTML = '';
+  actions.forEach((a, i) => {
+    const row = document.createElement('div');
+    row.className = 'action-row';
+    row.innerHTML = `<input placeholder="${esc(t('action.ph.title'))}" value="${esc(a.title)}"><select><option value="url">url</option><option value="copy">copy</option></select><input value="${esc(a.value)}"><button class="btn small danger">✕</button>`;
+    const [ti, k, v, x] = row.children;
+    k.value = a.kind;
+    v.placeholder = t(a.kind === 'url' ? 'action.ph.url' : 'action.ph.copy');
+    ti.oninput = () => { a.title = ti.value; render(); };
+    k.onchange = () => { a.kind = k.value; v.placeholder = t(a.kind === 'url' ? 'action.ph.url' : 'action.ph.copy'); render(); };
+    v.oninput = () => { a.value = v.value; render(); };
+    x.onclick = () => { actions.splice(i, 1); renderActions(); render(); };
+    box.appendChild(row);
+  });
+}
+
+function segValue(id) { return document.querySelector(`#${id} button.on`)?.dataset.v; }
+document.querySelectorAll('#v2-level').forEach((seg) => seg.addEventListener('click', (e) => {
+  if (e.target.tagName !== 'BUTTON') return;
+  e.preventDefault();
+  seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === e.target));
+  render();
+}));
+
+function buildV2() {
+  const p = {};
+  const v = (id) => $(id).value.trim();
+  if (v('v2-id')) p.id = v('v2-id');
+  if (v('v2-source')) p.source = v('v2-source');
+  if (v('v2-thread')) p.thread = v('v2-thread');
+  const level = segValue('v2-level'); if (level && level !== 'active') p.level = level;
+  const kind = $('v2-iconKind').value;
+  if (kind === 'png_base64') { if (pngData) p.icon = { kind, value: pngData }; }
+  else if (kind) p.icon = { kind, value: v('v2-iconValue') };
+  p.title = $('v2-title').value;
+  if (v('v2-subtitle')) p.subtitle = v('v2-subtitle');
+  if ($('v2-body').value.trim()) p.body = $('v2-body').value;
+  if (v('v2-duration')) p.duration = Number(v('v2-duration'));
+  if (v('v2-sound')) p.sound = v('v2-sound');
+  const ok = $('v2-openKind').value;
+  if (ok) p.open = { [ok]: v('v2-openValue') };
+  if (actions.length) p.actions = actions.map((a) => ({ title: a.title, [a.kind]: a.value }));
+  return p;
+}
+function buildV1() {
+  const p = {};
+  const v = (id) => $(id).value.trim();
+  if (v('v1-id')) p.id = v('v1-id');
+  if (v('v1-icon')) p.icon = { kind: 'sf_symbol', value: v('v1-icon') };
+  p.title = $('v1-title').value;
+  if (v('v1-subtitle')) p.subtitle = v('v1-subtitle');
+  if ($('v1-body').value.trim()) p.body = $('v1-body').value;
+  if (v('v1-duration')) p.duration = Number(v('v1-duration'));
+  if (v('v1-sticky')) p.sticky = v('v1-sticky') === 'true';
+  if (v('v1-sound')) p.sound = v('v1-sound');
+  if (v('v1-actionTitle') || v('v1-actionURL')) p.action = { title: v('v1-actionTitle'), url: v('v1-actionURL') };
+  return p;
+}
+function render() {
+  const p2 = buildV2();
+  if (p2.icon && p2.icon.kind === 'png_base64') p2.icon = { ...p2.icon, value: p2.icon.value.slice(0, 32) + '…' };
+  $('v2-preview').textContent = JSON.stringify(p2, null, 2);
+  $('v1-preview').textContent = JSON.stringify(buildV1(), null, 2);
+  const png = $('v2-iconKind').value === 'png_base64';
+  $('v2-iconValue').classList.toggle('hidden', png);
+  $('v2-iconFile').classList.toggle('hidden', !png);
+}
+document.querySelectorAll('#tab-v2 input, #tab-v2 select, #tab-v2 textarea, #tab-v1 input, #tab-v1 select, #tab-v1 textarea')
+  .forEach((el) => el.addEventListener('input', render));
+$('v2-iconFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { pngData = String(reader.result).split(',')[1]; render(); };
+  reader.readAsDataURL(file);
+});
+
+async function sendV2(thrice) {
+  const p = buildV2();
+  if (!thrice) return notify(p);
+  p.id = p.id || 'pg-inplace-' + Math.random().toString(36).slice(2, 6);
+  const base = p.title;
+  for (let i = 1; i <= 3; i++) { await notify({ ...p, title: `${base} (${i}/3)` }, t('label.update', { n: i })); await sleep(1200); }
+}
+const sendV1 = () => post('/reminder', buildV1(), { label: 'v1' });
+
+function sendRaw() {
+  let headers = {};
+  try { headers = $('raw-headers').value.trim() ? JSON.parse($('raw-headers').value) : {}; }
+  catch { note(t('log.badHeaders')); return; }
+  const tok = $('raw-token').value;
+  const body = $('raw-body').value;
+  call({
+    method: $('raw-method').value, path: $('raw-path').value,
+    token: tok === 'auto' ? 'auto' : tok === 'none' ? null : 'definitely-wrong',
+    body: body.length ? body : undefined, contentType: $('raw-ctype').value, headers,
+  }, 'raw');
+}
+
+document.querySelectorAll('#composerTabs button').forEach((b) => b.onclick = () => {
+  document.querySelectorAll('#composerTabs button').forEach((x) => x.classList.toggle('on', x === b));
+  ['v2', 'v1', 'raw'].forEach((tab) => $('tab-' + tab).classList.toggle('hidden', tab !== b.dataset.tab));
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    const tab = document.querySelector('#composerTabs button.on').dataset.tab;
+    ({ v2: () => sendV2(), v1: sendV1, raw: sendRaw })[tab]();
+  }
+});
+
+// ================================================================ scenarios
+// Built on demand rather than once, so what they send to the notch is in the current language.
+const uid = (p) => `${p}-${Math.random().toString(36).slice(2, 7)}`;
+function scenarios() {
+  return [
+    { name: L('Single banner', '单条横幅'),
+      what: L('One active notification. Hover it: the notch opens on the Inbox with it in view.', '一条 active 通知。悬停横幅：刘海展开到 Inbox 并定位到它。'),
+      run: async () => notify({ source: 'playground', icon: { kind: 'sf_symbol', value: 'hammer.fill' }, title: L('Build finished', '构建完成'), subtitle: L('12s · main', '12 秒 · main'), body: L('12 files typechecked, `0` errors.', '12 个文件类型检查通过，`0` 个错误。') }) },
+    { name: L('Update in place', '原地更新'),
+      what: L('Same id three times: one banner whose content changes, one Inbox row.', '同一个 id 发三次：只有一条横幅、内容在变，Inbox 里也只有一行。'),
+      run: async () => {
+        const id = uid('deploy');
+        const icon = { kind: 'sf_symbol', value: 'arrow.triangle.2.circlepath' };
+        await notify({ id, icon, title: L('Deploying', '正在部署'), subtitle: 'staging', duration: 8 });
+        await sleep(2000);
+        await notify({ id, icon, title: L('Deploying', '正在部署'), subtitle: L('migrating database', '迁移数据库'), duration: 8 });
+        await sleep(2000);
+        await notify({ id, icon: { kind: 'sf_symbol', value: 'checkmark.circle.fill' }, title: L('Deployed', '部署完成'), subtitle: L('staging · 41s', 'staging · 41 秒'), duration: 4 });
+      } },
+    { name: L('Queue overflow', '队列溢出'),
+      what: L('8 at once: 1 shows, 5 wait, the 2 oldest waiters lose their banner — but all 8 are in the Inbox.', '一次发 8 条：1 条显示、5 条排队，最早排队的 2 条失去横幅 —— 但 8 条都在 Inbox 里。'),
+      run: async () => { for (let i = 1; i <= 8; i++) await notify({ title: L(`Queued #${i}`, `排队 #${i}`), subtitle: L('of 8', '共 8 条'), duration: 2 }); } },
+    { name: L('Sticky gives way (v1)', 'sticky 让位（v1）'),
+      what: L('A v1 sticky reminder outlives its 3s while alone (pin icon), then yields the moment another arrives at 7s.', 'v1 sticky 提醒在没有别的通知时超过 3 秒仍停留（显示图钉），第 7 秒新通知一到就让位。'),
+      run: async () => {
+        await post('/reminder', { title: L('Sticky v1 reminder', 'v1 sticky 提醒'), subtitle: L('waits to be seen', '等你看到'), sticky: true, duration: 3, icon: { kind: 'sf_symbol', value: 'pin' } }, { label: 'sticky' });
+        note(L('Sticky is holding past its duration. Next one in 7s…', 'sticky 正在超时停留，7 秒后发下一条…'));
+        await sleep(7000);
+        await notify({ title: L('Something new', '新的通知'), subtitle: L('the sticky one stepped aside', 'sticky 那条让位了') });
+      } },
+    { name: L('Time-sensitive cuts in', 'time-sensitive 插队'),
+      what: L('3 active, then 1 time-sensitive: it shows second, ahead of the other two.', '先发 3 条 active，再发 1 条 time-sensitive：它第二个显示，排在另外两条前面。'),
+      run: async () => {
+        for (const n of ['A', 'B', 'C']) await notify({ title: L(`Active ${n}`, `普通 ${n}`), duration: 3 });
+        await notify({ title: L('Time-sensitive!', '时效通知！'), subtitle: L('jumped the queue', '插队了'), level: 'time-sensitive', duration: 3, icon: { kind: 'sf_symbol', value: 'exclamationmark.triangle.fill' } });
+      } },
+    { name: 'Passive',
+      what: L('No banner at all. The bell beside Settings appears with an unread dot.', '完全没有横幅。设置按钮旁出现带未读点的铃铛。'),
+      run: async () => notify({ title: L('Quiet background note', '安静的后台消息'), subtitle: 'passive', level: 'passive', body: L('Only in the Inbox.', '只出现在 Inbox 里。') }) },
+    { name: L('Withdraw', '撤回'),
+      what: L('Sent, then withdrawn by the sender after 2s: gone from the banner and the Inbox.', '发出后 2 秒由发送方撤回：横幅和 Inbox 里都消失。'),
+      run: async () => {
+        const id = uid('withdraw');
+        await notify({ id, title: L('About to be withdrawn', '即将被撤回'), subtitle: L('in 2s', '2 秒后'), duration: 8 });
+        await sleep(2000);
+        await withdraw(id);
+      } },
+    { name: L('Click targets', '点击跳转'),
+      what: L('Four passive notifications. In the Inbox, click each: URL, app, app-icon fallback, and nowhere (expands).', '四条 passive 通知。在 Inbox 里逐个点：打开网址、打开 app、按图标兜底打开 app、无处可去（展开正文）。'),
+      run: async () => {
+        await notify({ title: L('Opens a URL', '打开网址'), subtitle: 'github.com', level: 'passive', open: { url: 'https://github.com/AllenReder/not-boring-notch' }, icon: { kind: 'sf_symbol', value: 'link' } });
+        await notify({ title: L('Opens Terminal', '打开终端'), subtitle: 'open.app', level: 'passive', open: { app: 'com.apple.Terminal' }, icon: { kind: 'sf_symbol', value: 'terminal' } });
+        await notify({ title: L('Opens Safari via its icon', '按图标打开 Safari'), subtitle: L('no open, app_bundle icon', '没有 open，图标是 app_bundle'), level: 'passive', icon: { kind: 'app_bundle', value: 'com.apple.Safari' } });
+        await notify({ title: L('Goes nowhere', '无处可去'), subtitle: L('click to expand the body', '点击展开正文'), level: 'passive',
+          body: L('Line one of a longer body.\nLine two.\nLine three — only visible once expanded.\nLine four.', '较长正文的第一行。\n第二行。\n第三行 —— 展开后才看得到。\n第四行。') });
+      } },
+    { name: L('Actions', '操作按钮'),
+      what: L('A URL button and two copy buttons. Acting on one clears the notification.', '一个链接按钮和两个复制按钮。点任何一个，这条通知就被清除。'),
+      run: async () => notify({ title: L('PR #42 merged', 'PR #42 已合并'), subtitle: 'not-boring-notch', icon: { kind: 'sf_symbol', value: 'arrow.triangle.merge' },
+        actions: [{ title: L('Open PR', '打开 PR'), url: 'https://github.com/AllenReder/not-boring-notch/pulls' }, { title: L('Copy SHA', '复制 SHA'), copy: '0ae0b60' }, { title: L('Copy branch', '复制分支名'), copy: 'worktree-notch-channel-v2' }] }) },
+    { name: L('Long text', '长文本'),
+      what: L('Marquee title and subtitle in the banner; a long Markdown body clamped to two lines in the Inbox.', '横幅里的标题和副标题走马灯滚动；Inbox 里的长 Markdown 正文只显示两行。'),
+      run: async () => notify({
+        title: L('A rather long title that will not fit in the wing of the notch at all', '一个相当长的标题，长到刘海两侧的空间完全放不下它'),
+        subtitle: L('and a subtitle that is also far longer than the slot it has to live in', '副标题同样远远超出了它能占用的位置'), duration: 8,
+        body: L('**Bold**, _italic_, `code`, and [a link](https://example.com).\n', '**粗体**、_斜体_、`代码`，以及[一个链接](https://example.com)。\n') + L('Lorem ipsum dolor sit amet. ', '这是一段用来撑长正文的占位文字。').repeat(20) }) },
+    { name: L('Agent session', 'Agent 会话'),
+      what: L('Simulates an agent run in one thread: passive progress notes, then a time-sensitive "done" that opens VS Code.', '模拟同一 thread 里的一次 agent 运行：先是 passive 的进度，最后一条 time-sensitive 的「完成」，点击打开 VS Code。'),
+      run: async () => {
+        const thread = uid('session');
+        const icon = { kind: 'sf_symbol', value: 'sparkles' };
+        await notify({ source: 'claude-code', thread, level: 'passive', icon, title: L('Started', '已开始'), subtitle: 'not-boring-notch' });
+        await sleep(1500);
+        await notify({ source: 'claude-code', thread, level: 'passive', icon, title: L('Editing BannerQueue.swift', '正在编辑 BannerQueue.swift'), subtitle: 'not-boring-notch' });
+        await sleep(1500);
+        await notify({ source: 'claude-code', thread, level: 'time-sensitive', sound: 'default', icon, title: L('Task complete', '任务完成'),
+          subtitle: L('not-boring-notch · 4 files changed', 'not-boring-notch · 改动 4 个文件'),
+          body: L('Ran `./scripts/run-tests.sh`: **16 passed**.', '运行了 `./scripts/run-tests.sh`：**16 项通过**。'), open: { url: 'vscode://file/Users' } });
+      } },
+    { name: L('Fullscreen check', '全屏检查'),
+      what: L('Gives you 6s to put an app in fullscreen, then sends one active and one time-sensitive: only the time-sensitive one should show.', '给你 6 秒把某个 app 切到全屏，然后各发一条 active 和 time-sensitive：应该只有 time-sensitive 那条显示。'),
+      run: async () => {
+        note(L('Enter fullscreen now (⌃⌘F) — sending in 6s…', '现在进入全屏（⌃⌘F）—— 6 秒后发送…'));
+        await sleep(6000);
+        await notify({ title: L('Active (should wait)', 'active（应当等待）'), duration: 4 });
+        await notify({ title: L('Time-sensitive (should show)', 'time-sensitive（应当显示）'), level: 'time-sensitive', duration: 5, icon: { kind: 'sf_symbol', value: 'exclamationmark.triangle.fill' } });
+      } },
+    { name: L('Sound', '声音'),
+      what: L("The notch's own alert sound, played when the banner is drawn.", '刘海自带的提示音，在横幅画出来时播放。'),
+      run: async () => notify({ title: L('With sound', '带声音'), sound: 'default', icon: { kind: 'sf_symbol', value: 'speaker.wave.2.fill' } }) },
+  ];
+}
+function renderScenarios() {
+  const box = $('scenarios');
+  box.innerHTML = '';
+  scenarios().forEach((s, i) => {
+    const b = document.createElement('button');
+    b.className = 'scn';
+    b.innerHTML = `<b>${esc(s.name)}</b><span>${esc(s.what)}</span>`;
+    b.onclick = async () => {
+      const scn = scenarios()[i]; // the language may have changed since this was drawn
+      b.classList.add('running');
+      note(`▶ ${scn.name}`);
+      try { await scn.run(); } finally { b.classList.remove('running'); }
+    };
+    box.appendChild(b);
+  });
+}
+
+// ================================================================ protocol checks
+function checks() {
+  return [
+    [L('v2 accepted', 'v2 被接受'), 202, { body: { title: 'check', level: 'passive' } }],
+    [L('v1 accepted', 'v1 被接受'), 202, { path: '/reminder', body: { title: 'check v1' } }, 'v1'],
+    [L('missing title', '缺少 title'), 400, { body: { level: 'passive' } }, 'missing_title'],
+    [L('unknown level', '未知 level'), 400, { body: { title: 't', level: 'critical' } }, 'unknown_level'],
+    [L('four actions', '4 个 action'), 400, { body: { title: 't', actions: Array(4).fill({ title: 'x', copy: 'y' }) } }, 'too_many_actions'],
+    [L('action with url and copy', 'action 同时有 url 和 copy'), 400, { body: { title: 't', actions: [{ title: 'x', url: 'https://a.b', copy: 'y' }] } }, 'invalid_action'],
+    [L('open with url and app', 'open 同时有 url 和 app'), 400, { body: { title: 't', open: { url: 'https://a.b', app: 'com.x' } } }, 'invalid_open'],
+    [L('open url without scheme', 'open 的 url 没有 scheme'), 400, { body: { title: 't', open: { url: '://nope' } } }, 'invalid_open'],
+    [L('unknown icon kind', '未知图标类型'), 400, { body: { title: 't', icon: { kind: 'emoji', value: '🎉' } } }, 'unknown_icon_kind'],
+    [L('bad base64 icon', '图标 base64 无效'), 400, { body: { title: 't', icon: { kind: 'png_base64', value: 'not base64!!' } } }, 'invalid_icon_data'],
+    [L('unknown sound', '未知 sound'), 400, { body: { title: 't', sound: 'loud' } }, 'unknown_sound'],
+    [L('malformed JSON', 'JSON 格式错误'), 400, { body: '{ not json' }, 'malformed'],
+    [L('no token', '不带 token'), 401, { token: null, body: { title: 't' } }, 'unauthorized'],
+    [L('wrong token', '错误的 token'), 401, { token: 'wrong', body: { title: 't' } }, 'unauthorized'],
+    [L('browser Origin', '带浏览器 Origin'), 403, { headers: { Origin: 'https://evil.example' }, body: { title: 't' } }, 'forbidden_origin'],
+    [L('text/plain body', 'text/plain 请求体'), 415, { contentType: 'text/plain', body: '{"title":"t"}' }, 'unsupported_media_type'],
+    [L('oversized body', '请求体超限'), 413, { body: JSON.stringify({ title: 't', body: 'x'.repeat(70 * 1024) }) }, 'too_large'],
+    [L('GET on notifications', '对 notifications 用 GET'), 405, { method: 'GET' }, 'method_not_allowed'],
+    [L('POST on one notification', '对单条通知用 POST'), 405, { path: '/v2/notifications/abc', body: { title: 't' } }, 'method_not_allowed'],
+    [L('unknown path', '未知路径'), 404, { path: '/v2/nothing', body: { title: 't' } }, 'not_found'],
+    [L('withdraw unknown id', '撤回不存在的 id'), 200, { method: 'DELETE', path: '/v2/notifications/never-sent' }, 'withdrawn'],
+    [L('withdraw id with ":"', '撤回含 ":" 的 id'), 200, { method: 'DELETE', path: '/v2/notifications/' + encodeURIComponent('claude:42') }, 'withdrawn'],
+  ];
+}
+async function runChecks() {
+  const table = $('checks');
+  table.innerHTML = '';
+  const list = checks();
+  let pass = 0;
+  const accepted = [];
+  for (const [name, want, spec, code] of list) {
+    const full = { method: 'POST', path: '/v2/notifications', ...spec };
+    const res = await call(full, t('label.check', { name }));
+    const got = res.ok ? res.status : 'ERR';
+    const body = res.ok ? res.body : res.error;
+    const codeOK = !code || (body && (body.error === code || body.status === code || (code === 'v1' && body.status === 'queued')));
+    const ok = got === want && codeOK;
+    if (ok) pass++;
+    if (got === 202 && body.id) accepted.push(body.id);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="${ok ? 'pass' : 'fail'}">${ok ? '✓' : '✗'}</td><td>${esc(name)}<div class="hint">${esc(JSON.stringify(body))}</div></td><td class="r">${esc(t('chk.want'))} ${want}<br>${esc(t('chk.got'))} ${got}</td>`;
+    table.appendChild(tr);
+  }
+  for (const id of accepted) await withdraw(id, t('label.cleanup'));
+  const summary = $('checkSummary');
+  summary.removeAttribute('data-i18n');
+  summary.innerHTML = `<span class="${pass === list.length ? 'pass' : 'fail'}">${esc(t('chk.summary', { pass, total: list.length }))}</span>`;
+}
+
+// ================================================================ start
+// The first application has no previous language, so every example value is filled in.
+const initialLang = lang;
+lang = null;
+setLang(initialLang);
+</script>
+</body>
+</html>

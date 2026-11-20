@@ -17,6 +17,9 @@ let openNotchSize: CGSize = .init(width: 640, height: 190)
 /// surface has no room for. It reports the height it actually needs as the list changes; this is
 /// the ceiling the window is sized for.
 let launcherNotchSize: CGSize = .init(width: openNotchSize.width, height: 440)
+/// The most the Inbox ever asks for. Like the launcher, it reports the height its notifications
+/// need, and scrolls past this.
+let inboxNotchSize: CGSize = .init(width: openNotchSize.width, height: 340)
 /// The tallest surface any tab asks for, read from the tabs themselves so a new tab cannot be
 /// forgotten here. The window is sized to it, so a tab growing taller never clips.
 let maxOpenNotchSize: CGSize = NotchViews.allCases
@@ -30,13 +33,15 @@ let cornerRadiusInsets: (opened: (top: CGFloat, bottom: CGFloat), closed: (top: 
 
 extension NotchViews {
     /// The surface the notch grows to while this tab is open. Every tab shares the width for
-    /// now; the launcher is the first that asks for a different height.
+    /// now; the launcher and the Inbox ask for a different height.
     var expandedSize: CGSize {
         switch self {
         case .home, .shelf, .performance:
             return openNotchSize
         case .launcher:
             return launcherNotchSize
+        case .inbox:
+            return inboxNotchSize
         }
     }
 }
@@ -57,6 +62,24 @@ enum MusicPlayerImageSizes {
     }
     
     return nil
+}
+
+/// How far the closed notch's content keeps from the camera housing's reported edge. The panel's
+/// mask reaches a few points past that edge, and content drawn right up to it is cut.
+let closedNotchHousingMargin: CGFloat = 8
+
+/// The width the closed notch keeps clear in its middle, for the camera housing. On a screen with
+/// one it is the housing as macOS reports it, a margin either side; on a screen without, the drawn
+/// notch's own middle, as it has always been.
+@MainActor func getClosedNotchGap(screenUUID: String? = nil) -> CGFloat {
+    let screen = screenUUID.flatMap { NSScreen.screen(withUUID: $0) } ?? NSScreen.main
+    if let screen,
+       let left = screen.auxiliaryTopLeftArea?.width,
+       let right = screen.auxiliaryTopRightArea?.width
+    {
+        return screen.frame.width - left - right + 2 * closedNotchHousingMargin
+    }
+    return getClosedNotchSize(screenUUID: screenUUID).width - 20
 }
 
 @MainActor func getClosedNotchSize(screenUUID: String? = nil) -> CGSize {

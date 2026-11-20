@@ -1,0 +1,6 @@
+{"hook_event_name": "session_start", "session_id": "01a1f489-436a-7634-ad87-78d30faeb770", "cwd": "/Users/dev/project"}
+{"hook_event_name": "agent_start", "session_id": "01a1f489-436a-7634-ad87-78d30faeb770", "cwd": "/Users/dev/project"}
+{"hook_event_name": "tool_execution_start", "session_id": "01a1f489-436a-7634-ad87-78d30faeb770", "cwd": "/Users/dev/project", "tool_name": "bash"}
+{"hook_event_name": "tool_execution_end", "session_id": "01a1f489-436a-7634-ad87-78d30faeb770", "cwd": "/Users/dev/project", "tool_name": "bash"}
+{"hook_event_name": "agent_settled", "session_id": "01a1f489-436a-7634-ad87-78d30faeb770", "cwd": "/Users/dev/project", "aborted": false, "stop_reason": "stop", "last_assistant_message": "done"}
+{"hook_event_name": "session_shutdown", "session_id": "01a1f489-436a-7634-ad87-78d30faeb770", "cwd": "/Users/dev/project"}

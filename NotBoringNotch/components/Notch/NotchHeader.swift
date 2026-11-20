@@ -52,6 +52,7 @@ struct NotchHeader: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
+                        InboxHeaderButton()
                         if Defaults[.settingsIconInNotch] {
                             Button(action: {
                                 DispatchQueue.main.async {
