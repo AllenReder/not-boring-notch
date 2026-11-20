@@ -6,12 +6,12 @@
 //  Everything is relative to the `home` it is given, so tests run against a temporary one. The
 //  sandboxed app cannot do any of this, which is why it lives in the helper.
 //
-//  Claude Code and Codex get entries in their hooks file that run `notch-agent-hook`. pi gets a
-//  file of its own instead, `PiExtension`, in its extensions folder.
+//  Claude Code and Codex get entries in their hooks file that run `notch-agent-hook`. pi and
+//  OpenCode get a file of their own instead (`AgentPluginFile`), in the folder they load plugins from.
 //
 //  The rules, which the tests prove:
 //   - Only entries of ours are ever added, replaced or removed (ownership is by resolved script
-//     path). Every other byte of the user's file stays as it was. pi's extension is ours by its
+//     path). Every other byte of the user's file stays as it was. A plugin file is ours by its
 //     version marker; a file of that name without one is the user's, and is left alone.
 //   - Nothing is written unless the user asked to install, or already had us installed.
 //   - A file that can't be parsed, or has an unexpected shape, is refused, not rewritten.
@@ -27,8 +27,6 @@ struct AgentHookInstaller {
 
     /// Absolute, and without a space: Codex splits a hook's command on whitespace.
     var scriptURL: URL { supportDirectory.appendingPathComponent("bin/notch-agent-hook") }
-
-    var piExtensionURL: URL { home.appendingPathComponent(".pi/agent/extensions/\(PiExtension.fileName)") }
 
     private static let versionMarker = "# notch-agent-hook-version: "
 
@@ -57,7 +55,7 @@ struct AgentHookInstaller {
     }
 
     private func inspectStatus(of target: AgentHookTarget, bundledScript: String) throws -> AgentHookStatus {
-        if target == .pi { return try piStatus() }
+        if let plugin = AgentPluginFile.of(target) { return try pluginStatus(of: target, plugin) }
         let entries = self.entries(for: target)
         let inspection = try entries.inspect(configFile(for: target).read())
         guard !inspection.present.isEmpty else { return AgentHookStatus(agent: target, state: .notInstalled) }
@@ -128,7 +126,7 @@ struct AgentHookInstaller {
     }
 
     private func install(_ target: AgentHookTarget, script: String) throws {
-        if target == .pi { return try installPi() }
+        if let plugin = AgentPluginFile.of(target) { return try installPlugin(plugin) }
         guard Self.version(of: script) != nil else { throw AgentHookError.scriptHasNoVersion }
         try requireSafePath()
 
@@ -202,7 +200,7 @@ struct AgentHookInstaller {
     }
 
     private func uninstall(_ target: AgentHookTarget) throws {
-        if target == .pi { return try uninstallPi() }
+        if let plugin = AgentPluginFile.of(target) { return try uninstallPlugin(plugin) }
         let entries = self.entries(for: target)
         let file = configFile(for: target)
         guard let original = try file.read() else { return }
@@ -212,7 +210,7 @@ struct AgentHookInstaller {
 
     /// Kept whenever an agent still has entries of ours, or its file can't be read to tell.
     private func removeScriptIfUnused() {
-        for target in AgentHookTarget.allCases where target != .pi {
+        for target in AgentHookTarget.allCases where AgentPluginFile.of(target) == nil {
             guard let inspection = try? entries(for: target).inspect(configFile(for: target).read()),
                   inspection.present.isEmpty else { return }
         }
@@ -223,40 +221,42 @@ struct AgentHookInstaller {
         }
     }
 
-    // MARK: - pi
+    // MARK: - Plugin files
 
-    private func piStatus() throws -> AgentHookStatus {
-        guard let installed = try readPiExtension() else { return AgentHookStatus(agent: .pi, state: .notInstalled) }
-        guard let version = PiExtension.version(of: installed) else {
+    private func pluginStatus(of target: AgentHookTarget, _ plugin: AgentPluginFile) throws -> AgentHookStatus {
+        guard let installed = try readPlugin(plugin) else { return AgentHookStatus(agent: target, state: .notInstalled) }
+        guard let version = plugin.version(of: installed) else {
             // Somebody else's file under our name: not ours to report on, or to touch.
-            return AgentHookStatus(agent: .pi, state: .notInstalled,
-                                   problem: AgentHookError.notOurs(path: piExtensionURL.path).localizedDescription)
+            return AgentHookStatus(agent: target, state: .notInstalled,
+                                   problem: AgentHookError.notOurs(path: plugin.url(home: home).path).localizedDescription)
         }
-        if version != PiExtension.version { return AgentHookStatus(agent: .pi, state: .outdated) }
-        if installed != PiExtension.source {
-            return AgentHookStatus(agent: .pi, state: .modified, problem: "The pi extension was changed.")
+        if version != plugin.version { return AgentHookStatus(agent: target, state: .outdated) }
+        if installed != plugin.source {
+            return AgentHookStatus(agent: target, state: .modified, problem: "The \(plugin.label) was changed.")
         }
-        return AgentHookStatus(agent: .pi, state: .installed)
+        return AgentHookStatus(agent: target, state: .installed)
     }
 
-    private func installPi() throws {
-        if let installed = try readPiExtension(), PiExtension.version(of: installed) == nil {
-            throw AgentHookError.notOurs(path: piExtensionURL.path)
+    private func installPlugin(_ plugin: AgentPluginFile) throws {
+        let url = plugin.url(home: home)
+        if let installed = try readPlugin(plugin), plugin.version(of: installed) == nil {
+            throw AgentHookError.notOurs(path: url.path)
         }
-        try FileManager.default.createDirectory(at: piExtensionURL.deletingLastPathComponent(),
-                                                withIntermediateDirectories: true)
-        try ConfigFile.atomicallyWrite(Data(PiExtension.source.utf8), to: piExtensionURL, mode: 0o644)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try ConfigFile.atomicallyWrite(Data(plugin.source.utf8), to: url, mode: 0o644)
     }
 
-    private func uninstallPi() throws {
-        guard let installed = try readPiExtension() else { return }
-        guard PiExtension.version(of: installed) != nil else { throw AgentHookError.notOurs(path: piExtensionURL.path) }
-        try FileManager.default.removeItem(at: piExtensionURL)
+    private func uninstallPlugin(_ plugin: AgentPluginFile) throws {
+        guard let installed = try readPlugin(plugin) else { return }
+        let url = plugin.url(home: home)
+        guard plugin.version(of: installed) != nil else { throw AgentHookError.notOurs(path: url.path) }
+        try FileManager.default.removeItem(at: url)
     }
 
-    private func readPiExtension() throws -> String? {
-        guard FileManager.default.fileExists(atPath: piExtensionURL.path) else { return nil }
-        return String(decoding: try Data(contentsOf: piExtensionURL), as: UTF8.self)
+    private func readPlugin(_ plugin: AgentPluginFile) throws -> String? {
+        let url = plugin.url(home: home)
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return String(decoding: try Data(contentsOf: url), as: UTF8.self)
     }
 
     // MARK: - Files

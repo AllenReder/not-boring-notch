@@ -18,24 +18,19 @@
 import Foundation
 
 enum PiExtension {
-    /// Bump whenever `source` changes, so an installed copy can be told apart from this one.
-    static let version = 1
+    static let file = AgentPluginFile(
+        path: ".pi/agent/extensions/not-boring-notch.ts", label: "pi extension",
+        versionMarker: versionMarker, version: version, source: source)
 
-    static let fileName = "not-boring-notch.ts"
+    /// Bump whenever `source` changes, so an installed copy can be told apart from this one.
+    private static let version = 1
 
     private static let versionMarker = "// not-boring-notch-pi-extension-version: "
-
-    /// The number in an extension's version marker, on its first line.
-    static func version(of source: String) -> Int? {
-        guard let first = source.split(separator: "\n", maxSplits: 1).first,
-              first.hasPrefix(versionMarker) else { return nil }
-        return Int(first.dropFirst(versionMarker.count).trimmingCharacters(in: .whitespaces))
-    }
 
     /// Posts in order, one at a time: a `tool_execution_end` that overtook its start, or an
     /// `agent_settled` that overtook the last tool, would leave the session working for good.
     /// Each post gives up after a second and never throws into pi.
-    static let source = #"""
+    private static let source = #"""
     \#(versionMarker)\#(version)
     // Reports this pi session to Not Boring Notch. Installed by Not Boring Notch, which rewrites or
     // removes this file from its settings; edit it there, not here.

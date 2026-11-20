@@ -5,7 +5,7 @@
 //  Standalone runner, discovered by scripts/run-tests.sh, which compiles it against the
 //  sources declared below.
 //
-// SOURCES: NotBoringNotchXPCHelper/AgentHooks/AgentHookInstaller.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookEntries.swift NotBoringNotchXPCHelper/AgentHooks/ConfigFile.swift NotBoringNotchXPCHelper/AgentHooks/JSONSurgeon.swift NotBoringNotchXPCHelper/AgentHooks/CodexHooksConfig.swift NotBoringNotchXPCHelper/AgentHooks/AgentHooksModels.swift NotBoringNotch/Agents/Hooks/AgentHookScript.swift NotBoringNotchXPCHelper/AgentHooks/PiExtension.swift
+// SOURCES: NotBoringNotchXPCHelper/AgentHooks/AgentHookInstaller.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookEntries.swift NotBoringNotchXPCHelper/AgentHooks/ConfigFile.swift NotBoringNotchXPCHelper/AgentHooks/JSONSurgeon.swift NotBoringNotchXPCHelper/AgentHooks/CodexHooksConfig.swift NotBoringNotchXPCHelper/AgentHooks/AgentHooksModels.swift NotBoringNotch/Agents/Hooks/AgentHookScript.swift NotBoringNotchXPCHelper/AgentHooks/PiExtension.swift NotBoringNotchXPCHelper/AgentHooks/AgentPluginFile.swift
 //
 //  Every test runs against a temporary HOME. The files here belong to the user, so the claim
 //  that matters is about bytes: whatever the installer did not write, it did not change.
@@ -575,20 +575,20 @@ func testPiExtensionIsOneFileOfOurs() {
     checkInstall(home.installer.status(of: .pi, bundledScript: script).state == .notInstalled, "nothing there yet")
     let report = home.install([.pi])
     checkInstall(report.status(of: .pi)?.state == .installed, "installed, got \(String(describing: report.status(of: .pi)))")
-    checkInstall(home.read(file) == PiExtension.source, "the extension is written as bundled")
-    checkInstall(PiExtension.version(of: PiExtension.source) == PiExtension.version, "and carries its version")
+    checkInstall(home.read(file) == PiExtension.file.source, "the extension is written as bundled")
+    checkInstall(PiExtension.file.version(of: PiExtension.file.source) == PiExtension.file.version, "and carries its version")
     checkInstall(!FileManager.default.fileExists(atPath: home.installer.scriptURL.path), "pi needs no hook script")
     checkInstall(!FileManager.default.fileExists(atPath: home.path(".claude").path), "Claude Code was not touched")
 
-    home.write(PiExtension.source + "// mine\n", to: file)
+    home.write(PiExtension.file.source + "// mine\n", to: file)
     checkInstall(home.installer.status(of: .pi, bundledScript: script).state == .modified, "an edit is seen")
-    home.write(PiExtension.source.replacingOccurrences(of: "version: \(PiExtension.version)\n",
-                                                       with: "version: \(PiExtension.version - 1)\n"), to: file)
+    home.write(PiExtension.file.source.replacingOccurrences(of: "version: \(PiExtension.file.version)\n",
+                                                       with: "version: \(PiExtension.file.version - 1)\n"), to: file)
     let stale = home.installer.report(bundledScript: script)
     checkInstall(stale.status(of: .pi)?.state == .outdated, "an older version is seen")
     checkInstall(stale.needingRepair == [.pi], "and a launch repairs it")
     _ = home.install([.pi])
-    checkInstall(home.read(file) == PiExtension.source, "repaired")
+    checkInstall(home.read(file) == PiExtension.file.source, "repaired")
 
     let removed = home.installer.uninstall([.pi], bundledScript: script)
     checkInstall(removed.status(of: .pi)?.state == .notInstalled, "removed")
