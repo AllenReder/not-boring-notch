@@ -57,8 +57,10 @@ private struct AgentHookRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
+                AgentMark(kind: kind)
+                    .frame(width: 22, height: 22)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(name)
+                    Text(kind.displayName)
                     Text(stateText)
                         .font(.caption)
                         .foregroundStyle(state == .modified ? .orange : .secondary)
@@ -116,14 +118,8 @@ private struct AgentHookRow: View {
         }
     }
 
-    private var name: LocalizedStringKey {
-        switch agent {
-        case .claudeCode: "Claude Code"
-        case .codex: "Codex"
-        case .pi: "Pi"
-        case .opencode: "OpenCode"
-        }
-    }
+    /// The same agent, as the notch knows it: the two share their raw values.
+    private var kind: AgentKind { AgentKind(rawValue: agent.rawValue)! }
 
     private var stateText: LocalizedStringKey {
         switch state {

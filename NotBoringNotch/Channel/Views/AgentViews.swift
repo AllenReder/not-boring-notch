@@ -48,9 +48,9 @@ extension AgentKind {
     var markTint: Color? {
         switch self {
         case .claudeCode: return Color(red: 0xD9 / 255, green: 0x77 / 255, blue: 0x57 / 255)
-        case .codex: return .white
+        case .codex: return .primary
         case .pi: return nil
-        case .opencode: return .white
+        case .opencode: return .primary
         }
     }
 }
