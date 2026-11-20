@@ -2,7 +2,7 @@
 //  AgentSession.swift
 //  NotBoringNotch
 //
-//  What the notch knows about one Claude Code, Codex or pi session: where it runs, what it is doing,
+//  What the notch knows about one Claude Code, Codex, pi or OpenCode session: where it runs, what it is doing,
 //  and since when. Plain values; the rules that change them live in `AgentReducer`.
 //
 //  The shape follows Lookout's `AgentSession` (MIT, LookoutCore/AgentSession.swift), narrowed to
@@ -15,12 +15,14 @@ enum AgentKind: String, Codable, CaseIterable {
     case claudeCode = "claude-code"
     case codex
     case pi
+    case opencode
 
     var displayName: String {
         switch self {
         case .claudeCode: return "Claude Code"
         case .codex: return "Codex"
         case .pi: return "Pi"
+        case .opencode: return "OpenCode"
         }
     }
 }
@@ -46,6 +48,9 @@ enum AgentHost: Equatable {
     case t3Code(threadID: String, environmentID: String?)
     /// Anything else: a terminal, an editor. `bundleID` is the app that holds it.
     case app(bundleID: String?, termProgram: String?, tmuxPane: String?)
+
+    /// Where a session runs when nobody has said.
+    static let unknown = AgentHost.app(bundleID: nil, termProgram: nil, tmuxPane: nil)
 }
 
 /// The agent and its own session id. Not the T3 thread: an agent started from inside a thread (a
@@ -110,6 +115,10 @@ struct AgentSession: Equatable {
     var updatedAt: Date
     /// Sub-agents seen working. They never change the phase of their parent.
     var subagents: Set<String>
+    /// The turn ended while a sub-agent was still going, so the end was held back and the turn
+    /// goes on. A prompt that follows, as OpenCode sends when the sub-agent reports back, is
+    /// that turn's continuation and does not restart its clock.
+    var turnEndHeld = false
     /// The sub-agent whose permission request or question the session is waiting on, so that its
     /// carrying on can end the wait.
     var waitingSubagent: String?

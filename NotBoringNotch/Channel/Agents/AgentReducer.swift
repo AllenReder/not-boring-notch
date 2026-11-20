@@ -29,7 +29,7 @@ enum AgentReducer {
         -> (session: AgentSession?, effects: [AgentEffect])
     {
         var s = session ?? AgentSession(key: envelope.key, agent: envelope.agent, sessionID: envelope.sessionID,
-                                        host: envelope.host, cwd: envelope.cwd, process: nil, phase: .idle,
+                                        host: envelope.host ?? .unknown, cwd: envelope.cwd, process: nil, phase: .idle,
                                         turnStartedAt: nil, updatedAt: now, subagents: [], waitingSubagent: nil,
                                         threadTitle: nil, lastTurn: nil)
         let before = s.phase
@@ -78,7 +78,10 @@ enum AgentReducer {
 
         case .promptSubmitted:
             s.subagents = []
-            s.turnStartedAt = now
+            // OpenCode starts another execution of the session when a background sub-agent
+            // reports back. The turn the user is waiting on began with the first.
+            if !s.turnEndHeld { s.turnStartedAt = now }
+            s.turnEndHeld = false
             work(nil)
             calm()
 
@@ -115,7 +118,10 @@ enum AgentReducer {
         case let .turnEnded(summary, failed):
             // A turn that failed is over, whatever else is running. Otherwise the turn is not over
             // while a sub-agent is still going.
-            guard failed || s.subagents.isEmpty else { break }
+            guard failed || s.subagents.isEmpty else {
+                s.turnEndHeld = true
+                break
+            }
             let duration = s.turnStartedAt.map { now.timeIntervalSince($0) } ?? 0
             // A stray end, from an idle session, leaves the last turn as it was.
             let lastTurn = before == .idle ? s.lastTurn : (failed ? .failed : .finished)
@@ -148,6 +154,7 @@ enum AgentReducer {
         s.lastTurn = nil
         s.phase = .idle
         s.turnStartedAt = nil
+        s.turnEndHeld = false
         s.subagents = []
         s.waitingSubagent = nil
     }
@@ -157,7 +164,7 @@ private extension AgentSession {
     /// Takes in what the event says about where and who the session is.
     mutating func observe(_ envelope: AgentEnvelope, now: Date) {
         updatedAt = now
-        host = envelope.host
+        if let host = envelope.host { self.host = host }
         if let cwd = envelope.cwd { self.cwd = cwd }
         if let pid = envelope.pid, pid != process?.pid {
             process = AgentProcess(pid: pid, startedAt: nil)

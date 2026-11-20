@@ -59,7 +59,8 @@ struct AgentStore: Equatable {
         }
     }
 
-    /// Takes away sessions whose process has gone, and settles working ones that have gone quiet.
+    /// Takes away sessions whose process has gone, settles working ones that have gone quiet, and
+    /// takes away idle ones that have gone quiet and have no process to ask about.
     ///
     /// `alive` answers for the pids in `asked`: it maps each process that still exists to when it
     /// started; an asked pid that is absent has exited, and one that started at a different time
@@ -78,6 +79,17 @@ struct AgentStore: Equatable {
                 effects.append(.calmed(key))
                 continue
             }
+
+            // Idle, silent for as long, and with no process to watch: nothing will ever say that
+            // this session is over, as with OpenCode's shared service, which hosts the sessions of
+            // many terminals and so cannot name a process. It leaves quietly, and comes back with
+            // the next thing it says.
+            if session.process == nil, session.phase == .idle,
+               now.timeIntervalSince(session.updatedAt) >= AgentReducer.staleAfter {
+                sessions[key] = nil
+                effects.append(.calmed(key))
+                continue
+            }
             sessions[key] = session
 
             // Working, silent for a quarter of an hour, and nothing says the process is still
@@ -87,6 +99,7 @@ struct AgentStore: Equatable {
                now.timeIntervalSince(session.updatedAt) >= AgentReducer.staleAfter {
                 session.phase = .idle
                 session.turnStartedAt = nil
+                session.turnEndHeld = false
                 session.subagents = []
                 sessions[key] = session
                 effects.append(.calmed(key))

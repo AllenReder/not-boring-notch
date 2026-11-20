@@ -390,7 +390,7 @@ struct ChannelServerTestsRunner {
     static func testTheAgentRoute() {
         let received = ServerStateRecorder()
         guard let (server, port) = startedServer({ envelope in
-            received.record("\(envelope.agent.rawValue) \(envelope.sessionID) \(envelope.event) \(envelope.host) pid=\(envelope.pid.map(String.init) ?? "-")")
+            received.record("\(envelope.agent.rawValue) \(envelope.sessionID) \(envelope.event) \(envelope.host.map { "\($0)" } ?? "no host") pid=\(envelope.pid.map(String.init) ?? "-")")
         }) else { return }
         let path = "/v2/agents/claude-code/events"
 
@@ -402,6 +402,10 @@ struct ChannelServerTestsRunner {
         (status, json) = request("POST", "/v2/agents/codex/events", port: port,
                                  body: #"{"hook_event_name":"Stop","session_id":"c1","last_assistant_message":"done"}"#)
         checkServer(status == 202, "so is Codex's, got \(status) \(json)")
+
+        (status, json) = request("POST", "/v2/agents/opencode/events", port: port,
+                                 body: #"{"hook_event_name":"session.execution.started","session_id":"o1"}"#)
+        checkServer(status == 202 && json["status"] == "accepted", "and OpenCode's, got \(status) \(json)")
 
         (status, json) = request("POST", path, port: port, body: #"{"hook_event_name":"PreCompact","session_id":"s1"}"#)
         checkServer(status == 202 && json["status"] == "ignored", "a hook the table does not know is not an error, got \(status) \(json)")
@@ -434,10 +438,11 @@ struct ChannelServerTestsRunner {
                                       port: port)
         checkServer(noLength.contains(" 411 "), "a hook with no length, got \(noLength)")
 
-        let events = received.wait(until: { $0.count >= 2 })
+        let events = received.wait(until: { $0.count >= 3 })
         checkServer(events == [
             "claude-code s1 promptSubmitted t3Code(threadID: \"th-1\", environmentID: Optional(\"env-1\")) pid=321",
-            "codex c1 turnEnded(summary: Optional(\"done\"), failed: false) app(bundleID: nil, termProgram: nil, tmuxPane: nil) pid=-",
+            "codex c1 turnEnded(summary: Optional(\"done\"), failed: false) no host pid=-",
+            "opencode o1 promptSubmitted no host pid=-",
         ], "exactly the well-formed, authorised hooks reach the notch, got \(events)")
         server.stop()
     }

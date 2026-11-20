@@ -35,7 +35,9 @@ struct AgentEnvelope: Equatable {
     let subagentID: String?
     let event: AgentEvent
     let cwd: String?
-    let host: AgentHost
+    /// Nil when the poster said nothing about where it runs (no T3 thread, no app, no terminal):
+    /// a session already known keeps the host it has.
+    let host: AgentHost?
     let pid: Int32?
 
     var key: AgentSessionKey {

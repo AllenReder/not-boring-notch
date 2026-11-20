@@ -114,6 +114,13 @@ struct AgentReducerTestsRunner {
         testReplayingACodexTurn()
         testReplayingAPiTurn()
         testReplayingAPiTurnThatWaitsForApproval()
+        testReplayingAnOpenCodeServer()
+        testAnOpenCodeSubAgentTaskIsOneBanner()
+        testAnOpenCodeInterruptEndsAnApprovalNobodyAnswered()
+        testOpenCodeFormsThatAreNotQuestionsAreIgnored()
+        testASubAgentOfOpenCodeAsksForApproval()
+        testAPostWithNoPlaceKeepsTheHostTheSessionHas()
+        testAPromptAfterAHeldTurnEndContinuesTheTurn()
         testHowAPiTurnEnds()
         testAPiPromptThatIsNotAConfirmIsAQuestion()
         testHooksTheTableDoesNotKnowAreIgnored()
@@ -144,14 +151,15 @@ struct AgentReducerTestsRunner {
         testSweepRemovesWhatHasExited()
         testASweepJudgesOnlyThePidsItAskedAbout()
         testSweepSettlesAWorkingSessionThatWentQuiet()
+        testSweepRemovesAnIdleSessionThatHasNoProcessAndWentQuiet()
         print("✅ AgentReducerTests: all passed")
     }
 
     // MARK: Replaying real turns
 
-    static func fixture(_ name: String) -> [Data] {
+    static func fixture(_ name: String, in folder: String = "agents") -> [Data] {
         let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-            .appendingPathComponent("Fixtures/agents/\(name)")
+            .appendingPathComponent("Fixtures/\(folder)/\(name)")
         let text = try! String(contentsOf: url, encoding: .utf8)
         return text.split(separator: "\n").map { Data($0.utf8) }
     }
@@ -226,6 +234,182 @@ struct AgentReducerTestsRunner {
         checkAgents(rig.send("UserPromptSubmit"), ["ignored"], "pi does not speak Claude's names")
     }
 
+    // MARK: OpenCode
+
+    /// What the plugin posted while real OpenCode 2.3.2 ran (Tests/Fixtures/opencode/serve-posted.jsonl;
+    /// Tests/OpenCodePluginTests.swift keeps it what the plugin really posts for the capture). One
+    /// line per post: the event, whose it is (`root`, or the sub-agent under it), the root session's
+    /// phase after it, and what the app is asked to do.
+    static func replayOpenCode(_ posts: [Data], after seconds: TimeInterval = 2) -> [String] {
+        var rig = agentsRig(.opencode)
+        var lines: [String] = []
+        for post in posts {
+            rig.now.addTimeInterval(seconds)
+            let json = try! JSONSerialization.jsonObject(with: post) as! [String: Any]
+            let envelope = try! AgentAdapter.envelope(agent: .opencode, payload: post, headers: [:])!
+            let effects = agentsDescribe(rig.store.apply(envelope, now: rig.now))
+            let whose = envelope.subagentID == nil ? "root" : "child"
+            lines.append("\(json["hook_event_name"]!) \(whose) -> \(rig.phase(envelope.sessionID)) \(effects)")
+        }
+        return lines
+    }
+
+    static func testReplayingAnOpenCodeServer() {
+        let lines = replayOpenCode(fixture("serve-posted.jsonl", in: "opencode"))
+        let expected = [
+            // A turn that reads a file.
+            "session.execution.started root -> working [\"calmed\"]",
+            "tool.execute.before root -> working:read []",
+            "tool.execute.after root -> working []",
+            "session.execution.succeeded root -> idle [\"finished(hello,ok,6s)\"]",
+            // A shell command that asks for approval, and is allowed.
+            "session.execution.started root -> working [\"calmed\"]",
+            "tool.execute.before root -> working:shell []",
+            "permission.asked root -> waiting:approval:shell [\"needs(approval:shell)\"]",
+            "permission.replied root -> working [\"calmed\"]",
+            "tool.execute.after root -> working []",
+            "session.execution.succeeded root -> idle [\"finished(nbn-perm-test,ok,10s)\"]",
+            // The question tool: the wait begins with the tool, and the form is the same wait.
+            "session.execution.started root -> working [\"calmed\"]",
+            "tool.execute.before root -> waiting:question [\"needs(question)\"]",
+            "form.created root -> waiting:question []",
+            "tool.execute.after root -> working [\"calmed\"]",
+            "form.replied root -> working []",
+            "session.execution.succeeded root -> idle [\"finished(Option B,ok,10s)\"]",
+            // A background sub-agent: the root's turn ends first, and again when the child reports.
+            "session.execution.started root -> working [\"calmed\"]",
+            "tool.execute.before root -> working:subagent []",
+            "tool.execute.after root -> working []",
+            "session.created child -> working []",
+            "session.execution.started child -> working []",
+            "tool.execute.before child -> working []",
+            "tool.execute.after child -> working []",
+            "session.execution.succeeded root -> working []",
+            "session.execution.succeeded child -> working []",
+            "session.execution.started root -> working [\"calmed\"]",
+            "session.execution.succeeded root -> idle [\"finished(The explore agent reported that README.md contains one line: \\\"hello\\\".,ok,20s)\"]",
+            // Escape while the approval waits: nothing answers it.
+            "session.execution.started root -> working [\"calmed\"]",
+            "tool.execute.before root -> working:shell []",
+            "permission.asked root -> waiting:approval:shell [\"needs(approval:shell)\"]",
+            "tool.execute.after root -> working [\"calmed\"]",
+            "session.execution.interrupted root -> idle [\"calmed\"]",
+            // A session whose model does not exist.
+            "session.created root -> idle []",
+            "session.execution.started root -> working [\"calmed\"]",
+            "session.execution.failed root -> idle [\"finished(Model unavailable: magpie/no-such-model-xyz,failed,2s)\"]",
+            // Two directories, two sessions running at once.
+            "session.execution.started root -> working [\"calmed\"]",
+            "session.execution.started root -> working [\"calmed\"]",
+            "session.execution.succeeded root -> idle [\"finished(two,ok,4s)\"]",
+            "session.execution.succeeded root -> idle [\"finished(one,ok,4s)\"]",
+            "session.deleted root -> gone [\"calmed\"]",
+        ]
+        checkAgents(lines.count, expected.count, "one line per post")
+        for (index, line) in lines.enumerated() {
+            checkAgents(line, expected[index], "post \(index)")
+        }
+    }
+
+    /// The sub-agent task is one turn to the user: one banner, when the answer comes back, and
+    /// timed from the first prompt.
+    static func testAnOpenCodeSubAgentTaskIsOneBanner() {
+        let lines = replayOpenCode(fixture("serve-posted.jsonl", in: "opencode"))
+        let task = lines[16...26]
+        checkAgents(task.filter { $0.contains("finished(") }.count, 1, "one banner for the whole task")
+        checkAgents(task.last?.hasSuffix(",ok,20s)\"]") == true, "at the end, timed from the prompt: \(task.last ?? "")")
+        checkAgents(task[23], "session.execution.succeeded root -> working []", "the root's first end is not the task's")
+        checkAgents(task[24], "session.execution.succeeded child -> working []", "nor is the sub-agent's")
+
+        var rig = agentsRig(.opencode)
+        rig.send("session.execution.started")
+        rig.send("session.created", ["agent_id": "child-1"])
+        rig.send("session.created", ["agent_id": "child-2"])
+        rig.send("session.execution.succeeded", ["last_assistant_message": "Launched both."])
+        checkAgents(rig.send("session.execution.failed", ["agent_id": "child-1", "error": "boom"]), [],
+                    "a sub-agent that fails ends only itself")
+        checkAgents(rig.send("session.execution.interrupted", ["agent_id": "child-2"]), [],
+                    "and one that is interrupted")
+        checkAgents(rig.store.sessions.values.first?.subagents.isEmpty, true, "both are done")
+        rig.send("session.execution.started", after: 20)
+        checkAgents(rig.send("session.execution.succeeded", after: 3, ["last_assistant_message": "Both reported."]),
+                    ["finished(Both reported.,ok,28s)"], "and the root's next end is the banner")
+    }
+
+    static func testAnOpenCodeInterruptEndsAnApprovalNobodyAnswered() {
+        var rig = agentsRig(.opencode)
+        rig.send("session.execution.started")
+        rig.send("permission.asked", ["tool_name": "shell"])
+        checkAgents(rig.phase(), "waiting:approval:shell")
+        checkAgents(rig.send("session.execution.interrupted"), ["calmed"], "the notification is taken back")
+        checkAgents(rig.phase(), "idle", "and the session is free")
+    }
+
+    static func testOpenCodeFormsThatAreNotQuestionsAreIgnored() {
+        var rig = agentsRig(.opencode)
+        rig.send("session.execution.started")
+        checkAgents(rig.send("form.created"), ["ignored"], "a form that is not a question is not the user's turn")
+        checkAgents(rig.phase(), "working")
+        checkAgents(rig.send("form.created", ["form_kind": "question"]), ["needs(question)"], "a question is")
+        checkAgents(rig.send("form.cancelled"), ["calmed"], "and cancelling it ends the wait")
+    }
+
+    static func testASubAgentOfOpenCodeAsksForApproval() {
+        var rig = agentsRig(.opencode)
+        rig.send("session.execution.started")
+        rig.send("session.created", ["agent_id": "child"])
+        checkAgents(rig.send("permission.asked", ["agent_id": "child", "tool_name": "shell"]), ["needs(approval:shell)"],
+                    "the user is needed whoever asked")
+        checkAgents(rig.send("permission.replied", ["agent_id": "child"]), ["calmed"], "and the child carrying on ends the wait")
+        checkAgents(rig.phase(), "working")
+    }
+
+    /// OpenCode's shared service posts no host at all. It must not erase the one Unit 2's TUI
+    /// companion attached, or the T3 thread a session was found in.
+    static func testAPostWithNoPlaceKeepsTheHostTheSessionHas() {
+        var rig = agentsRig(.opencode, headers: ["X-Agent-T3-Thread": "th-1", "X-Agent-T3-Environment": "env-1"])
+        rig.send("session.execution.started")
+        rig.headers = [:]
+        rig.send("tool.execute.before", ["tool_name": "read"])
+        let key = AgentSessionKey(agent: .opencode, sessionID: "s1")
+        checkAgents(rig.store.sessions[key]?.host, .t3Code(threadID: "th-1", environmentID: "env-1"), "the host stays")
+        checkAgents(rig.store.sessions[key]?.t3ThreadID, "th-1", "and so does the thread")
+
+        var first = agentsRig(.opencode)
+        first.send("session.execution.started")
+        checkAgents(first.store.sessions[key]?.host, AgentHost.unknown, "a session never told where it runs is nowhere in particular")
+
+        var pid = agentsRig(.opencode, headers: ["X-Agent-Pid": "100"])
+        pid.send("session.execution.started")
+        pid.headers = [:]
+        pid.send("tool.execute.before", ["tool_name": "read"])
+        checkAgents(pid.store.pids, [100], "nor does a post without a pid forget the process")
+    }
+
+    static func testAPromptAfterAHeldTurnEndContinuesTheTurn() {
+        var rig = agentsRig(.opencode)
+        rig.send("session.execution.started")
+        rig.send("session.created", ["agent_id": "child"])
+        rig.send("session.execution.succeeded", after: 10)
+        rig.send("session.execution.succeeded", after: 10, ["agent_id": "child"])
+        checkAgents(rig.send("session.execution.started", after: 1), ["calmed"])
+        checkAgents(rig.send("session.execution.succeeded", after: 2, ["last_assistant_message": "Done."]),
+                    ["finished(Done.,ok,24s)"], "the user has waited since the first prompt")
+
+        var again = agentsRig(.opencode)
+        again.send("session.execution.started")
+        again.send("session.execution.succeeded", after: 10)
+        again.send("session.execution.started", after: 100)
+        checkAgents(again.send("session.execution.succeeded", after: 2), ["finished(-,ok,2s)"],
+                    "but a prompt after a turn that ended is a new turn")
+
+        var steering = agentsRig(.opencode)
+        steering.send("session.execution.started")
+        steering.send("session.execution.started", after: 30)
+        checkAgents(steering.send("session.execution.succeeded", after: 2), ["finished(-,ok,2s)"],
+                    "and a prompt in the middle of a turn restarts it, as for the other agents")
+    }
+
     // MARK: The adapter
 
     static func testHooksTheTableDoesNotKnowAreIgnored() {
@@ -266,7 +450,7 @@ struct AgentReducerTestsRunner {
     }
 
     static func testHeadersSayWhereTheSessionRuns() {
-        func host(_ headers: [String: String]) -> AgentHost {
+        func host(_ headers: [String: String]) -> AgentHost? {
             try! AgentAdapter.envelope(agent: .claudeCode, payload: AgentsRig.payload("Stop", "s1", [:]),
                                        headers: headers)!.host
         }
@@ -276,9 +460,10 @@ struct AgentReducerTestsRunner {
                     "a T3 thread whose environment could not be read; header names are case-insensitive")
         checkAgents(host(["X-Agent-Host-Bundle": "com.mitchellh.ghostty", "X-Agent-Term-Program": "ghostty", "X-Agent-Tmux-Pane": "%3"]),
                     .app(bundleID: "com.mitchellh.ghostty", termProgram: "ghostty", tmuxPane: "%3"), "a terminal")
-        checkAgents(host(["X-Agent-T3-Thread": "", "X-Agent-Host-Bundle": ""]),
-                    .app(bundleID: nil, termProgram: nil, tmuxPane: nil), "empty values are absent values")
-        checkAgents(host([:]), .app(bundleID: nil, termProgram: nil, tmuxPane: nil), "no headers at all")
+        checkAgents(host(["X-Agent-T3-Thread": "", "X-Agent-Host-Bundle": ""]), nil, "empty values are absent values")
+        checkAgents(host(["X-Agent-Term-Program": "ghostty"]), .app(bundleID: nil, termProgram: "ghostty", tmuxPane: nil),
+                    "any one fact names a place")
+        checkAgents(host([:]), nil, "no headers at all name no place")
 
         func pid(_ value: String) -> Int32? {
             try! AgentAdapter.envelope(agent: .codex, payload: AgentsRig.payload("Stop", "s1", [:]),
@@ -813,5 +998,41 @@ struct AgentReducerTestsRunner {
         unknown.send("UserPromptSubmit")
         checkAgents(agentsDescribe(unknown.store.sweep(asked: unknown.store.pids, alive: nil, now: unknown.now.addingTimeInterval(quarterHour + 1))), ["calmed"],
                     "with liveness unknown, quiet alone settles it")
+    }
+
+    static func testSweepRemovesAnIdleSessionThatHasNoProcessAndWentQuiet() {
+        let quarterHour: TimeInterval = 15 * 60
+
+        var rig = agentsRig(.opencode)
+        rig.send("session.created")
+        rig.send("session.execution.started")
+        rig.send("session.execution.succeeded", ["last_assistant_message": "Done."])
+        checkAgents(rig.phase(), "idle")
+        let quiet = rig.now.addingTimeInterval(quarterHour - 5)
+        checkAgents(agentsDescribe(rig.store.sweep(asked: rig.store.pids, alive: [:], now: quiet)), [], "not yet")
+        checkAgents(rig.phase(), "idle")
+        checkAgents(agentsDescribe(rig.store.sweep(asked: rig.store.pids, alive: [:], now: rig.now.addingTimeInterval(quarterHour + 1))),
+                    ["calmed"], "idle for a quarter of an hour, and nothing to ask about: it is let go")
+        checkAgents(rig.phase(), "gone")
+        rig.send("session.execution.started", after: quarterHour + 60)
+        checkAgents(rig.phase(), "working", "and the next thing it says brings it back")
+
+        var working = agentsRig(.opencode)
+        working.send("session.execution.started")
+        checkAgents(agentsDescribe(working.store.sweep(asked: [], alive: nil, now: working.now.addingTimeInterval(quarterHour - 5))), [],
+                    "a working session is not idle")
+        checkAgents(working.phase(), "working")
+
+        var watched = agentsRig(.claudeCode, headers: ["X-Agent-Pid": "100"])
+        watched.send("SessionStart")
+        let started = Date(timeIntervalSince1970: 500)
+        _ = watched.store.sweep(asked: watched.store.pids, alive: [100: started], now: watched.now)
+        checkAgents(agentsDescribe(watched.store.sweep(asked: watched.store.pids, alive: [100: started],
+                                                        now: watched.now.addingTimeInterval(3 * quarterHour))), [],
+                    "an idle session whose process is there stays as long as it does")
+        checkAgents(watched.phase(), "idle")
+        checkAgents(agentsDescribe(watched.store.sweep(asked: watched.store.pids, alive: nil,
+                                                        now: watched.now.addingTimeInterval(3 * quarterHour))), [],
+                    "and when it cannot be told whether the process is there")
     }
 }

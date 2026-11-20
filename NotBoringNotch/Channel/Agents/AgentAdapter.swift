@@ -57,15 +57,17 @@ enum AgentAdapter {
         value("x-agent-pid", in: headers).flatMap { Int32($0) }.flatMap { $0 > 0 ? $0 : nil }
     }
 
-    /// The header contract with the hook script: where the session runs.
-    static func host(from headers: [String: String]) -> AgentHost {
+    /// The header contract with the hook script: where the session runs. Nil when the poster
+    /// named no place at all, as OpenCode's shared service does: it hosts sessions of many
+    /// terminals, and says nothing that would be true of them all.
+    static func host(from headers: [String: String]) -> AgentHost? {
         func value(_ name: String) -> String? { Self.value(name, in: headers) }
         if let thread = value("x-agent-t3-thread") {
             return .t3Code(threadID: thread, environmentID: value("x-agent-t3-environment"))
         }
-        return .app(bundleID: value("x-agent-host-bundle"),
-                    termProgram: value("x-agent-term-program"),
-                    tmuxPane: value("x-agent-tmux-pane"))
+        let (bundleID, termProgram, tmuxPane) = (value("x-agent-host-bundle"), value("x-agent-term-program"), value("x-agent-tmux-pane"))
+        guard bundleID != nil || termProgram != nil || tmuxPane != nil else { return nil }
+        return .app(bundleID: bundleID, termProgram: termProgram, tmuxPane: tmuxPane)
     }
 
     // MARK: - The tables
@@ -83,6 +85,7 @@ enum AgentAdapter {
         case .claudeCode: return claudeCode
         case .codex: return codex
         case .pi: return pi
+        case .opencode: return opencode
         }
     }
 
@@ -153,6 +156,31 @@ enum AgentAdapter {
             "session_shutdown": { _ in .sessionEnded },
         ])
 
+    /// OpenCode's own event names, as `OpenCodePlugin` forwards them. A sub-agent is a session of
+    /// its own: the plugin posts its events under its root's id, with `agent_id` set, and its end
+    /// is the sub-agent's, not the turn's. OpenCode asks for approval with `permission.asked`
+    /// (answered by `permission.replied`, or by nothing when the turn is interrupted), and for an
+    /// answer with a `question` tool, which opens a form.
+    private static let opencode = Dialect(
+        askUserTools: ["question"],
+        events: [
+            "session.created": { $0.isSubagent ? .subagentStarted : .sessionStarted },
+            "session.execution.started": { _ in .promptSubmitted },
+            "tool.execute.before": { .toolStarted(name: $0.toolName, asksUser: $0.asksUser) },
+            "tool.execute.after": { .toolFinished(name: $0.toolName) },
+            "permission.asked": { .permissionRequested(tool: $0.toolName, asksUser: $0.asksUser) },
+            "permission.replied": { _ in .toolFinished(name: nil) },
+            "form.created": { $0.string("form_kind") == "question" ? .needsAttention(.question) : nil },
+            "form.replied": { _ in .toolFinished(name: nil) },
+            "form.cancelled": { _ in .toolFinished(name: nil) },
+            "session.execution.succeeded": { $0.isSubagent ? .subagentStopped : .turnEnded(summary: $0.summary, failed: false) },
+            "session.execution.failed": { hook in
+                hook.isSubagent ? .subagentStopped : .turnEnded(summary: hook.string("error") ?? hook.summary, failed: true)
+            },
+            "session.execution.interrupted": { $0.isSubagent ? .subagentStopped : .interrupted },
+            "session.deleted": { $0.isSubagent ? .subagentStopped : .sessionEnded },
+        ])
+
     // MARK: - Reading a hook
 
     private struct Hook {
@@ -166,6 +194,9 @@ enum AgentAdapter {
         }
 
         var toolName: String? { string("tool_name") }
+
+        /// Set when the hook fired inside a sub-agent.
+        var isSubagent: Bool { string("agent_id") != nil }
 
         var asksUser: Bool { toolName.map(askUserTools.contains) ?? false }
 
