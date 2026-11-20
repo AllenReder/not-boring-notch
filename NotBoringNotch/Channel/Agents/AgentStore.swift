@@ -134,6 +134,13 @@ struct AgentStore: Equatable {
         }
     }
 
+    /// The one session per kind whose Inbox row holds the kind's mark, the one the closed notch's
+    /// mark flies to: the first of its kind in `ordered`, which is the topmost active one.
+    var markHolders: Set<AgentSessionKey> {
+        var seen: Set<AgentKind> = []
+        return Set(ordered.filter { seen.insert($0.agent).inserted }.map(\.key))
+    }
+
     var summary: AgentSummary {
         var summary = AgentSummary()
         var perKind: [AgentKind: Int] = [:]

@@ -140,6 +140,7 @@ struct AgentReducerTestsRunner {
         testThreadTitlesAreAskedForOnceAndAgainOnlyWhileInATurn()
         testTurnDurationIsMeasured()
         testTheSummaryCountsWhatIsActive()
+        testEachKindHasOneRowThatHoldsItsMark()
         testSweepRemovesWhatHasExited()
         testASweepJudgesOnlyThePidsItAskedAbout()
         testSweepSettlesAWorkingSessionThatWentQuiet()
@@ -709,6 +710,24 @@ struct AgentReducerTestsRunner {
         tie.agent = .pi
         tie.send("agent_start", session: "w")
         checkAgents(tie.store.summary.leadKind, .pi, "until one kind has more")
+    }
+
+    static func testEachKindHasOneRowThatHoldsItsMark() {
+        var rig = agentsRig()
+        rig.send("UserPromptSubmit", session: "old")
+        rig.send("UserPromptSubmit", session: "new")
+        rig.agent = .codex
+        rig.send("UserPromptSubmit", session: "cx")
+        func key(_ agent: AgentKind, _ session: String) -> AgentSessionKey {
+            AgentSessionKey(agent: agent, sessionID: session)
+        }
+        checkAgents(rig.store.markHolders, [key(.claudeCode, "new"), key(.codex, "cx")],
+                    "of two Claude sessions only the first in the Inbox holds the mark, and Codex has its own")
+
+        rig.agent = .claudeCode
+        rig.send("PermissionRequest", session: "old", ["tool_name": "Bash"])
+        checkAgents(rig.store.markHolders, [key(.claudeCode, "old"), key(.codex, "cx")],
+                    "the mark moves to the session that rose to the top")
     }
 
     static func testSweepRemovesWhatHasExited() {

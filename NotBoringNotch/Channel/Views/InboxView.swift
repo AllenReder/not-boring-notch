@@ -90,8 +90,9 @@ struct InboxView: View {
                     if !channel.agents.isEmpty {
                         sectionHeader("Agents")
                             .frame(height: Self.headerHeight)
+                        let markHolders = channel.agents.markHolders
                         ForEach(channel.agents.ordered, id: \.key.raw) { session in
-                            AgentRow(session: session) {
+                            AgentRow(session: session, holdsMark: markHolders.contains(session.key)) {
                                 channel.jump(to: session)
                                 if session.jumpTarget != nil { vm.close() }
                             }

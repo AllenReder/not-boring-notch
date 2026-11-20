@@ -76,6 +76,42 @@ struct AgentMark: View {
     }
 }
 
+// MARK: - Flying between the closed notch and the Inbox
+
+private struct AgentMarkNamespaceKey: EnvironmentKey {
+    static let defaultValue: Namespace.ID? = nil
+}
+
+extension EnvironmentValues {
+    /// Where the closed notch's marks and the Inbox's rows match up. Nil where nothing flies.
+    var agentMarkNamespace: Namespace.ID? {
+        get { self[AgentMarkNamespaceKey.self] }
+        set { self[AgentMarkNamespaceKey.self] = newValue }
+    }
+}
+
+private struct AgentMarkMatch: ViewModifier {
+    @Environment(\.agentMarkNamespace) private var namespace
+    let kind: AgentKind
+    let holds: Bool
+
+    func body(content: Content) -> some View {
+        if let namespace, holds {
+            content.matchedGeometryEffect(id: kind, in: namespace)
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    /// Makes this the mark `kind` flies from or to as the notch opens and closes. Only one view of
+    /// each side may hold a kind at a time, so a row that is not its kind's first passes `holds: false`.
+    func agentMarkMatch(_ kind: AgentKind, holds: Bool = true) -> some View {
+        modifier(AgentMarkMatch(kind: kind, holds: holds))
+    }
+}
+
 /// A mark with a dot on its corner for how the turn came out.
 struct AgentBadgedMark: View {
     let kind: AgentKind
@@ -141,7 +177,6 @@ struct AgentMarkStack: View {
 
     var body: some View {
         marks
-            .modifier(AgentBreathing(isActive: isBreathing && !isWaiting))
             .overlay(alignment: .bottomTrailing) {
                 if isWaiting { AgentBadgeDot(color: agentAttentionColor) }
             }
@@ -149,11 +184,13 @@ struct AgentMarkStack: View {
     }
 
     private var marks: some View {
-        ZStack(alignment: .leading) {
-            ForEach(Array(kinds.enumerated()), id: \.element) { index, kind in
+        HStack(spacing: Self.step - Self.markSize) {
+            ForEach(kinds, id: \.self) { kind in
+                // Each mark breathes inside its match, so the geometry the match reads is the layout frame.
                 AgentMark(kind: kind)
                     .frame(width: Self.markSize, height: Self.markSize)
-                    .offset(x: CGFloat(index) * Self.step)
+                    .modifier(AgentBreathing(isActive: isBreathing && !isWaiting))
+                    .agentMarkMatch(kind)
             }
         }
         .frame(width: Self.width(for: kinds.count), height: Self.markSize, alignment: .leading)
@@ -231,11 +268,12 @@ struct AgentMinimalView: View {
     var body: some View {
         if let kind = summary.leadKind {
             AgentMark(kind: kind)
+                .frame(width: AgentMarkStack.markSize, height: AgentMarkStack.markSize)
                 .modifier(AgentBreathing(isActive: summary.working > 0))
+                .agentMarkMatch(kind)
                 .overlay(alignment: .bottomTrailing) {
                     if count > 1 { countBadge }
                 }
-                .frame(width: AgentMarkStack.markSize, height: AgentMarkStack.markSize)
         }
     }
 
@@ -257,6 +295,8 @@ struct AgentMinimalView: View {
 /// An agent session in the Inbox: what the closed notch had room to summarise only as a count.
 struct AgentRow: View {
     let session: AgentSession
+    /// Whether the closed notch's mark of this kind flies to this row. One row per kind.
+    let holdsMark: Bool
     let onClick: () -> Void
 
     @State private var isHovering = false
@@ -265,6 +305,7 @@ struct AgentRow: View {
         HStack(alignment: .center, spacing: 10) {
             AgentMark(kind: session.agent)
                 .modifier(AgentBreathing(isActive: session.phase.isWorking))
+                .agentMarkMatch(session.agent, holds: holdsMark)
                 .overlay(alignment: .bottomTrailing) {
                     if let badge { AgentBadgeDot(color: badge.color) }
                 }

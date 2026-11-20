@@ -41,6 +41,7 @@ struct ContentView: View {
     @State private var haptics: Bool = false
 
     @Namespace var albumArtNamespace
+    @Namespace var agentMarkNamespace
 
     @Default(.useMusicVisualizer) var useMusicVisualizer
 
@@ -324,6 +325,7 @@ struct ContentView: View {
         .background(alignment: .top) { dragDetector }
         .preferredColorScheme(.dark)
         .environmentObject(vm)
+        .environment(\.agentMarkNamespace, agentMarkNamespace)
         .onChange(of: vm.anyDropZoneTargeting) { _, isTargeted in
             anyDropDebounceTask?.cancel()
 
