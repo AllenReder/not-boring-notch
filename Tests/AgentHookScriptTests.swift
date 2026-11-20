@@ -253,7 +253,8 @@ func testSendsHeadersAndBodyUnchanged() throws {
     let err = stderr.fileHandleForReading.readDataToEndOfFile()
     process.waitUntilExit()
 
-    checkHook(process.terminationStatus == 0, "exits 0")
+    let reason = process.terminationReason == .exit ? "exit" : "signal"
+    checkHook(process.terminationStatus == 0, "exits 0, got \(reason) \(process.terminationStatus)")
     checkHook(out.isEmpty && err.isEmpty, "prints nothing, got \(String(decoding: out + err, as: UTF8.self))")
 
     let requests = listener.waitForRequests(1)
