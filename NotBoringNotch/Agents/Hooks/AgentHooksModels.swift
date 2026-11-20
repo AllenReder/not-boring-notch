@@ -17,6 +17,7 @@ enum AgentHookTarget: String, Codable, CaseIterable, Sendable {
     case claudeCode = "claude-code"
     case codex
     case pi
+    case opencode
 }
 
 enum AgentHookState: String, Codable, Sendable {

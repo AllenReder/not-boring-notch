@@ -26,6 +26,7 @@ struct AgentPluginFile {
         switch target {
         case .claudeCode, .codex: return nil
         case .pi: return PiExtension.file
+        case .opencode: return OpenCodePlugin.file
         }
     }
 

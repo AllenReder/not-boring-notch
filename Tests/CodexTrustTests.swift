@@ -4,7 +4,7 @@
 //
 //  Standalone runner, discovered by scripts/run-tests.sh.
 //
-// SOURCES: NotBoringNotchXPCHelper/AgentHooks/CodexTrust.swift NotBoringNotchXPCHelper/AgentHooks/ChildProcess.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookEntries.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookInstaller.swift NotBoringNotchXPCHelper/AgentHooks/ConfigFile.swift NotBoringNotchXPCHelper/AgentHooks/JSONSurgeon.swift NotBoringNotchXPCHelper/AgentHooks/CodexHooksConfig.swift NotBoringNotchXPCHelper/AgentHooks/AgentHooksModels.swift NotBoringNotchXPCHelper/AgentHooks/PiExtension.swift NotBoringNotchXPCHelper/AgentHooks/AgentPluginFile.swift
+// SOURCES: NotBoringNotchXPCHelper/AgentHooks/CodexTrust.swift NotBoringNotchXPCHelper/AgentHooks/ChildProcess.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookEntries.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookInstaller.swift NotBoringNotchXPCHelper/AgentHooks/ConfigFile.swift NotBoringNotchXPCHelper/AgentHooks/JSONSurgeon.swift NotBoringNotchXPCHelper/AgentHooks/CodexHooksConfig.swift NotBoringNotchXPCHelper/AgentHooks/AgentHooksModels.swift NotBoringNotchXPCHelper/AgentHooks/PiExtension.swift NotBoringNotchXPCHelper/AgentHooks/OpenCodePlugin.swift NotBoringNotchXPCHelper/AgentHooks/AgentPluginFile.swift
 //
 //  Never runs the real `codex`. The exchange with `codex app-server` is checked against a fake
 //  executable that answers like it, and the choice of which hooks to trust is a pure function

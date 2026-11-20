@@ -4,7 +4,7 @@
 //
 //  Standalone runner, discovered by scripts/run-tests.sh.
 //
-// SOURCES: NotBoringNotchXPCHelper/NotBoringNotchXPCHelperProtocol.swift NotBoringNotchXPCHelper/NotBoringNotchXPCHelper.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookInstaller.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookEntries.swift NotBoringNotchXPCHelper/AgentHooks/ConfigFile.swift NotBoringNotchXPCHelper/AgentHooks/JSONSurgeon.swift NotBoringNotchXPCHelper/AgentHooks/CodexHooksConfig.swift NotBoringNotchXPCHelper/AgentHooks/AgentHooksModels.swift NotBoringNotchXPCHelper/AgentHooks/AgentProcess.swift NotBoringNotchXPCHelper/AgentHooks/CodexTrust.swift NotBoringNotch/Agents/Hooks/AgentHookScript.swift NotBoringNotchXPCHelper/AgentHooks/PiExtension.swift NotBoringNotchXPCHelper/AgentHooks/AgentPluginFile.swift NotBoringNotchXPCHelper/AgentHooks/T3ThreadTitles.swift NotBoringNotchXPCHelper/AgentHooks/ChildProcess.swift
+// SOURCES: NotBoringNotchXPCHelper/NotBoringNotchXPCHelperProtocol.swift NotBoringNotchXPCHelper/NotBoringNotchXPCHelper.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookInstaller.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookEntries.swift NotBoringNotchXPCHelper/AgentHooks/ConfigFile.swift NotBoringNotchXPCHelper/AgentHooks/JSONSurgeon.swift NotBoringNotchXPCHelper/AgentHooks/CodexHooksConfig.swift NotBoringNotchXPCHelper/AgentHooks/AgentHooksModels.swift NotBoringNotchXPCHelper/AgentHooks/AgentProcess.swift NotBoringNotchXPCHelper/AgentHooks/CodexTrust.swift NotBoringNotch/Agents/Hooks/AgentHookScript.swift NotBoringNotchXPCHelper/AgentHooks/PiExtension.swift NotBoringNotchXPCHelper/AgentHooks/OpenCodePlugin.swift NotBoringNotchXPCHelper/AgentHooks/AgentPluginFile.swift NotBoringNotchXPCHelper/AgentHooks/T3ThreadTitles.swift NotBoringNotchXPCHelper/AgentHooks/ChildProcess.swift
 //
 //  The helper's real class behind a real NSXPCConnection (an anonymous listener in this
 //  process), called through the protocol the app uses. What this proves is what a unit test of
@@ -87,21 +87,22 @@ enum AgentHooksXPCTests {
         // Hooks, end to end.
         let script = AgentHookScript.source
         var current = report(call { proxy, reply in proxy.agentHooksStatus(hookScript: script, with: reply) })
-        checkXPC(current.statuses.map(\.state) == [.notInstalled, .notInstalled, .notInstalled], "nothing installed to start with, got \(current)")
-        checkXPC(current.statuses.map(\.agent) == [.claudeCode, .codex, .pi], "one status per agent, in order")
+        checkXPC(current.statuses.map(\.state) == [.notInstalled, .notInstalled, .notInstalled, .notInstalled], "nothing installed to start with, got \(current)")
+        checkXPC(current.statuses.map(\.agent) == [.claudeCode, .codex, .pi, .opencode], "one status per agent, in order")
 
-        current = report(call { proxy, reply in proxy.installAgentHooks(["claude-code", "codex", "pi", "nonsense"], hookScript: script, with: reply) })
-        checkXPC(current.statuses.map(\.state) == [.installed, .installed, .installed], "installs all three and ignores a name it doesn't know, got \(current)")
+        current = report(call { proxy, reply in proxy.installAgentHooks(["claude-code", "codex", "pi", "opencode", "nonsense"], hookScript: script, with: reply) })
+        checkXPC(current.statuses.map(\.state) == [.installed, .installed, .installed, .installed], "installs all four and ignores a name it doesn't know, got \(current)")
         checkXPC(FileManager.default.fileExists(atPath: home.appendingPathComponent(".claude/settings.json").path), "and wrote into the helper's home")
         checkXPC(FileManager.default.fileExists(atPath: home.appendingPathComponent(".pi/agent/extensions/not-boring-notch.ts").path), "pi's extension too")
+        checkXPC(FileManager.default.fileExists(atPath: home.appendingPathComponent(".config/opencode/plugins/not-boring-notch.js").path), "and OpenCode's plugin")
 
         current = report(call { proxy, reply in proxy.agentHooksStatus(hookScript: script, with: reply) })
-        checkXPC(current.statuses.map(\.state) == [.installed, .installed, .installed], "status sees what was installed")
+        checkXPC(current.statuses.map(\.state) == [.installed, .installed, .installed, .installed], "status sees what was installed")
 
         let newer = script.replacingOccurrences(of: "version: \(AgentHookScript.version)", with: "version: \(AgentHookScript.version + 1)")
         current = report(call { proxy, reply in proxy.agentHooksStatus(hookScript: newer, with: reply) })
-        checkXPC(current.statuses.map(\.state) == [.outdated, .outdated, .installed],
-                 "a newer bundled script makes both hook agents outdated, and pi, which does not use it, stays, got \(current)")
+        checkXPC(current.statuses.map(\.state) == [.outdated, .outdated, .installed, .installed],
+                 "a newer bundled script makes both hook agents outdated, and pi and OpenCode, which do not use it, stay, got \(current)")
 
         let trust: Data = call { proxy, reply in proxy.trustCodexHooks(with: reply) }
         let trustReport = try JSONDecoder().decode(CodexTrustReport.self, from: trust)
@@ -111,8 +112,8 @@ enum AgentHooksXPCTests {
         checkXPC(current.statuses.map(\.state) == [.notInstalled], "uninstalls one agent, got \(current)")
         current = report(call { proxy, reply in proxy.uninstallAgentHooks(["claude-code"], hookScript: script, with: reply) })
         checkXPC(current.statuses.map(\.state) == [.notInstalled], "and then the other, got \(current)")
-        current = report(call { proxy, reply in proxy.uninstallAgentHooks(["pi"], hookScript: script, with: reply) })
-        checkXPC(current.statuses.map(\.state) == [.notInstalled], "and pi, got \(current)")
+        current = report(call { proxy, reply in proxy.uninstallAgentHooks(["pi", "opencode"], hookScript: script, with: reply) })
+        checkXPC(current.statuses.map(\.state) == [.notInstalled, .notInstalled], "and pi and OpenCode, got \(current)")
         checkXPC(!FileManager.default.fileExists(atPath: home.appendingPathComponent(".not-boring-notch/bin/notch-agent-hook").path), "and the script goes with it")
 
         print("✅ AgentHooksXPCTests passed")

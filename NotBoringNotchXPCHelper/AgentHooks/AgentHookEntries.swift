@@ -42,7 +42,7 @@ struct AgentHookSpec {
                     "SubagentStart", "SubagentStop", "Stop", "SessionEnd", "Interrupt",
                 ],
                 matcherEvents: [])
-        case .pi:
+        case .pi, .opencode:
             preconditionFailure("\(target.rawValue) has no hooks file: AgentHookInstaller gives it a plugin file instead")
         }
     }
@@ -51,7 +51,7 @@ struct AgentHookSpec {
         switch target {
         case .claudeCode: return home.appendingPathComponent(".claude/settings.json")
         case .codex: return home.appendingPathComponent(".codex/hooks.json")
-        case .pi: preconditionFailure("\(target.rawValue) has no hooks file")
+        case .pi, .opencode: preconditionFailure("\(target.rawValue) has no hooks file")
         }
     }
 }

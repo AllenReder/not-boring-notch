@@ -5,7 +5,7 @@
 //  Standalone runner, discovered by scripts/run-tests.sh, which compiles it against the
 //  sources declared below.
 //
-// SOURCES: NotBoringNotchXPCHelper/AgentHooks/AgentHookInstaller.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookEntries.swift NotBoringNotchXPCHelper/AgentHooks/ConfigFile.swift NotBoringNotchXPCHelper/AgentHooks/JSONSurgeon.swift NotBoringNotchXPCHelper/AgentHooks/CodexHooksConfig.swift NotBoringNotchXPCHelper/AgentHooks/AgentHooksModels.swift NotBoringNotch/Agents/Hooks/AgentHookScript.swift NotBoringNotchXPCHelper/AgentHooks/PiExtension.swift NotBoringNotchXPCHelper/AgentHooks/AgentPluginFile.swift
+// SOURCES: NotBoringNotchXPCHelper/AgentHooks/AgentHookInstaller.swift NotBoringNotchXPCHelper/AgentHooks/AgentHookEntries.swift NotBoringNotchXPCHelper/AgentHooks/ConfigFile.swift NotBoringNotchXPCHelper/AgentHooks/JSONSurgeon.swift NotBoringNotchXPCHelper/AgentHooks/CodexHooksConfig.swift NotBoringNotchXPCHelper/AgentHooks/AgentHooksModels.swift NotBoringNotch/Agents/Hooks/AgentHookScript.swift NotBoringNotchXPCHelper/AgentHooks/PiExtension.swift NotBoringNotchXPCHelper/AgentHooks/OpenCodePlugin.swift NotBoringNotchXPCHelper/AgentHooks/AgentPluginFile.swift
 //
 //  Every test runs against a temporary HOME. The files here belong to the user, so the claim
 //  that matters is about bytes: whatever the installer did not write, it did not change.
@@ -563,60 +563,88 @@ func testVersionMarkerParsing() {
     checkInstall(AgentHookInstaller.version(of: "#!/bin/sh\n# notch-agent-hook-version: x\n") == nil, "a garbled marker, no version")
 }
 
-// MARK: - pi
+// MARK: - Agents installed as a file: pi, OpenCode
 
-func testPiExtensionIsOneFileOfOurs() {
-    let home = InstallHome()
-    defer { home.cleanUp() }
-    let file = home.path(".pi/agent/extensions/not-boring-notch.ts")
-    let neighbour = home.path(".pi/agent/extensions/bark-notify.ts")
-    home.write("export default function () {}\n", to: neighbour)
+/// Each agent installed as a file of ours, with a plugin of the user's own beside it.
+let pluginTargets: [(target: AgentHookTarget, folder: String, ours: String)] = [
+    (.pi, ".pi/agent/extensions", "not-boring-notch.ts"),
+    (.opencode, ".config/opencode/plugins", "not-boring-notch.js"),
+]
 
-    checkInstall(home.installer.status(of: .pi, bundledScript: script).state == .notInstalled, "nothing there yet")
-    let report = home.install([.pi])
-    checkInstall(report.status(of: .pi)?.state == .installed, "installed, got \(String(describing: report.status(of: .pi)))")
-    checkInstall(home.read(file) == PiExtension.file.source, "the extension is written as bundled")
-    checkInstall(PiExtension.file.version(of: PiExtension.file.source) == PiExtension.file.version, "and carries its version")
-    checkInstall(!FileManager.default.fileExists(atPath: home.installer.scriptURL.path), "pi needs no hook script")
-    checkInstall(!FileManager.default.fileExists(atPath: home.path(".claude").path), "Claude Code was not touched")
+func testAPluginFileIsOneFileOfOurs() {
+    for (target, folder, name) in pluginTargets {
+        let plugin = AgentPluginFile.of(target)!
+        let home = InstallHome()
+        defer { home.cleanUp() }
+        let file = home.path("\(folder)/\(name)")
+        let neighbour = home.path("\(folder)/bark-notify.js")
+        home.write("export default function () {}\n", to: neighbour)
+        let others = AgentHookTarget.allCases.filter { $0 != target }
 
-    home.write(PiExtension.file.source + "// mine\n", to: file)
-    checkInstall(home.installer.status(of: .pi, bundledScript: script).state == .modified, "an edit is seen")
-    home.write(PiExtension.file.source.replacingOccurrences(of: "version: \(PiExtension.file.version)\n",
-                                                       with: "version: \(PiExtension.file.version - 1)\n"), to: file)
-    let stale = home.installer.report(bundledScript: script)
-    checkInstall(stale.status(of: .pi)?.state == .outdated, "an older version is seen")
-    checkInstall(stale.needingRepair == [.pi], "and a launch repairs it")
-    _ = home.install([.pi])
-    checkInstall(home.read(file) == PiExtension.file.source, "repaired")
+        checkInstall(home.installer.status(of: target, bundledScript: script).state == .notInstalled, "\(target): nothing there yet")
+        let report = home.install([target])
+        checkInstall(report.status(of: target)?.state == .installed, "\(target): installed, got \(String(describing: report.status(of: target)))")
+        checkInstall(plugin.path == "\(folder)/\(name)", "\(target): where the user's agent loads it from")
+        checkInstall(home.read(file) == plugin.source, "\(target): the file is written as bundled")
+        checkInstall(plugin.version(of: plugin.source) == plugin.version, "\(target): and carries its version")
+        checkInstall(home.read(file)?.hasPrefix(plugin.versionMarker) == true, "\(target): on its first line")
+        checkInstall(!FileManager.default.fileExists(atPath: home.installer.scriptURL.path), "\(target) needs no hook script")
+        checkInstall(!FileManager.default.fileExists(atPath: home.path(".claude").path), "Claude Code was not touched")
+        for other in others {
+            checkInstall(home.installer.status(of: other, bundledScript: script).state == .notInstalled, "\(target) installed does not install \(other)")
+        }
 
-    let removed = home.installer.uninstall([.pi], bundledScript: script)
-    checkInstall(removed.status(of: .pi)?.state == .notInstalled, "removed")
-    checkInstall(!FileManager.default.fileExists(atPath: file.path), "the file is gone")
-    checkInstall(home.read(neighbour) == "export default function () {}\n", "the user's own extension stays")
+        home.write(plugin.source + "// mine\n", to: file)
+        checkInstall(home.installer.status(of: target, bundledScript: script).state == .modified, "\(target): an edit is seen")
+        home.write(plugin.source.replacingOccurrences(of: "version: \(plugin.version)\n",
+                                                      with: "version: \(plugin.version - 1)\n"), to: file)
+        let stale = home.installer.report(bundledScript: script)
+        checkInstall(stale.status(of: target)?.state == .outdated, "\(target): an older version is seen")
+        checkInstall(stale.needingRepair == [target], "\(target): and a launch repairs it")
+        _ = home.install([target])
+        checkInstall(home.read(file) == plugin.source, "\(target): repaired")
+
+        let removed = home.installer.uninstall([target], bundledScript: script)
+        checkInstall(removed.status(of: target)?.state == .notInstalled, "\(target): removed")
+        checkInstall(!FileManager.default.fileExists(atPath: file.path), "\(target): the file is gone")
+        checkInstall(home.read(neighbour) == "export default function () {}\n", "\(target): the user's own plugin stays")
+    }
 }
 
-func testPiExtensionLeavesAFileThatIsNotOurs() {
-    let home = InstallHome()
-    defer { home.cleanUp() }
-    let file = home.path(".pi/agent/extensions/not-boring-notch.ts")
-    let theirs = "// my own notch bridge\nexport default function () {}\n"
-    home.write(theirs, to: file)
+func testAPluginFileLeavesAFileThatIsNotOurs() {
+    for (target, folder, name) in pluginTargets {
+        let home = InstallHome()
+        defer { home.cleanUp() }
+        let file = home.path("\(folder)/\(name)")
+        let theirs = "// my own notch bridge\nexport default function () {}\n"
+        home.write(theirs, to: file)
 
-    let status = home.installer.status(of: .pi, bundledScript: script)
-    checkInstall(status.state == .notInstalled && status.problem != nil, "not ours, and says so: \(status)")
-    let report = home.install([.pi])
-    checkInstall(report.status(of: .pi)?.problem != nil, "install refuses")
-    _ = home.installer.uninstall([.pi], bundledScript: script)
-    checkInstall(home.read(file) == theirs, "neither install nor uninstall touched it")
+        let status = home.installer.status(of: target, bundledScript: script)
+        checkInstall(status.state == .notInstalled && status.problem != nil, "\(target): not ours, and says so: \(status)")
+        let report = home.install([target])
+        checkInstall(report.status(of: target)?.problem != nil, "\(target): install refuses")
+        _ = home.installer.uninstall([target], bundledScript: script)
+        checkInstall(home.read(file) == theirs, "\(target): neither install nor uninstall touched it")
+    }
+}
+
+func testAPluginFileIsFoundByItsOwnMarkerOnly() {
+    // Each agent's marker is its own: pi's file is not mistaken for OpenCode's, nor the reverse.
+    let pi = AgentPluginFile.of(.pi)!
+    let opencode = AgentPluginFile.of(.opencode)!
+    checkInstall(opencode.version(of: pi.source) == nil, "pi's extension is not OpenCode's plugin")
+    checkInstall(pi.version(of: opencode.source) == nil, "nor the reverse")
+    checkInstall(AgentPluginFile.of(.claudeCode) == nil && AgentPluginFile.of(.codex) == nil,
+                 "the agents with a hooks file have no plugin file")
 }
 
 @main
 enum AgentHookInstallerTests {
     static func main() {
         testVersionMarkerParsing()
-        testPiExtensionIsOneFileOfOurs()
-        testPiExtensionLeavesAFileThatIsNotOurs()
+        testAPluginFileIsOneFileOfOurs()
+        testAPluginFileLeavesAFileThatIsNotOurs()
+        testAPluginFileIsFoundByItsOwnMarkerOnly()
         testInstallChangesOnlyOurEntriesAndUninstallRestoresTheBytes()
         testUninstallRestoresTheMeaningWhereBytesCannotBeKept()
         testCodexInstallAndUninstall()

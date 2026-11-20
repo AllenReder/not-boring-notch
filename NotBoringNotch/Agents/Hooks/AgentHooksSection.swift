@@ -2,7 +2,7 @@
 //  AgentHooksSection.swift
 //  NotBoringNotch
 //
-//  The settings section for the hooks that report Claude Code, Codex and pi sessions to the notch:
+//  The settings section for the hooks that report Claude Code, Codex, pi and OpenCode sessions to the notch:
 //  a row per agent with where its hooks stand and a switch that installs or removes them. It
 //  stands on its own, so any settings form can drop it in.
 //
@@ -121,6 +121,7 @@ private struct AgentHookRow: View {
         case .claudeCode: "Claude Code"
         case .codex: "Codex"
         case .pi: "Pi"
+        case .opencode: "OpenCode"
         }
     }
 
