@@ -48,7 +48,7 @@ struct SettingsView: View {
                 //     Label("Extensions", systemImage: "puzzlepiece.extension")
                 // }
                 NavigationLink(value: "Integrations") {
-                    Label("Integrations", systemImage: "bell.badge")
+                    Label("Notifications", systemImage: "bell.badge")
                 }
                 NavigationLink(value: "Shelf") {
                     Label("Shelf", systemImage: "books.vertical")

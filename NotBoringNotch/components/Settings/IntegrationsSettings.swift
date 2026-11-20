@@ -53,7 +53,7 @@ struct IntegrationsSettings: View {
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("Integrations")
+        .navigationTitle("Notifications")
     }
 
     // MARK: - Sections

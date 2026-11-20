@@ -3,7 +3,7 @@
 //  NotBoringNotch
 //
 //  The settings section for the hooks that report Claude Code, Codex and pi sessions to the notch:
-//  a row per agent with where its hooks stand and the button for what the user can do next. It
+//  a row per agent with where its hooks stand and a switch that installs or removes them. It
 //  stands on its own, so any settings form can drop it in.
 //
 
@@ -36,6 +36,23 @@ private struct AgentHookRow: View {
     private var status: AgentHookStatus? { controller.statuses[agent] }
     private var state: AgentHookState { status?.state ?? .notInstalled }
     private var isBusy: Bool { controller.busy.contains(agent) }
+    /// What the user just asked for, shown until the helper answers, so the switch doesn't flip
+    /// back while the install or removal runs.
+    @State private var requested: Bool?
+
+    /// On while our hooks are in the agent's config and the agent runs them. Codex's own hooks
+    /// switch being off reads as off, and turning it on installs, which turns that switch back on.
+    private var isOn: Binding<Bool> {
+        Binding {
+            requested ?? (state != .notInstalled && state != .turnedOff)
+        } set: { on in
+            requested = on
+            Task {
+                if on { await controller.install(agent) } else { await controller.uninstall(agent) }
+                requested = nil
+            }
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -55,21 +72,14 @@ private struct AgentHookRow: View {
                 }
                 Spacer(minLength: 20)
                 if isBusy { ProgressView().controlSize(.small) }
-                if state == .turnedOff {
-                    Button("Turn On") { Task { await controller.install(agent) } }
-                        .disabled(isBusy)
-                }
                 if state == .modified || state == .outdated {
                     Button("Repair") { Task { await controller.install(agent) } }
                         .disabled(isBusy)
                 }
-                if state == .notInstalled {
-                    Button("Install") { Task { await controller.install(agent) } }
-                        .disabled(isBusy)
-                } else {
-                    Button("Remove") { Task { await controller.uninstall(agent) } }
-                        .disabled(isBusy)
-                }
+                Toggle("", isOn: isOn)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .disabled(isBusy)
             }
 
             if agent == .codex, state != .notInstalled {
