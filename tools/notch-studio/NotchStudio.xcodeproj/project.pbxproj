@@ -1,0 +1,383 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000101 /* LaunchAtLogin in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000201 /* LaunchAtLogin */; };
+		A10000000000000000000102 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000202 /* KeyboardShortcuts */; };
+		A10000000000000000000103 /* Collections in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000203 /* Collections */; };
+		A10000000000000000000104 /* Defaults in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000204 /* Defaults */; };
+		A10000000000000000000105 /* SwiftUIIntrospect in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000205 /* SwiftUIIntrospect */; };
+		A10000000000000000000106 /* SkyLightWindow in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000206 /* SkyLightWindow */; };
+		A10000000000000000000107 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000207 /* Lottie */; };
+		A10000000000000000000108 /* AsyncXPCConnection in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000208 /* AsyncXPCConnection */; };
+		A10000000000000000000109 /* MacroVisionKit in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000209 /* MacroVisionKit */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A10000000000000000000010 /* NotchStudio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NotchStudio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A10000000000000000000030 /* Exceptions for "NotBoringNotch" folder in "NotchStudio" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				NotBoringNotch.entitlements,
+				NotBoringNotchApp.swift,
+				metal/visualizer.metal,
+			);
+			target = A10000000000000000000050 /* NotchStudio */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A10000000000000000000020 /* NotBoringNotch */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A10000000000000000000030 /* Exceptions for "NotBoringNotch" folder in "NotchStudio" target */, ); explicitFileTypes = {}; explicitFolders = (); name = NotBoringNotch; path = ../../NotBoringNotch; sourceTree = "<group>"; };
+		A10000000000000000000021 /* Studio */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Studio; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A10000000000000000000060 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000101 /* LaunchAtLogin in Frameworks */,
+				A10000000000000000000102 /* KeyboardShortcuts in Frameworks */,
+				A10000000000000000000103 /* Collections in Frameworks */,
+				A10000000000000000000104 /* Defaults in Frameworks */,
+				A10000000000000000000105 /* SwiftUIIntrospect in Frameworks */,
+				A10000000000000000000106 /* SkyLightWindow in Frameworks */,
+				A10000000000000000000107 /* Lottie in Frameworks */,
+				A10000000000000000000108 /* AsyncXPCConnection in Frameworks */,
+				A10000000000000000000109 /* MacroVisionKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A10000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000021 /* Studio */,
+				A10000000000000000000020 /* NotBoringNotch */,
+				A10000000000000000000002 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A10000000000000000000002 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000010 /* NotchStudio.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A10000000000000000000050 /* NotchStudio */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000080 /* Build configuration list for PBXNativeTarget "NotchStudio" */;
+			buildPhases = (
+				A10000000000000000000061 /* Sources */,
+				A10000000000000000000060 /* Frameworks */,
+				A10000000000000000000062 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A10000000000000000000020 /* NotBoringNotch */,
+				A10000000000000000000021 /* Studio */,
+			);
+			name = NotchStudio;
+			packageProductDependencies = (
+				A10000000000000000000201 /* LaunchAtLogin */,
+				A10000000000000000000202 /* KeyboardShortcuts */,
+				A10000000000000000000203 /* Collections */,
+				A10000000000000000000204 /* Defaults */,
+				A10000000000000000000205 /* SwiftUIIntrospect */,
+				A10000000000000000000206 /* SkyLightWindow */,
+				A10000000000000000000207 /* Lottie */,
+				A10000000000000000000208 /* AsyncXPCConnection */,
+				A10000000000000000000209 /* MacroVisionKit */,
+			);
+			productName = NotchStudio;
+			productReference = A10000000000000000000010 /* NotchStudio.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A10000000000000000000040 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+			};
+			buildConfigurationList = A10000000000000000000070 /* Build configuration list for PBXProject "NotchStudio" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A10000000000000000000001;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A10000000000000000000301 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */,
+				A10000000000000000000302 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
+				A10000000000000000000303 /* XCRemoteSwiftPackageReference "swift-collections" */,
+				A10000000000000000000304 /* XCRemoteSwiftPackageReference "Defaults" */,
+				A10000000000000000000305 /* XCRemoteSwiftPackageReference "swiftui-introspect" */,
+				A10000000000000000000306 /* XCRemoteSwiftPackageReference "SkyLightWindow" */,
+				A10000000000000000000307 /* XCRemoteSwiftPackageReference "lottie-spm" */,
+				A10000000000000000000308 /* XCRemoteSwiftPackageReference "AsyncXPCConnection" */,
+				A10000000000000000000309 /* XCRemoteSwiftPackageReference "MacroVisionKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A10000000000000000000002 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A10000000000000000000050 /* NotchStudio */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A10000000000000000000062 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A10000000000000000000061 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A10000000000000000000071 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A10000000000000000000072 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		A10000000000000000000081 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Notch Studio";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "Notch Studio stages the calendar view.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.allenreder.notchstudio;
+				PRODUCT_NAME = NotchStudio;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG NOTCH_STUDIO $(inherited)";
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+				SYSTEM_FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SDKROOT)/System/Library/PrivateFrameworks",
+				);
+			};
+			name = Debug;
+		};
+		A10000000000000000000082 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Notch Studio";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "Notch Studio stages the calendar view.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.allenreder.notchstudio;
+				PRODUCT_NAME = NotchStudio;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "NOTCH_STUDIO $(inherited)";
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+				SYSTEM_FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SDKROOT)/System/Library/PrivateFrameworks",
+				);
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A10000000000000000000070 /* Build configuration list for PBXProject "NotchStudio" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000000071 /* Debug */,
+				A10000000000000000000072 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000000000000000000080 /* Build configuration list for PBXNativeTarget "NotchStudio" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000000081 /* Debug */,
+				A10000000000000000000082 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A10000000000000000000301 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sindresorhus/LaunchAtLogin-Modern";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.0;
+			};
+		};
+		A10000000000000000000302 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sindresorhus/KeyboardShortcuts";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.2.4;
+			};
+		};
+		A10000000000000000000303 /* XCRemoteSwiftPackageReference "swift-collections" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-collections.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.2;
+			};
+		};
+		A10000000000000000000304 /* XCRemoteSwiftPackageReference "Defaults" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sindresorhus/Defaults";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.2;
+			};
+		};
+		A10000000000000000000305 /* XCRemoteSwiftPackageReference "swiftui-introspect" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/siteline/swiftui-introspect";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.0;
+			};
+		};
+		A10000000000000000000306 /* XCRemoteSwiftPackageReference "SkyLightWindow" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Lakr233/SkyLightWindow";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
+		A10000000000000000000307 /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-spm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.5.2;
+			};
+		};
+		A10000000000000000000308 /* XCRemoteSwiftPackageReference "AsyncXPCConnection" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ChimeHQ/AsyncXPCConnection";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.0;
+			};
+		};
+		A10000000000000000000309 /* XCRemoteSwiftPackageReference "MacroVisionKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/TheBoredTeam/MacroVisionKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.2.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A10000000000000000000201 /* LaunchAtLogin */ = {isa = XCSwiftPackageProductDependency; package = A10000000000000000000301 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Modern" */; productName = LaunchAtLogin; };
+		A10000000000000000000202 /* KeyboardShortcuts */ = {isa = XCSwiftPackageProductDependency; package = A10000000000000000000302 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */; productName = KeyboardShortcuts; };
+		A10000000000000000000203 /* Collections */ = {isa = XCSwiftPackageProductDependency; package = A10000000000000000000303 /* XCRemoteSwiftPackageReference "swift-collections" */; productName = Collections; };
+		A10000000000000000000204 /* Defaults */ = {isa = XCSwiftPackageProductDependency; package = A10000000000000000000304 /* XCRemoteSwiftPackageReference "Defaults" */; productName = Defaults; };
+		A10000000000000000000205 /* SwiftUIIntrospect */ = {isa = XCSwiftPackageProductDependency; package = A10000000000000000000305 /* XCRemoteSwiftPackageReference "swiftui-introspect" */; productName = SwiftUIIntrospect; };
+		A10000000000000000000206 /* SkyLightWindow */ = {isa = XCSwiftPackageProductDependency; package = A10000000000000000000306 /* XCRemoteSwiftPackageReference "SkyLightWindow" */; productName = SkyLightWindow; };
+		A10000000000000000000207 /* Lottie */ = {isa = XCSwiftPackageProductDependency; package = A10000000000000000000307 /* XCRemoteSwiftPackageReference "lottie-spm" */; productName = Lottie; };
+		A10000000000000000000208 /* AsyncXPCConnection */ = {isa = XCSwiftPackageProductDependency; package = A10000000000000000000308 /* XCRemoteSwiftPackageReference "AsyncXPCConnection" */; productName = AsyncXPCConnection; };
+		A10000000000000000000209 /* MacroVisionKit */ = {isa = XCSwiftPackageProductDependency; package = A10000000000000000000309 /* XCRemoteSwiftPackageReference "MacroVisionKit" */; productName = MacroVisionKit; };
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = A10000000000000000000040 /* Project object */;
+}
