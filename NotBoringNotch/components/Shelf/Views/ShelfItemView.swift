@@ -62,6 +62,10 @@ struct ShelfItemView: View {
                     .padding(.horizontal, 5)
             }
         }
+        // DraggableClickView selects on mouse-down, but the same click still reaches
+        // ShelfView's panel-wide clear-selection tap gesture. A tap gesture here wins
+        // over that ancestor gesture, so a click on an item never clears the selection.
+        .onTapGesture {}
         .onChange(of: viewModel.isDropTargeted) { _, targeted in
             vm.dragDetectorTargeting = targeted
             // Debounce drop target state changes
