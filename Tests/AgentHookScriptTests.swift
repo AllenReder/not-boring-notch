@@ -404,7 +404,9 @@ func testIsFast() throws {
     for _ in 0 ..< 10 { times.append(sandbox.runScript("codex", input: payload).elapsed) }
     times.sort()
     print("   bridge median \(Int(times[times.count / 2] * 1000)) ms, max \(Int(times.last! * 1000)) ms")
-    checkHook(times[times.count / 2] < 0.15, "the bridge is a few tens of milliseconds, median \(times[times.count / 2])")
+    // Shared CI runners put the median anywhere from 70 to 250 ms; 400 ms still catches a bridge
+    // that has slowed toward the script's one-second curl limit.
+    checkHook(times[times.count / 2] < 0.4, "the bridge stays well inside its one-second limit, median \(times[times.count / 2])")
 }
 
 @main
