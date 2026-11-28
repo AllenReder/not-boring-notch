@@ -254,68 +254,28 @@ struct NotBoringNotchOfficialIconView: View {
         )
 
         let continuousRim = makeFullRimPath(size: size, notchW: notchW, notchH: notchH, topR: topR, botR: botR)
-        // The ring lights the glass edge: each point takes the ring's colour in its direction from
-        // the ring's centre, and dims with distance from it, never quite to black.
-        let ringCenter = UnitPoint(x: 0.5, y: 0.66)
-        let ringColors: [Color] = [
-            Color(red: 1.0, green: 0.22, blue: 0.45),
-            Color(red: 1.0, green: 0.55, blue: 0.12),
-            Color(red: 1.0, green: 0.88, blue: 0.10),
-            Color(red: 0.15, green: 0.90, blue: 0.50),
-            Color(red: 0.10, green: 0.75, blue: 1.00),
-            Color(red: 0.65, green: 0.30, blue: 0.95),
-            Color(red: 1.0, green: 0.22, blue: 0.45)
-        ]
-        let ringTint = AngularGradient(colors: ringColors, center: ringCenter)
-        let ringLight = RadialGradient(stops: [
+        // The glass edge is lit white, brightest low on the notch and dimming upward, never quite to
+        // black.
+        let edgeLight = RadialGradient(stops: [
             .init(color: .white, location: 0.0),
             .init(color: .white.opacity(0.85), location: 0.45),
             .init(color: .white.opacity(0.16), location: 1.0),
-        ], center: ringCenter, startRadius: size * 0.22, endRadius: size * 0.70)
+        ], center: UnitPoint(x: 0.5, y: 0.66), startRadius: size * 0.22, endRadius: size * 0.70)
             .frame(width: size, height: size)
+
+        // Three agent sessions in the notch, each a status mark and a line of text in its agent's
+        // colour: Claude, Codex, Gemini.
+        let rows: [(color: Color, y: CGFloat)] = [
+            (Color(red: 0.851, green: 0.467, blue: 0.341), 0.15),
+            (Color(red: 0.92, green: 0.92, blue: 0.94), 0.235),
+            (Color(red: 0.278, green: 0.588, blue: 0.89), 0.32),
+        ]
 
         ZStack(alignment: .top) {
             ZStack {
                 // Lifted a little from black so the notch reads darker than the ground around it.
                 Color(red: 0.09, green: 0.09, blue: 0.125)
 
-                // Rainbow Donut Ring
-                Circle()
-                    .strokeBorder(
-                        AngularGradient(
-                            colors: [
-                                Color(red: 1.0, green: 0.22, blue: 0.45),
-                                Color(red: 1.0, green: 0.55, blue: 0.12),
-                                Color(red: 1.0, green: 0.88, blue: 0.10),
-                                Color(red: 0.15, green: 0.90, blue: 0.50),
-                                Color(red: 0.10, green: 0.75, blue: 1.00),
-                                Color(red: 0.65, green: 0.30, blue: 0.95),
-                                Color(red: 1.0, green: 0.22, blue: 0.45)
-                            ],
-                            center: .center
-                        ),
-                        lineWidth: size * 0.095
-                    )
-                    .frame(width: size * 0.56, height: size * 0.56)
-                    .offset(y: size * 0.16)
-                    .shadow(color: Color.purple.opacity(0.60), radius: 28, y: 8)
-                    .shadow(color: Color.blue.opacity(0.50), radius: 38, y: 6)
-
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                Color(red: 0.35, green: 0.55, blue: 0.95).opacity(0.55),
-                                Color(red: 0.20, green: 0.15, blue: 0.45).opacity(0.30),
-                                Color.clear
-                            ],
-                            center: .center,
-                            startRadius: 5,
-                            endRadius: size * 0.22
-                        )
-                    )
-                    .frame(width: size * 0.46, height: size * 0.46)
-                    .offset(y: size * 0.16)
 
                 RadialGradient(
                     colors: [.clear, Color.black.opacity(0.75)],
@@ -352,17 +312,17 @@ struct NotBoringNotchOfficialIconView: View {
                 .clipShape(notchPath)
 
                 continuousRim
-                    .stroke(ringTint, style: StrokeStyle(lineWidth: size * 0.012, lineCap: .round, lineJoin: .round))
+                    .stroke(Color.white, style: StrokeStyle(lineWidth: size * 0.012, lineCap: .round, lineJoin: .round))
                     .opacity(0.85)
-                    .mask(alignment: .top) { ringLight }
+                    .mask(alignment: .top) { edgeLight }
 
                 // Glass thickness: a faint light band just inside the edge, all the way up.
                 makeMasterNotchPath(size: size, notchW: notchW, notchH: notchH, topR: topR, botR: botR)
-                    .stroke(ringTint, lineWidth: size * 0.05)
+                    .stroke(Color.white, lineWidth: size * 0.05)
                     .opacity(0.16)
                     .blur(radius: 5)
                     .clipShape(notchPath)
-                    .mask(alignment: .top) { ringLight }
+                    .mask(alignment: .top) { edgeLight }
 
                 continuousRim
                     .stroke(
@@ -396,8 +356,89 @@ struct NotBoringNotchOfficialIconView: View {
                     ),
                     lineWidth: size * 0.008
                 )
+
+            ZStack(alignment: .topLeading) {
+                // Each row lights the edge beside it: the text from the right, the mark from the left.
+                ForEach(rows.indices, id: \.self) { i in
+                    EdgeGlow(rim: continuousRim, notch: notchPath, color: rows[i].color.opacity(0.5),
+                             source: UnitPoint(x: 0.75, y: rows[i].y), size: size)
+                }
+                ForEach(rows.indices, id: \.self) { i in
+                    EdgeGlow(rim: continuousRim, notch: notchPath, color: rows[i].color,
+                             source: UnitPoint(x: 0.25, y: rows[i].y), size: size)
+                }
+                ForEach(rows.indices, id: \.self) { i in
+                    GlowingBar(from: 0.25, to: 0.34, y: rows[i].y, color: rows[i].color, size: size)
+                    GlowingBar(from: 0.40, to: 0.75, y: rows[i].y, color: rows[i].color.opacity(0.5), size: size)
+                }
+                ForEach([(0.46, 0.755, 0.15), (0.625, 0.65, 0.0625)], id: \.0) { x, y, r in
+                    makeSparklePath(center: CGPoint(x: size * x, y: size * y), radius: size * r)
+                        .fill(Color.white)
+                        .frame(width: size, height: size)
+                        .shadow(color: .white.opacity(0.35), radius: 12)
+                }
+            }
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: squircleR, style: .continuous))
         }
         .frame(width: size, height: size)
+    }
+}
+
+/// A four-pointed sparkle: four concave sides meeting at the centre's axes.
+func makeSparklePath(center c: CGPoint, radius r: CGFloat) -> Path {
+    var p = Path()
+    p.move(to: CGPoint(x: c.x, y: c.y - r))
+    p.addQuadCurve(to: CGPoint(x: c.x + r, y: c.y), control: c)
+    p.addQuadCurve(to: CGPoint(x: c.x, y: c.y + r), control: c)
+    p.addQuadCurve(to: CGPoint(x: c.x - r, y: c.y), control: c)
+    p.addQuadCurve(to: CGPoint(x: c.x, y: c.y - r), control: c)
+    return p
+}
+
+/// A round-capped bar from `from` to `to` (fractions of the icon) that glows in its own colour.
+struct GlowingBar: View {
+    let from: CGFloat, to: CGFloat, y: CGFloat
+    let color: Color
+    let size: CGFloat
+
+    var body: some View {
+        Path { p in
+            p.move(to: CGPoint(x: size * from, y: size * y))
+            p.addLine(to: CGPoint(x: size * to, y: size * y))
+        }
+        .stroke(color, style: StrokeStyle(lineWidth: size * 0.032, lineCap: .round))
+        .shadow(color: color.opacity(0.75), radius: 7)
+        .frame(width: size, height: size)
+    }
+}
+
+/// Light from `source` on the notch's glass edge: the edge line itself and a soft band inside it,
+/// both fading with distance from the source.
+struct EdgeGlow: View {
+    let rim: Path, notch: Path
+    let color: Color
+    let source: UnitPoint
+    let size: CGFloat
+
+    var body: some View {
+        let falloff = RadialGradient(stops: [
+            .init(color: .white, location: 0),
+            .init(color: .white.opacity(0.55), location: 0.45),
+            .init(color: .clear, location: 1),
+        ], center: source, startRadius: 0, endRadius: size * 0.26)
+            .frame(width: size, height: size)
+
+        ZStack(alignment: .topLeading) {
+            rim.stroke(color, style: StrokeStyle(lineWidth: size * 0.013, lineCap: .round, lineJoin: .round))
+                .frame(width: size, height: size)
+            rim.stroke(color, style: StrokeStyle(lineWidth: size * 0.05, lineCap: .round, lineJoin: .round))
+                .frame(width: size, height: size)
+                .blur(radius: 6)
+                .opacity(0.35)
+                .clipShape(notch)
+        }
+        .mask(alignment: .topLeading) { falloff }
     }
 }
 
