@@ -28,7 +28,7 @@
 
 刘海伴侣该有的功能它也都有：显示正在播放的音乐和歌词，在置物架上暂存文件，用 `⌥Space` 打开应用，显示日历和系统状态，替换音量与亮度 HUD。在 macOS 26 上，它用流体玻璃（Liquid Glass）折射渲染。
 
-https://github.com/user-attachments/assets/dc28cce2-7d5e-4bd8-ba9d-8574a08e7f2c
+https://github.com/user-attachments/assets/2ed7038c-dcd9-4a2f-9b1f-964ce1bd3965
 
 ---
 

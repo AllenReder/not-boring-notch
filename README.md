@@ -28,7 +28,7 @@
 
 The notch does the rest of what a notch companion does. It shows what's playing with lyrics, holds files on a shelf, opens apps with `⌥Space`, and shows your calendar and system stats. It also replaces the volume and brightness HUDs. On macOS 26 it draws with Liquid Glass refraction.
 
-https://github.com/user-attachments/assets/dc28cce2-7d5e-4bd8-ba9d-8574a08e7f2c
+https://github.com/user-attachments/assets/2ed7038c-dcd9-4a2f-9b1f-964ce1bd3965
 
 ---
 
