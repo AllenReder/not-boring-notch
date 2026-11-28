@@ -72,32 +72,23 @@ func makeMasterNotchPath(size: CGFloat, notchW: CGFloat, notchH: CGFloat, topR: 
     return p
 }
 
-func makeContinuousRimPath(size: CGFloat, notchW: CGFloat, notchH: CGFloat, botR: CGFloat) -> Path {
+/// The notch outline without its top edge: left shoulder, down, across the bottom, up, right shoulder.
+func makeFullRimPath(size: CGFloat, notchW: CGFloat, notchH: CGFloat, topR: CGFloat, botR: CGFloat) -> Path {
     var p = Path()
-    let midX = size / 2
-    let notchLeft = midX - notchW / 2
-    let notchRight = midX + notchW / 2
-    let topY: CGFloat = 0
+    let notchLeft = size / 2 - notchW / 2, notchRight = size / 2 + notchW / 2
     let k = botR * 0.5522847
-
-    p.move(to: CGPoint(x: notchLeft, y: topY + notchH * 0.45))
-    p.addLine(to: CGPoint(x: notchLeft, y: topY + notchH - botR))
-
-    p.addCurve(
-        to: CGPoint(x: notchLeft + botR, y: topY + notchH),
-        control1: CGPoint(x: notchLeft, y: topY + notchH - botR + k),
-        control2: CGPoint(x: notchLeft + botR - k, y: topY + notchH)
-    )
-
-    p.addLine(to: CGPoint(x: notchRight - botR, y: topY + notchH))
-
-    p.addCurve(
-        to: CGPoint(x: notchRight, y: topY + notchH - botR),
-        control1: CGPoint(x: notchRight - botR + k, y: topY + notchH),
-        control2: CGPoint(x: notchRight, y: topY + notchH - botR + k)
-    )
-
-    p.addLine(to: CGPoint(x: notchRight, y: topY + notchH * 0.45))
+    p.move(to: CGPoint(x: notchLeft - topR, y: 0))
+    p.addCurve(to: CGPoint(x: notchLeft, y: topR),
+               control1: CGPoint(x: notchLeft - topR * 0.45, y: 0), control2: CGPoint(x: notchLeft, y: topR * 0.45))
+    p.addLine(to: CGPoint(x: notchLeft, y: notchH - botR))
+    p.addCurve(to: CGPoint(x: notchLeft + botR, y: notchH),
+               control1: CGPoint(x: notchLeft, y: notchH - botR + k), control2: CGPoint(x: notchLeft + botR - k, y: notchH))
+    p.addLine(to: CGPoint(x: notchRight - botR, y: notchH))
+    p.addCurve(to: CGPoint(x: notchRight, y: notchH - botR),
+               control1: CGPoint(x: notchRight - botR + k, y: notchH), control2: CGPoint(x: notchRight, y: notchH - botR + k))
+    p.addLine(to: CGPoint(x: notchRight, y: topR))
+    p.addCurve(to: CGPoint(x: notchRight + topR, y: 0),
+               control1: CGPoint(x: notchRight, y: topR * 0.45), control2: CGPoint(x: notchRight + topR * 0.45, y: 0))
     return p
 }
 
@@ -262,16 +253,31 @@ struct NotBoringNotchOfficialIconView: View {
             botR: botR
         )
 
-        let continuousRim = makeContinuousRimPath(
-            size: size,
-            notchW: notchW,
-            notchH: notchH,
-            botR: botR
-        )
+        let continuousRim = makeFullRimPath(size: size, notchW: notchW, notchH: notchH, topR: topR, botR: botR)
+        // The ring lights the glass edge: each point takes the ring's colour in its direction from
+        // the ring's centre, and dims with distance from it, never quite to black.
+        let ringCenter = UnitPoint(x: 0.5, y: 0.66)
+        let ringColors: [Color] = [
+            Color(red: 1.0, green: 0.22, blue: 0.45),
+            Color(red: 1.0, green: 0.55, blue: 0.12),
+            Color(red: 1.0, green: 0.88, blue: 0.10),
+            Color(red: 0.15, green: 0.90, blue: 0.50),
+            Color(red: 0.10, green: 0.75, blue: 1.00),
+            Color(red: 0.65, green: 0.30, blue: 0.95),
+            Color(red: 1.0, green: 0.22, blue: 0.45)
+        ]
+        let ringTint = AngularGradient(colors: ringColors, center: ringCenter)
+        let ringLight = RadialGradient(stops: [
+            .init(color: .white, location: 0.0),
+            .init(color: .white.opacity(0.85), location: 0.45),
+            .init(color: .white.opacity(0.16), location: 1.0),
+        ], center: ringCenter, startRadius: size * 0.22, endRadius: size * 0.70)
+            .frame(width: size, height: size)
 
         ZStack(alignment: .top) {
             ZStack {
-                Color(red: 0.04, green: 0.04, blue: 0.06)
+                // Lifted a little from black so the notch reads darker than the ground around it.
+                Color(red: 0.09, green: 0.09, blue: 0.125)
 
                 // Rainbow Donut Ring
                 Circle()
@@ -346,22 +352,17 @@ struct NotBoringNotchOfficialIconView: View {
                 .clipShape(notchPath)
 
                 continuousRim
-                    .stroke(
-                        LinearGradient(
-                            stops: [
-                                .init(color: Color.clear, location: 0.0),
-                                .init(color: Color.clear, location: 0.15),
-                                .init(color: Color(red: 0.3, green: 0.8, blue: 1.0).opacity(0.75), location: 0.30),
-                                .init(color: Color.white.opacity(0.95), location: 0.50),
-                                .init(color: Color(red: 1.0, green: 0.7, blue: 0.3).opacity(0.85), location: 0.70),
-                                .init(color: Color.clear, location: 0.85),
-                                .init(color: Color.clear, location: 1.0)
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ),
-                        style: StrokeStyle(lineWidth: size * 0.012, lineCap: .round, lineJoin: .round)
-                    )
+                    .stroke(ringTint, style: StrokeStyle(lineWidth: size * 0.012, lineCap: .round, lineJoin: .round))
+                    .opacity(0.85)
+                    .mask(alignment: .top) { ringLight }
+
+                // Glass thickness: a faint light band just inside the edge, all the way up.
+                makeMasterNotchPath(size: size, notchW: notchW, notchH: notchH, topR: topR, botR: botR)
+                    .stroke(ringTint, lineWidth: size * 0.05)
+                    .opacity(0.16)
+                    .blur(radius: 5)
+                    .clipShape(notchPath)
+                    .mask(alignment: .top) { ringLight }
 
                 continuousRim
                     .stroke(
