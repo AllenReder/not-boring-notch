@@ -7,7 +7,7 @@
 </h1>
 
 <p align="center">
-  <em>为 macOS 深度重构、性能强劲的刘海伴侣。</em><br>
+  <em>把你的编程 Agent、音乐和文件，都放进 MacBook 刘海。</em><br>
   <strong>基于 <a href="https://github.com/TheBoredTeam/boring.notch">TheBoredTeam/boring.notch</a> 分叉 · 由 Allen Reder 维护</strong>
 </p>
 
@@ -24,16 +24,17 @@
 
 ---
 
-欢迎使用 **Not Boring Notch**，让你的 MacBook 刘海不再单调，成为屏幕上的视觉焦点与效率利器！
+**Not Boring Notch** 把你的编程 Agent 显示在 MacBook 刘海上。Claude Code、Codex、pi 和 OpenCode 会把每个会话的状态报给它。不用切换窗口，就能看到哪些 Agent 在干活、哪些在等你；点一下就回到那个会话。
 
-告别沉闷静态的黑色小方块：在 Not Boring Notch 的加持下，刘海化身为你专属的灵动控制中心——拥有原生 **macOS 26 流体玻璃（Liquid Glass）光学折射**渲染、应用启动器、实时系统监控、动感频谱可视化、实时歌词、日历深度集成、支持 AirDrop 的文件暂存置物架、灵动岛风格系统 HUD，以及全新的自定义提醒通道。
+刘海伴侣该有的功能它也都有：显示正在播放的音乐和歌词，在置物架上暂存文件，用 `⌥Space` 打开应用，显示日历和系统状态，替换音量与亮度 HUD。在 macOS 26 上，它用流体玻璃（Liquid Glass）折射渲染。
 
-https://github.com/user-attachments/assets/f4418383-67a6-435b-9e4e-647e4fac87a6
+https://github.com/user-attachments/assets/dc28cce2-7d5e-4bd8-ba9d-8574a08e7f2c
 
 ---
 
 ## ✨ 核心特性
 
+- 🤖 **刘海上的 Agent (Agents on the Notch)**：Claude Code、Codex、pi 和 OpenCode 的会话显示在闭合刘海上。需要你批准或回答时变成琥珀色，一轮结束时弹出横幅，点一下即可回到会话所在的 T3 Code 线程或终端。每个 Agent 在设置里一个开关即可启用。
 - 💎 **流体玻璃质感 (Liquid Glass Surface)**：基于原生 CoreAnimation GPU 光线折射着色器开发，拥有亚像素级色散效果与零模糊的高保真清澈透亮感。
 - 🚀 **应用启动器 (App Launcher)**：`⌥Space` 唤起应用搜索，敲几个字母、回车即可打开。五种名称匹配规则、中文名可按读音搜索、系统级最近使用，以及独立的设置面板。
 - 📊 **系统监控标签页 (Stats Tab)**：可选开启的 CPU、GPU、内存、温度、网络、磁盘六张实时卡片，每张都带历史走势迷你图。仅在标签页可见时采样，且全程在 App Sandbox 内。
@@ -42,9 +43,26 @@ https://github.com/user-attachments/assets/f4418383-67a6-435b-9e4e-647e4fac87a6
 - 📆 **日历与系统提醒 (Calendar & Reminders)**：完整的月历视图、即将开始的日程，以及可直接在刘海内勾选完成的系统待办事项。
 - 📚 **文件置物架 (File Shelf)**：拖拽文件至刘海即可临时置顶暂存，支持空格快速预览（Quick Look），可随时拖出至任意位置或通过 AirDrop 快速分享。
 - 🎚️ **灵动系统 HUD (System HUDs)**：用精致的灵动岛动画全面替代音量、亮度、键盘背光与电池充放电提示。
-- 🪞 **刘海镜子与萌趣表情 (Notch Mirror & Face)**：一键唤起前置摄像头快速整理仪容，闭合状态下还有生动有趣的灵巧表情动画。
 
 ---
+
+### 🤖 刘海上的 Agent (Agents on the Notch)
+
+让 Agent 在后台跑，哪个需要你，刘海会告诉你。
+
+- **在跑、在等、还是做完了。** 每个会话的标记显示在闭合刘海上，Agent 工作时它会呼吸。需要你批准或回答的会话变成琥珀色，并排到最前面。
+- **一轮结束时弹出横幅。** 横幅显示 Agent 回复的第一行。很短的一轮不弹横幅，直接进收件箱。
+- **点一下回去。** 点击会话或它的通知，会打开它所在的 T3 Code 线程，或把承载它的终端或应用切到前台。
+- **子 Agent 算作所属会话的一部分。** 一个跑了多个子 Agent 的任务结束时只弹一条横幅，而不是每个子 Agent 一条。
+- **音乐和 Agent 共用刘海。** 两者同时显示时，指针从左边移入打开音乐，从右边移入打开收件箱。
+
+**启用方法。** 打开 **设置 → 通知**，为你用的每个 Agent 打开开关。应用会在该 Agent 的配置里写入自己的条目，启动时如果条目被改动会自动修复，关掉开关时会删除它们。配置里的其他内容保持原样。
+
+**在 Agent 里运行的是什么。** Claude Code 和 Codex 用的是一个 hook，它运行一段简短的 shell 脚本；pi 用的是扩展，OpenCode 用的是插件。它们都只把 Agent 的事件发给 `127.0.0.1` 上的应用，不会有数据离开你的 Mac。那段 shell 脚本从不输出、总是以 0 退出，约一秒后放弃，所以不会拖住 Agent 的任何一轮。
+
+从终端启动的 OpenCode 会话暂时无法追溯到它的终端：点击不会跳转，静默 15 分钟后会从列表中移除。
+
+<!-- TODO(图片)：闭合刘海上两个在跑的 Agent 和一个琥珀色等待中的 Agent，旁边是展开的收件箱 -->
 
 ### 🚀 应用启动器 (Launcher)
 

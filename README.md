@@ -7,7 +7,7 @@
 </h1>
 
 <p align="center">
-  <em>A heavily modernized, high-performance notch companion for macOS.</em><br>
+  <em>Your coding agents, your music, and your files, on the MacBook notch.</em><br>
   <strong>Forked from <a href="https://github.com/TheBoredTeam/boring.notch">TheBoredTeam/boring.notch</a> · Maintained by Allen Reder</strong>
 </p>
 
@@ -24,16 +24,17 @@
 
 ---
 
-Say hello to **Not Boring Notch**, the coolest way to make your MacBook’s notch the star of the show! 
+**Not Boring Notch** shows your coding agents on the MacBook notch. Claude Code, Codex, pi, and OpenCode report each session to it. You can see which agents are working and which are waiting for you without switching windows, and one click takes you back to the session.
 
-Forget about static black cutouts: with Not Boring Notch, your notch transforms into a dynamic control center with native **macOS 26 Liquid Glass optical refraction**, an app launcher, live system stats, vibrant visualizers, lyrics, calendar integration, a handy file shelf with AirDrop support, sleek system HUD replacements, and upcoming intelligent workflow companions.
+The notch does the rest of what a notch companion does. It shows what's playing with lyrics, holds files on a shelf, opens apps with `⌥Space`, and shows your calendar and system stats. It also replaces the volume and brightness HUDs. On macOS 26 it draws with Liquid Glass refraction.
 
-https://github.com/user-attachments/assets/f4418383-67a6-435b-9e4e-647e4fac87a6
+https://github.com/user-attachments/assets/dc28cce2-7d5e-4bd8-ba9d-8574a08e7f2c
 
 ---
 
 ## ✨ Features
 
+- 🤖 **Agents on the Notch**: Claude Code, Codex, pi, and OpenCode sessions on the closed notch. A session turns amber when it needs your approval or an answer, a banner slides out when a turn ends, and one click takes you back to the session's T3 Code thread or terminal. Turn each agent on with one switch in Settings.
 - 💎 **Liquid Glass Surface**: Native CoreAnimation GPU ray-bending refraction, sub-pixel chromatic dispersion, and crystal-clear transparency with zero blur.
 - 🚀 **App Launcher**: Summon an app search with `⌥Space`, type a few letters, press Return to open. Five-way name matching, readings of non-Latin names, system recents, and a settings pane of its own.
 - 📊 **Stats Tab**: Optional live cards for CPU, GPU, memory, temperature, network, and disk, each with a sparkline of recent history. Sampled only while the tab is visible, inside the App Sandbox.
@@ -42,9 +43,26 @@ https://github.com/user-attachments/assets/f4418383-67a6-435b-9e4e-647e4fac87a6
 - 📆 **Calendar & Reminders**: Full monthly calendar view, upcoming events, and checkable system Reminders built directly into the notch.
 - 📚 **File Shelf**: Drop files into the notch to stage them, quick-look previews, and drag them out anywhere or share via AirDrop.
 - 🎚️ **System HUDs**: Sleek Dynamic Island replacements for volume, brightness, backlight, and battery charging animations.
-- 🪞 **Notch Mirror & Face**: Built-in camera mirror for quick appearance checks and playful animated notch expressions.
 
 ---
+
+### 🤖 Your Agents on the Notch
+
+Leave your agents running in the background. The notch shows you when one of them needs you.
+
+- **Working, waiting, or done.** Each session's mark sits on the closed notch and breathes while the agent works. A session that needs your approval or an answer turns amber and moves to the front.
+- **A banner when a turn ends.** The banner shows the first line of the agent's reply. A short turn goes to the Inbox without a banner.
+- **One click back.** Click a session, or its notification, to open the T3 Code thread it runs in, or to bring forward the terminal or app that hosts it.
+- **Sub-agents count as part of their session.** A task that runs sub-agents ends with one banner, not one per sub-agent.
+- **Music and agents share the notch.** With both showing, move the pointer in from the left to open the music, or from the right to open the Inbox.
+
+**Turn it on.** Open **Settings → Notifications** and turn on the switch for each agent you use. The app installs its own entries in that agent's config, repairs them on launch if they change, and removes them when you turn the switch off. It leaves the rest of the config as it was.
+
+**What runs inside your agent.** Claude Code and Codex get a hook that runs a short shell script. pi gets an extension, and OpenCode gets a plugin. Each one sends the agent's events to the app on `127.0.0.1`, and nothing leaves your Mac. The shell script never prints and always exits 0. It gives up after about a second, so it can't stall a turn.
+
+OpenCode sessions started from a terminal can't be traced back to that terminal yet. Clicking one does not jump, and it leaves the list after 15 quiet minutes.
+
+<!-- TODO(image): closed notch with two working agents and one waiting in amber, next to the opened Inbox -->
 
 ### 🚀 The Launcher
 
