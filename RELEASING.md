@@ -124,7 +124,7 @@ to publish as-is.
 
 ## 7. Confirm the issue form was updated
 
-Publishing the release, or pushing the tag, runs `update-version-dropdown.yml`: it rewrites the
+Publishing the release runs `update-version-dropdown.yml`: it rewrites the
 version dropdown in `.github/ISSUE_TEMPLATE/bug-report.yml` with the five most recent
 tags. Check that the new version shows up in the form. If that job failed, the dropdown simply
 still lists the old tags — nothing else breaks.

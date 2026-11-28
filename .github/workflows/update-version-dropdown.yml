@@ -2,10 +2,9 @@ name: Update Version Dropdown in Issue Form
 # Least-privilege: only needs to push the updated issue template file.
 permissions:
   contents: write
+# Only on a published release: a tag push fires for the same release seconds earlier, and the
+# two runs race to push to main, so the loser fails.
 on:
-  push:
-    tags:
-      - '*'
   workflow_dispatch: {}
   release:
     types:
