@@ -121,10 +121,10 @@ curl -X POST http://127.0.0.1:45999/v2/notifications \
 brew install --cask AllenReder/tap/not-boring-notch
 ```
 
-本项目为 ad-hoc 签名，macOS Gatekeeper 会拦截首次启动。加 `--no-quarantine` 可跳过该提示：
+本项目为 ad-hoc 签名且未经公证，macOS Gatekeeper 会拦截首次启动。安装后运行一次以下命令解除隔离：
 
 ```bash
-brew install --cask --no-quarantine AllenReder/tap/not-boring-notch
+xattr -dr com.apple.quarantine "/Applications/Not Boring Notch.app"
 ```
 
 ### 从 GitHub Releases 下载预编译版本

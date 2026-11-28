@@ -121,10 +121,10 @@ The easiest way to install and keep Not Boring Notch up to date:
 brew install --cask AllenReder/tap/not-boring-notch
 ```
 
-The build is ad-hoc signed, so macOS Gatekeeper blocks the first launch. Pass `--no-quarantine` to skip that prompt:
+The build is ad-hoc signed and not notarized, so macOS Gatekeeper blocks the first launch. Clear the quarantine flag once after installing:
 
 ```bash
-brew install --cask --no-quarantine AllenReder/tap/not-boring-notch
+xattr -dr com.apple.quarantine "/Applications/Not Boring Notch.app"
 ```
 
 ### Download from GitHub Releases
